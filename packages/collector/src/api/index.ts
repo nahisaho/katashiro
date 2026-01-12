@@ -1,4 +1,10 @@
 /**
  * API module exports
  */
-export { APIClient, type APIClientOptions } from './api-client.js';
+export { 
+  APIClient, 
+  type APIClientOptions,
+  ApiClientError,
+  NetworkError,
+  JsonParseError,
+} from './api-client.js';

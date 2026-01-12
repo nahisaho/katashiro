@@ -3,6 +3,7 @@
  *
  * @requirement REQ-GEN-003
  * @requirement REQ-CITE-001-ENH (v0.2.0)
+ * @requirement REQ-FIX-012 (v0.2.10)
  * @design DES-KATASHIRO-001 §2.3 Generator Container
  * @design DES-KATASHIRO-002 §3.1 CitationGenerator
  * @task TSK-033
@@ -14,6 +15,15 @@ import type { Source } from '@nahisaho/katashiro-core';
  * 引用スタイル
  */
 export type CitationStyle = 'apa' | 'mla' | 'ieee' | 'chicago' | 'harvard';
+
+/**
+ * 生成オプション
+ * @since 0.2.10
+ */
+export interface CitationOptions {
+  readonly format?: CitationStyle;
+  readonly includeAccessDate?: boolean;
+}
 
 /**
  * 生成された引用情報
@@ -28,6 +38,7 @@ export interface GeneratedCitation {
 
 /**
  * 引用ソース入力（簡易API用）
+ * @since 0.2.10 - year フィールド追加
  */
 export interface SourceInput {
   readonly title: string;
@@ -35,6 +46,7 @@ export interface SourceInput {
   readonly author?: string;
   readonly date?: string;
   readonly publishedAt?: string;
+  readonly year?: number | string;
 }
 
 /**
@@ -53,11 +65,52 @@ export interface CitationValidationResult {
  */
 export class CitationGenerator {
   /**
-   * 引用を生成（簡易API）
-   * AGENTS.md互換API
+   * 引用を生成（単一または複数）
+   * AGENTS.md互換API - 配列の場合は参考文献リストを文字列で返す
+   * @since 0.2.10 - 配列対応追加
+   * 
+   * @param input - 単一のSource/SourceInputまたは配列
+   * @param styleOrOptions - スタイルまたはオプション
+   * @returns 単一の場合はGeneratedCitation、配列の場合はフォーマット済み文字列
    */
-  generate(input: Source | SourceInput, style: CitationStyle = 'apa'): GeneratedCitation {
-    // SourceInputからSourceに変換
+  generate(
+    input: Source | SourceInput | (Source | SourceInput)[],
+    styleOrOptions: CitationStyle | CitationOptions = 'apa'
+  ): GeneratedCitation | string {
+    const style = typeof styleOrOptions === 'string' 
+      ? styleOrOptions 
+      : (styleOrOptions.format ?? 'apa');
+    const includeAccessDate = typeof styleOrOptions === 'object' 
+      ? styleOrOptions.includeAccessDate 
+      : false;
+
+    // 配列の場合は参考文献リストを生成
+    if (Array.isArray(input)) {
+      if (input.length === 0) {
+        return '';
+      }
+      
+      // ソースを正規化してソート
+      const sources = input.map(i => this.normalizeSource(i));
+      const sorted = [...sources].sort((a, b) => {
+        const authorA = a.metadata?.author ?? a.metadata?.title ?? '';
+        const authorB = b.metadata?.author ?? b.metadata?.title ?? '';
+        return authorA.localeCompare(authorB, 'ja');
+      });
+
+      // 各引用をフォーマット
+      const citations = sorted.map(s => {
+        const formatted = this.formatCitation(s, style);
+        if (includeAccessDate && s.url) {
+          return `${formatted} Retrieved ${new Date(s.fetchedAt).toLocaleDateString('ja-JP')} from ${s.url}`;
+        }
+        return formatted;
+      });
+      
+      return citations.join('\n\n');
+    }
+
+    // 単一の場合は従来通り
     const source: Source = this.normalizeSource(input);
     return this.generateCitation(source, style);
   }
@@ -169,14 +222,21 @@ export class CitationGenerator {
     
     // SourceInputからSourceを構築
     const simpleInput = input as SourceInput;
+    
+    // yearフィールドからpublishedAtを生成
+    let publishedAt = simpleInput.publishedAt || simpleInput.date;
+    if (!publishedAt && simpleInput.year) {
+      publishedAt = `${simpleInput.year}-01-01`;
+    }
+    
     return {
-      id: `source-${Date.now()}`,
+      id: `source-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       url: simpleInput.url || '',
       fetchedAt: new Date().toISOString(),
       metadata: {
         title: simpleInput.title,
         author: simpleInput.author,
-        publishedAt: simpleInput.publishedAt || simpleInput.date,
+        publishedAt,
       },
     };
   }

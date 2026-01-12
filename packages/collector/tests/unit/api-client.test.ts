@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { APIClient } from '../../src/api/api-client.js';
+import { APIClient, ApiClientError, NetworkError } from '../../src/api/api-client.js';
 import { isOk, isErr } from '@nahisaho/katashiro-core';
 
 describe('APIClient', () => {
@@ -24,7 +24,7 @@ describe('APIClient', () => {
     global.fetch = originalFetch;
   });
 
-  describe('get', () => {
+  describe('get (direct API)', () => {
     it('should make GET request successfully', async () => {
       const mockData = { id: 1, name: 'Test' };
       global.fetch = vi.fn().mockResolvedValue({
@@ -34,10 +34,7 @@ describe('APIClient', () => {
       });
 
       const result = await client.get<typeof mockData>('/users/1');
-      expect(isOk(result)).toBe(true);
-      if (isOk(result)) {
-        expect(result.value).toEqual(mockData);
-      }
+      expect(result).toEqual(mockData);
     });
 
     it('should append query parameters', async () => {
@@ -59,24 +56,69 @@ describe('APIClient', () => {
       );
     });
 
-    it('should handle HTTP errors', async () => {
+    it('should throw ApiClientError on HTTP errors', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 404,
         statusText: 'Not Found',
       });
 
-      const result = await client.get('/notfound');
+      await expect(client.get('/notfound')).rejects.toThrow(ApiClientError);
+      try {
+        await client.get('/notfound');
+      } catch (e) {
+        expect(e).toBeInstanceOf(ApiClientError);
+        expect((e as ApiClientError).statusCode).toBe(404);
+      }
+    });
+
+    it('should throw NetworkError on network errors', async () => {
+      global.fetch = vi.fn().mockRejectedValue(new Error('Network failure'));
+
+      await expect(client.get('/users')).rejects.toThrow(NetworkError);
+      try {
+        await client.get('/users');
+      } catch (e) {
+        expect(e).toBeInstanceOf(NetworkError);
+        expect((e as NetworkError).message).toContain('Network failure');
+      }
+    });
+  });
+
+  describe('getSafe (Result API)', () => {
+    it('should return Ok result on success', async () => {
+      const mockData = { id: 1, name: 'Test' };
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: () => Promise.resolve(mockData),
+      });
+
+      const result = await client.getSafe<typeof mockData>('/users/1');
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value).toEqual(mockData);
+      }
+    });
+
+    it('should return Err result on HTTP errors', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+      });
+
+      const result = await client.getSafe('/notfound');
       expect(isErr(result)).toBe(true);
       if (isErr(result)) {
         expect(result.error.message).toContain('404');
       }
     });
 
-    it('should handle network errors', async () => {
+    it('should return Err result on network errors', async () => {
       global.fetch = vi.fn().mockRejectedValue(new Error('Network failure'));
 
-      const result = await client.get('/users');
+      const result = await client.getSafe('/users');
       expect(isErr(result)).toBe(true);
       if (isErr(result)) {
         expect(result.error.message).toContain('Network failure');
@@ -84,7 +126,7 @@ describe('APIClient', () => {
     });
   });
 
-  describe('post', () => {
+  describe('post (direct API)', () => {
     it('should make POST request with body', async () => {
       const requestBody = { name: 'New User' };
       const responseData = { id: 1, name: 'New User' };
@@ -95,10 +137,7 @@ describe('APIClient', () => {
       });
 
       const result = await client.post<typeof responseData>('/users', requestBody);
-      expect(isOk(result)).toBe(true);
-      if (isOk(result)) {
-        expect(result.value).toEqual(responseData);
-      }
+      expect(result).toEqual(responseData);
 
       expect(global.fetch).toHaveBeenCalledWith(
         'https://api.example.com/users',
@@ -109,14 +148,42 @@ describe('APIClient', () => {
       );
     });
 
-    it('should handle POST errors', async () => {
+    it('should throw ApiClientError on POST errors', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 400,
         statusText: 'Bad Request',
       });
 
-      const result = await client.post('/users', { invalid: 'data' });
+      await expect(client.post('/users', { invalid: 'data' })).rejects.toThrow(ApiClientError);
+    });
+  });
+
+  describe('postSafe (Result API)', () => {
+    it('should return Ok result on success', async () => {
+      const requestBody = { name: 'New User' };
+      const responseData = { id: 1, name: 'New User' };
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: () => Promise.resolve(responseData),
+      });
+
+      const result = await client.postSafe<typeof responseData>('/users', requestBody);
+      expect(isOk(result)).toBe(true);
+      if (isOk(result)) {
+        expect(result.value).toEqual(responseData);
+      }
+    });
+
+    it('should return Err result on POST errors', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+      });
+
+      const result = await client.postSafe('/users', { invalid: 'data' });
       expect(isErr(result)).toBe(true);
     });
   });
@@ -195,7 +262,7 @@ describe('APIClient', () => {
   });
 
   describe('timeout', () => {
-    it('should abort request on timeout', async () => {
+    it('should throw on timeout', async () => {
       const timeoutClient = new APIClient({
         baseUrl: 'https://api.example.com',
         timeout: 100,
@@ -205,7 +272,20 @@ describe('APIClient', () => {
         () => new Promise((resolve) => setTimeout(resolve, 500))
       );
 
-      const result = await timeoutClient.get('/slow');
+      await expect(timeoutClient.get('/slow')).rejects.toThrow();
+    });
+
+    it('should return Err result on timeout with Safe API', async () => {
+      const timeoutClient = new APIClient({
+        baseUrl: 'https://api.example.com',
+        timeout: 100,
+      });
+
+      global.fetch = vi.fn().mockImplementation(
+        () => new Promise((resolve) => setTimeout(resolve, 500))
+      );
+
+      const result = await timeoutClient.getSafe('/slow');
       expect(isErr(result)).toBe(true);
     });
   });

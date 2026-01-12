@@ -27,6 +27,9 @@ export {
   type GraphNodeInput,
   type GraphEdge,
   type GraphEdgeInput,
+  type AddNodeOptions,
+  type AddEdgeOptions,
+  DuplicateNodeError,
 } from './graph/index.js';
 
 // Persistence module

@@ -71,6 +71,38 @@ export interface AddEdgeOptions {
 }
 
 /**
+ * ノード追加オプション
+ * @since 0.2.10
+ */
+export interface AddNodeOptions {
+  /** 重複IDの場合、既存ノードを更新するか */
+  readonly upsert?: boolean;
+  /** 重複IDの場合、スキップして既存ノードを返すか */
+  readonly skipDuplicate?: boolean;
+  /** 重複IDの場合、自動でリネームするか */
+  readonly autoRename?: boolean;
+}
+
+/**
+ * 重複ノードエラー
+ * @since 0.2.10
+ */
+export class DuplicateNodeError extends Error {
+  readonly code = 'KATASHIRO-E013';
+  readonly nodeId: string;
+  readonly existingNode: GraphNode;
+  readonly suggestion: string;
+
+  constructor(nodeId: string, existingNode: GraphNode) {
+    super(`Node with ID ${nodeId} already exists`);
+    this.name = 'DuplicateNodeError';
+    this.nodeId = nodeId;
+    this.existingNode = existingNode;
+    this.suggestion = "Use { upsert: true } to update or { skipDuplicate: true } to skip";
+  }
+}
+
+/**
  * KnowledgeGraph
  *
  * In-memory graph for storing entities and relationships
@@ -82,19 +114,70 @@ export class KnowledgeGraph {
   private reverseAdjacencyList: Map<string, Set<string>> = new Map();
 
   /**
+   * Check if a node with the specified ID exists
+   * @since 0.2.10
+   *
+   * @param id - Node ID to check
+   * @returns true if node exists, false otherwise
+   */
+  hasNode(id: string): boolean {
+    return this.nodes.has(id);
+  }
+
+  /**
+   * Check if an edge with the specified ID exists
+   * @since 0.2.10
+   *
+   * @param id - Edge ID to check
+   * @returns true if edge exists, false otherwise
+   */
+  hasEdge(id: string): boolean {
+    return this.edges.has(id);
+  }
+
+  /**
    * Add a node to the graph
    * Accepts both full GraphNode and simplified GraphNodeInput
    * AGENTS.md互換: idが省略された場合は自動生成
    *
    * @param node - Node to add
+   * @param options - Optional settings (upsert, skipDuplicate, autoRename)
    * @returns The added node (AGENTS.md互換)
    */
-  addNode(node: GraphNode | GraphNodeInput): GraphNode {
+  addNode(node: GraphNode | GraphNodeInput, options?: AddNodeOptions): GraphNode {
     // IDがない場合は自動生成
-    const nodeId = node.id || `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    let nodeId = node.id || `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     
+    // 重複チェック
     if (this.nodes.has(nodeId)) {
-      throw new Error(`Node with ID ${nodeId} already exists`);
+      const existingNode = this.nodes.get(nodeId)!;
+      
+      // upsert: 既存ノードを更新
+      if (options?.upsert) {
+        const updatedNode: GraphNode = {
+          id: nodeId,
+          type: node.type || existingNode.type,
+          label: node.label || existingNode.label,
+          properties: { ...existingNode.properties, ...node.properties },
+          createdAt: existingNode.createdAt,
+          updatedAt: new Date().toISOString(),
+        };
+        this.nodes.set(nodeId, updatedNode);
+        return updatedNode;
+      }
+      
+      // skipDuplicate: 既存ノードをそのまま返す
+      if (options?.skipDuplicate) {
+        return existingNode;
+      }
+      
+      // autoRename: 新しいIDを生成
+      if (options?.autoRename) {
+        nodeId = `${nodeId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      } else {
+        // デフォルト: エラーをスロー
+        throw new DuplicateNodeError(nodeId, existingNode);
+      }
     }
 
     // Normalize input to full GraphNode

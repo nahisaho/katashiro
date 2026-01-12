@@ -33,7 +33,13 @@ export { WebSearchClient } from './web-search/index.js';
 export { WebScraper } from './scraper/index.js';
 export { YouTubeTranscript } from './youtube/index.js';
 export { FeedReader } from './feed/index.js';
-export { APIClient, type APIClientOptions } from './api/index.js';
+export { 
+  APIClient, 
+  type APIClientOptions,
+  ApiClientError,
+  NetworkError,
+  JsonParseError,
+} from './api/index.js';
 export { MediaExtractor, type ExtractedMedia } from './media/index.js';
 
 // AGENTS.md互換エイリアス（APIClientをApiClientとしてもエクスポート）

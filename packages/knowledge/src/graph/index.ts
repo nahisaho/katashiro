@@ -10,4 +10,7 @@ export {
   type GraphNodeInput,
   type GraphEdge,
   type GraphEdgeInput,
+  type AddNodeOptions,
+  type AddEdgeOptions,
+  DuplicateNodeError,
 } from './knowledge-graph.js';
