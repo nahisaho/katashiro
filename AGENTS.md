@@ -1,280 +1,1026 @@
 # KATASHIRO - AI Coding Agent Guide
 
-> **AI Coding Agent向け**: このファイルはAIエージェント（GitHub Copilot、Claude等）がKATASHIROサービスを自然言語で利用するためのガイドです。
+> **AI Coding Agent向け**: このファイルを読み込んだAIエージェントは、ユーザーの課題を解決するためにKATASHIROライブラリの機能を自動的に活用できます。
 
-## 🎯 KATASHIROでできること
+## 🎯 このガイドの目的
 
-KATASHIROは以下のタスクを自然言語で実行できます：
-
-| やりたいこと | 自然言語での依頼例 |
-|-------------|-------------------|
-| **Web調査** | 「〜について調べて」「〜の最新情報を検索して」 |
-| **Webページ取得** | 「このURLの内容を取得して」「〜のサイトをスクレイピングして」 |
-| **テキスト分析** | 「この文章を分析して」「キーワードを抽出して」 |
-| **エンティティ抽出** | 「人名・組織名を抽出して」「固有表現を見つけて」 |
-| **レポート生成** | 「調査レポートを作成して」「分析結果をまとめて」 |
-| **要約作成** | 「この文章を要約して」「3行でまとめて」 |
-| **知識グラフ操作** | 「知識グラフに追加して」「関連情報を検索して」 |
+ユーザーが自然言語で入力した課題に対して、KATASHIROの機能を適切に組み合わせて解決策を提供します。
 
 ---
 
-## 🔧 MCPツール（自然言語で呼び出し可能）
+## 📋 課題タイプ別の解決アプローチ
 
-### 情報収集ツール
+### 課題タイプの判定
 
-| ツール | 自然言語での呼び出し例 |
-|--------|----------------------|
-| `katashiro_scrape` | 「https://example.com の内容を取得して」 |
-| `katashiro_search` | 「TypeScript best practices について検索して」 |
-| `katashiro_feed` | 「このRSSフィードを読み込んで」 |
+ユーザーの入力から以下のタイプを判定してください：
 
-### 分析ツール
-
-| ツール | 自然言語での呼び出し例 |
-|--------|----------------------|
-| `katashiro_analyze` | 「この文章のキーワードと複雑度を分析して」 |
-| `katashiro_extract_entities` | 「このテキストから人名と組織名を抽出して」 |
-| `katashiro_topics` | 「これらの文書のトピックを分析して」 |
-
-### 生成ツール
-
-| ツール | 自然言語での呼び出し例 |
-|--------|----------------------|
-| `katashiro_generate_report` | 「調査結果からレポートを生成して」 |
-| `katashiro_summarize` | 「この長文を300文字で要約して」 |
-| `katashiro_citation` | 「APA形式で引用を生成して」 |
-
-### 知識グラフツール
-
-| ツール | 自然言語での呼び出し例 |
-|--------|----------------------|
-| `katashiro_knowledge_query` | 「知識グラフから〜に関連する情報を検索して」 |
-| `katashiro_knowledge_add` | 「この情報を知識グラフに追加して」 |
+| 課題タイプ | キーワード例 | 使用する機能 |
+|-----------|-------------|-------------|
+| **調査・リサーチ** | 調べて、検索、情報収集、〜について | Collector → Analyzer → Generator |
+| **Deep Research** | 詳しく調べて、徹底的に、包括的に、網羅的に | Collector → Analyzer → Knowledge → Generator（反復） |
+| **戦略策定** | 戦略、SWOT、3C、5Forces、競合分析 | FrameworkAnalyzer → Generator |
+| **分析・解析** | 分析して、解析、キーワード、傾向 | Analyzer |
+| **要約・まとめ** | 要約、まとめて、短くして | Generator (SummaryGenerator) |
+| **レポート作成** | レポート、報告書、文書化 | Generator (ReportGenerator) |
+| **データ抽出** | 抽出、取り出して、リストアップ | Analyzer (EntityExtractor) |
+| **知識管理** | 保存、記録、覚えておいて | Knowledge |
+| **比較・評価** | 比較、評価、どちらが | Collector → Analyzer → Generator |
 
 ---
 
-## 📝 ユースケース別ワークフロー
+## 🔄 課題解決ワークフロー
 
-### 1. 競合調査レポート作成
-
-```
-ユーザー: 「〇〇社について競合調査して、レポートにまとめて」
-
-AIエージェントの動作:
-1. katashiro_search で「〇〇社」を検索
-2. katashiro_scrape で上位結果のページを取得
-3. katashiro_analyze でテキスト分析
-4. katashiro_extract_entities で企業名・人名を抽出
-5. katashiro_generate_report でレポート生成
-```
-
-### 2. 技術トレンド分析
-
-```
-ユーザー: 「2026年のAI技術トレンドを調べて分析して」
-
-AIエージェントの動作:
-1. katashiro_search で「AI trends 2026」を検索
-2. katashiro_scrape で技術ブログを取得
-3. katashiro_topics でトピック分析
-4. katashiro_summarize で要点をまとめ
-```
-
-### 3. 論文・記事の要約
-
-```
-ユーザー: 「このURLの論文を要約して、重要なポイントを箇条書きにして」
-
-AIエージェントの動作:
-1. katashiro_scrape でページ内容を取得
-2. katashiro_analyze で構造分析
-3. katashiro_summarize で要約生成
-4. katashiro_citation で引用情報を生成
-```
-
-### 4. 知識ベース構築
-
-```
-ユーザー: 「このプロジェクトの情報を知識グラフに登録して」
-
-AIエージェントの動作:
-1. katashiro_extract_entities でエンティティ抽出
-2. katashiro_knowledge_add でノード追加
-3. katashiro_knowledge_query で関連性確認
-```
-
----
-
-## 💡 自然言語プロンプト例
-
-### 調査系
-- 「〜について調べて」
-- 「〜の最新ニュースを検索して」
-- 「〜に関する情報を集めて」
-- 「このURLの内容を取得して分析して」
-
-### 分析系
-- 「この文章を分析して」
-- 「キーワードを抽出して」
-- 「人名・組織名をリストアップして」
-- 「トピックを分類して」
-- 「感情分析して」
-
-### 生成系
-- 「レポートにまとめて」
-- 「要約して」
-- 「〜文字でまとめて」
-- 「プレゼン資料を作って」
-- 「引用を生成して」
-
-### 知識グラフ系
-- 「知識グラフに追加して」
-- 「関連情報を検索して」
-- 「この情報を保存して」
-
----
-
-## 📦 npmパッケージ
-
-```bash
-# オールインワン（推奨）
-npm install @nahisaho/katashiro
-
-# MCPサーバー
-npm install @nahisaho/katashiro-mcp-server
-```
-
-### CLI使用法
-
-```bash
-# Web検索
-npx katashiro search "検索クエリ"
-
-# Webスクレイピング
-npx katashiro scrape https://example.com
-
-# テキスト分析
-npx katashiro analyze "分析するテキスト"
-
-# エンティティ抽出
-npx katashiro extract "テキスト"
-
-# 要約
-npx katashiro summarize "長いテキスト" --length 300
-```
-
-### プログラムAPI
+### ステップ1: 課題の分析
 
 ```typescript
-import { 
-  WebSearchClient, 
-  WebScraper, 
-  TextAnalyzer, 
-  EntityExtractor, 
-  SummaryGenerator, 
-  ReportGenerator,
-  TopicModeler,
-  FeedReader,
-  KnowledgeGraph,
-  isOk 
-} from '@nahisaho/katashiro';
-
-// Web検索（文字列を直接渡せる）
-const search = new WebSearchClient();
-const results = await search.search('検索クエリ');
-
-// スクレイピング
-const scraper = new WebScraper();
-const page = await scraper.scrape('https://example.com');
-
-// テキスト分析（日本語キーワード対応）
-const analyzer = new TextAnalyzer();
-const analysis = await analyzer.analyzeText('分析するテキスト');
-// { keywords, complexity, sentiment, wordCount, sentenceCount }
-
-// エンティティ抽出
-const extractor = new EntityExtractor();
-const entities = await extractor.extract('テキスト');
-// { persons, organizations, locations, urls, all }
-
-// 要約（Result型を返す）
-const summarizer = new SummaryGenerator();
-const summaryResult = await summarizer.summarize('長いテキスト', { maxLength: 300 });
-
-// 要約（文字列を返す簡易版）
-const summary = await summarizer.generate('長いテキスト', { maxLength: 300 });
-
-// レポート生成
-const reporter = new ReportGenerator();
-const report = await reporter.generate({
-  title: 'レポートタイトル',
-  sections: [{ heading: 'セクション', content: '内容' }],
-  format: 'markdown'
-});
-
-// トピックモデリング（配列対応）
-const modeler = new TopicModeler();
-const topics = modeler.model(['文書1', '文書2'], { numTopics: 5 });
-// または: modeler.extractTopics(['文書1', '文書2'], 5);
-
-// RSSフィード
-const reader = new FeedReader();
-const feed = await reader.read('https://example.com/rss.xml');
-
-// 知識グラフ検索
-const kg = new KnowledgeGraph();
-const nodes = kg.query('検索キーワード');
+// ユーザー入力から課題タイプを判定
+function analyzeProblem(userInput: string): ProblemType {
+  const keywords = {
+    research: ['調べ', '検索', '情報', 'について', '知りたい'],
+    analyze: ['分析', '解析', 'キーワード', '傾向', '特徴'],
+    summarize: ['要約', 'まとめ', '短く', '簡潔'],
+    report: ['レポート', '報告', '文書', 'ドキュメント'],
+    extract: ['抽出', '取り出', 'リスト', '一覧'],
+    knowledge: ['保存', '記録', '覚え', '登録'],
+    compare: ['比較', '評価', 'どちら', '違い'],
+  };
+  // キーワードマッチングで判定
+}
 ```
 
-### VS Code MCP設定
+### ステップ2: 必要な機能の選択
 
-```json
-{
-  "mcp.servers": {
-    "katashiro": {
-      "command": "npx",
-      "args": ["@nahisaho/katashiro-mcp-server"]
-    }
+課題タイプに応じて以下のクラスを使用：
+
+```typescript
+import {
+  // 情報収集（URLや検索クエリがある場合）
+  WebScraper,        // URL指定のページ取得
+  WebSearchClient,   // キーワード検索
+  FeedReader,        // RSSフィード
+  ApiClient,         // API呼び出し
+  
+  // テキスト分析（テキストデータがある場合）
+  TextAnalyzer,      // キーワード・複雑度分析
+  EntityExtractor,   // 人名・組織名抽出
+  TopicModeler,      // トピック分類
+  StructureAnalyzer, // 文書構造解析
+  QualityScorer,     // 品質スコアリング
+  
+  // コンサルティングフレームワーク（戦略策定の場合）
+  FrameworkAnalyzer, // SWOT, 3C, 4P, 5Forces, ValueChain, MECE等
+  
+  // コンテンツ生成（出力が必要な場合）
+  ReportGenerator,   // レポート生成
+  SummaryGenerator,  // 要約生成
+  CitationGenerator, // 引用生成
+  TemplateEngine,    // テンプレート処理
+  
+  // 知識管理（情報を蓄積・検索する場合）
+  KnowledgeGraph,    // グラフ管理
+  GraphQuery,        // 検索
+  GraphPersistence,  // 永続化
+  
+  // ユーティリティ
+  ok, err, isOk, isErr,
+} from '@nahisaho/katashiro';
+```
+
+---
+
+## 📝 課題タイプ別の実装パターン
+
+### パターンA: 調査・リサーチ課題
+
+**ユーザー例**: 「〇〇について調べてまとめて」
+
+```typescript
+async function solveResearchProblem(topic: string) {
+  // 1. 情報収集（文字列でも検索可能）
+  const searchClient = new WebSearchClient();
+  const results = await searchClient.search(topic);  // 文字列を直接渡せる
+  // オプション付き: await searchClient.search({ query: topic, maxResults: 10, provider: 'duckduckgo' });
+  
+  // 2. ページ取得
+  const scraper = new WebScraper();
+  const contents: string[] = [];
+  for (const result of results.slice(0, 5)) {
+    const page = await scraper.scrape(result.url);
+    if (isOk(page)) contents.push(page.value.content);
   }
+  
+  // 3. 分析
+  const analyzer = new TextAnalyzer();
+  const analyses = await Promise.all(contents.map(c => analyzer.analyze(c)));
+  
+  // 4. エンティティ抽出
+  const extractor = new EntityExtractor();
+  const allEntities: Entity[] = [];
+  for (const content of contents) {
+    const extracted = await extractor.extract(content);
+    // extract() は ExtractedEntities オブジェクトを返す
+    // extracted.persons, extracted.organizations, extracted.urls など
+    allEntities.push(...extracted.all);  // all プロパティで全エンティティ配列にアクセス
+  }
+  
+  // 5. 要約生成
+  const summarizer = new SummaryGenerator();
+  const summary = await summarizer.generate(contents.join('\n\n'), { maxLength: 500 });
+  
+  // 6. レポート生成
+  const reportGen = new ReportGenerator();
+  const report = await reportGen.generate({
+    title: `${topic} 調査レポート`,
+    sections: [
+      { heading: '概要', content: summary },
+      { heading: 'キーワード', content: analyses.flatMap(a => a.keywords).join(', ') },
+      { heading: '関連エンティティ', content: [...new Set(allEntities.map(e => e.text))].join(', ') },
+      { heading: '参考URL', content: results.map(r => `- ${r.url}`).join('\n') },
+    ],
+    format: 'markdown',
+  });
+  
+  return report;
+}
+```
+
+### パターンB: 分析課題
+
+**ユーザー例**: 「このテキストを分析して特徴を教えて」
+
+```typescript
+async function solveAnalysisProblem(text: string) {
+  // 1. テキスト分析
+  const analyzer = new TextAnalyzer();
+  const analysis = await analyzer.analyze(text);
+  
+  // 2. 構造分析
+  const structAnalyzer = new StructureAnalyzer();
+  const structure = await structAnalyzer.analyze(text);
+  
+  // 3. エンティティ抽出
+  const extractor = new EntityExtractor();
+  const extracted = await extractor.extract(text);
+  // extracted は ExtractedEntities 型:
+  // { persons, organizations, locations, dates, urls, emails, all, ... }
+  
+  // 4. 品質スコアリング
+  const scorer = new QualityScorer();
+  const quality = await scorer.score(text);
+  
+  return {
+    keywords: analysis.keywords,
+    complexity: analysis.complexity,
+    sentiment: analysis.sentiment,
+    structure: structure,
+    entities: {
+      persons: extracted.persons,
+      organizations: extracted.organizations,
+      locations: extracted.locations,
+      total: extracted.all.length,
+    },
+    qualityScore: quality,
+  };
+}
+```
+
+### パターンC: 要約課題
+
+**ユーザー例**: 「この長文を300文字でまとめて」
+
+```typescript
+async function solveSummaryProblem(text: string, maxLength: number = 300) {
+  const summarizer = new SummaryGenerator();
+  const summary = await summarizer.generate(text, { 
+    maxLength,
+    style: 'paragraph' // または 'bullets', 'headline'
+  });
+  return summary;
+}
+```
+
+### パターンD: レポート作成課題
+
+**ユーザー例**: 「分析結果をレポートにまとめて」
+
+```typescript
+async function solveReportProblem(data: any, title: string) {
+  const reportGen = new ReportGenerator();
+  const report = await reportGen.generate({
+    title,
+    sections: [
+      { heading: '概要', content: data.summary },
+      { heading: '詳細分析', content: data.details },
+      { heading: '結論', content: data.conclusion },
+    ],
+    format: 'markdown',
+    metadata: { author: 'KATASHIRO', date: new Date().toISOString() },
+  });
+  return report;
+}
+```
+
+### パターンE: データ抽出課題
+
+**ユーザー例**: 「この文章から人名と組織名を抽出して」
+
+```typescript
+async function solveExtractionProblem(text: string) {
+  const extractor = new EntityExtractor();
+  const extracted = await extractor.extract(text);
+  
+  // extract() は構造化されたオブジェクトを返す
+  return {
+    persons: extracted.persons,         // string[]
+    organizations: extracted.organizations,  // string[]
+    locations: extracted.locations,     // string[]
+    urls: extracted.urls,               // string[]
+    all: extracted.all,                 // Entity[]（全エンティティ）
+  };
+}
+```
+
+### パターンF: 知識管理課題
+
+**ユーザー例**: 「この情報を保存しておいて」「〇〇に関連する情報を探して」
+
+```typescript
+async function solveKnowledgeProblem(action: 'save' | 'search', data: any) {
+  const kg = new KnowledgeGraph();
+  const persistence = new GraphPersistence();
+  
+  // 既存のグラフを読み込み
+  try {
+    const loaded = await persistence.load('./knowledge-graph.json');
+    Object.assign(kg, loaded);
+  } catch { /* 新規作成 */ }
+  
+  if (action === 'save') {
+    // エンティティを抽出してノード追加
+    const extractor = new EntityExtractor();
+    const extracted = await extractor.extract(data.text);
+    
+    for (const entity of extracted.all) {
+      kg.addNode({
+        id: `entity-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        type: entity.type,
+        properties: { name: entity.text, source: data.source },
+      });
+    }
+    
+    await persistence.save(kg, './knowledge-graph.json');
+    return { saved: extracted.all.length };
+  } else {
+    // 検索
+    const query = new GraphQuery(kg);
+    const results = query.search(data.query);
+    return results;
+  }
+}
+```
+
+### パターンG: 比較・評価課題
+
+**ユーザー例**: 「AとBを比較して」
+
+```typescript
+async function solveComparisonProblem(itemA: string, itemB: string) {
+  const searchClient = new WebSearchClient();
+  const scraper = new WebScraper();
+  const analyzer = new TextAnalyzer();
+  
+  // 両方の情報を収集
+  const [resultsA, resultsB] = await Promise.all([
+    searchClient.search(itemA, { maxResults: 5 }),
+    searchClient.search(itemB, { maxResults: 5 }),
+  ]);
+  
+  // 分析
+  const analysisA = await analyzeResults(resultsA, scraper, analyzer);
+  const analysisB = await analyzeResults(resultsB, scraper, analyzer);
+  
+  // 比較レポート生成
+  const reportGen = new ReportGenerator();
+  return reportGen.generate({
+    title: `${itemA} vs ${itemB} 比較レポート`,
+    sections: [
+      { heading: itemA, content: formatAnalysis(analysisA) },
+      { heading: itemB, content: formatAnalysis(analysisB) },
+      { heading: '比較まとめ', content: generateComparison(analysisA, analysisB) },
+    ],
+    format: 'markdown',
+  });
+}
+```
+
+### パターンH: 戦略策定課題
+
+**ユーザー例**: 「〇〇のSWOT分析をして」「競争戦略を立てて」「マーケティング戦略を考えて」
+
+```typescript
+import { FrameworkAnalyzer } from '@nahisaho/katashiro';
+
+async function solveStrategyProblem(topic: string, frameworkType: string) {
+  const analyzer = new FrameworkAnalyzer();
+  const searchClient = new WebSearchClient();
+  const scraper = new WebScraper();
+  const reportGen = new ReportGenerator();
+
+  // 1. 情報収集（戦略策定の材料を集める）
+  const searchQueries = [
+    `${topic} 強み 特徴`,
+    `${topic} 課題 弱み`,
+    `${topic} 市場 機会`,
+    `${topic} 競合 脅威`,
+  ];
+  const results = await Promise.all(
+    searchQueries.map(q => searchClient.search(q, { maxResults: 5 }))
+  );
+
+  // 2. フレームワーク分析を実行
+  switch (frameworkType) {
+    case 'swot': {
+      const swot = analyzer.analyzeSWOT({
+        strengths: ['技術力', 'ブランド力', '顧客基盤'],
+        weaknesses: ['販売網', 'コスト構造'],
+        opportunities: ['市場成長', 'DX需要', '規制緩和'],
+        threats: ['競合参入', '技術陳腐化', '景気変動'],
+      });
+      // クロスSWOT戦略が自動生成される
+      return reportGen.generate({
+        title: `${topic} SWOT分析レポート`,
+        sections: [
+          { heading: '強み (Strengths)', content: swot.strengths.map(s => `- ${s.item}`).join('\n') },
+          { heading: '弱み (Weaknesses)', content: swot.weaknesses.map(w => `- ${w.item}`).join('\n') },
+          { heading: '機会 (Opportunities)', content: swot.opportunities.map(o => `- ${o.item}`).join('\n') },
+          { heading: '脅威 (Threats)', content: swot.threats.map(t => `- ${t.item}`).join('\n') },
+          { heading: '戦略オプション', content: swot.crossStrategies.map(s => `### ${s.name}\n${s.description}`).join('\n\n') },
+        ],
+        format: 'markdown',
+      });
+    }
+
+    case '3c': {
+      const threeC = analyzer.analyzeThreeC({
+        company: [
+          { name: '技術力', detail: '独自技術保有', importance: 5 },
+          { name: 'ブランド', detail: '認知度高い', importance: 4 },
+        ],
+        customer: [
+          { name: 'ニーズ', detail: '利便性重視', importance: 5 },
+          { name: '購買行動', detail: 'オンライン中心', importance: 4 },
+        ],
+        competitor: [
+          { name: '主要競合', detail: '3社寡占', importance: 5 },
+          { name: '差別化要因', detail: '価格・品質', importance: 4 },
+        ],
+      });
+      return reportGen.generate({
+        title: `${topic} 3C分析レポート`,
+        sections: [
+          { heading: '自社 (Company)', content: threeC.company.summary },
+          { heading: '顧客 (Customer)', content: threeC.customer.summary },
+          { heading: '競合 (Competitor)', content: threeC.competitor.summary },
+          { heading: 'KSF (重要成功要因)', content: threeC.keySuccessFactors.map(k => `- ${k}`).join('\n') },
+          { heading: '戦略示唆', content: threeC.strategicImplications.map(s => `- ${s}`).join('\n') },
+        ],
+        format: 'markdown',
+      });
+    }
+
+    case '5forces': {
+      const fiveForces = analyzer.analyzeFiveForces({
+        newEntrants: { intensity: 3, factors: ['参入障壁中程度', '資本集約的'] },
+        substitutes: { intensity: 2, factors: ['代替品少ない'] },
+        buyerPower: { intensity: 4, factors: ['価格感度高い', '情報非対称性低い'] },
+        supplierPower: { intensity: 2, factors: ['供給者多数'] },
+        rivalry: { intensity: 5, factors: ['競争激化', '差別化困難'] },
+      });
+      return reportGen.generate({
+        title: `${topic} 5Forces分析レポート`,
+        sections: [
+          { heading: '新規参入の脅威', content: `強度: ${fiveForces.newEntrants.intensity}/5\n${fiveForces.newEntrants.description}` },
+          { heading: '代替品の脅威', content: `強度: ${fiveForces.substitutes.intensity}/5\n${fiveForces.substitutes.description}` },
+          { heading: '買い手の交渉力', content: `強度: ${fiveForces.buyerPower.intensity}/5\n${fiveForces.buyerPower.description}` },
+          { heading: '売り手の交渉力', content: `強度: ${fiveForces.supplierPower.intensity}/5\n${fiveForces.supplierPower.description}` },
+          { heading: '業界内競争', content: `強度: ${fiveForces.rivalry.intensity}/5\n${fiveForces.rivalry.description}` },
+          { heading: '業界魅力度', content: `スコア: ${fiveForces.industryAttractiveness}/5` },
+          { heading: '戦略示唆', content: fiveForces.strategicImplications.map(s => `- ${s}`).join('\n') },
+        ],
+        format: 'markdown',
+      });
+    }
+
+    case '4p': {
+      const fourP = analyzer.analyzeFourP({
+        product: { current: ['主力製品A', '新製品B'], strengths: ['品質'], challenges: ['ラインナップ'] },
+        price: { current: ['中価格帯'], strengths: ['競争力'], challenges: ['利益率'] },
+        place: { current: ['直販', '代理店'], strengths: ['カバレッジ'], challenges: ['EC強化'] },
+        promotion: { current: ['Web広告', '展示会'], strengths: ['認知度'], challenges: ['費用対効果'] },
+      });
+      return reportGen.generate({
+        title: `${topic} 4P分析レポート`,
+        sections: [
+          { heading: 'Product (製品)', content: formatFourPElement(fourP.product) },
+          { heading: 'Price (価格)', content: formatFourPElement(fourP.price) },
+          { heading: 'Place (流通)', content: formatFourPElement(fourP.place) },
+          { heading: 'Promotion (販促)', content: formatFourPElement(fourP.promotion) },
+          { heading: '4P整合性スコア', content: `${fourP.consistency}/5` },
+          { heading: '改善提案', content: fourP.recommendations.map(r => `- ${r}`).join('\n') },
+        ],
+        format: 'markdown',
+      });
+    }
+
+    case 'valuechain': {
+      const valueChain = analyzer.analyzeValueChain({
+        primaryActivities: [
+          { name: '購買', type: 'inbound', valueContribution: 3, costRatio: 0.2 },
+          { name: '製造', type: 'operations', valueContribution: 5, costRatio: 0.35 },
+          { name: '出荷', type: 'outbound', valueContribution: 3, costRatio: 0.15 },
+          { name: 'マーケティング', type: 'marketing', valueContribution: 4, costRatio: 0.2 },
+          { name: 'サービス', type: 'service', valueContribution: 4, costRatio: 0.1 },
+        ],
+        supportActivities: [
+          { name: 'IT基盤', type: 'technology', valueContribution: 4, costRatio: 0.1 },
+          { name: '人事', type: 'hr', valueContribution: 3, costRatio: 0.08 },
+        ],
+      });
+      return reportGen.generate({
+        title: `${topic} バリューチェーン分析レポート`,
+        sections: [
+          { heading: '主活動', content: valueChain.primaryActivities.map(a => `- ${a.name}: 価値貢献${a.valueContribution}/5, コスト${(a.costRatio*100).toFixed(0)}%`).join('\n') },
+          { heading: '支援活動', content: valueChain.supportActivities.map(a => `- ${a.name}: 価値貢献${a.valueContribution}/5`).join('\n') },
+          { heading: '価値創造ポイント', content: valueChain.valueCreationPoints.map(p => `- ${p}`).join('\n') },
+          { heading: '競争優位', content: valueChain.competitiveAdvantages.map(a => `- ${a}`).join('\n') },
+        ],
+        format: 'markdown',
+      });
+    }
+
+    default:
+      // MECE分析やロジックツリーなど
+      const mece = analyzer.analyzeMECE(['要素1', '要素2', '要素3']);
+      return { mece };
+  }
+}
+
+// 利用可能なフレームワーク一覧
+const availableFrameworks = {
+  swot: 'SWOT分析（強み・弱み・機会・脅威）',
+  '3c': '3C分析（自社・顧客・競合）',
+  '4p': '4P分析（製品・価格・流通・販促）',
+  '5forces': '5Forces分析（ポーターの競争戦略）',
+  valuechain: 'バリューチェーン分析',
+  mece: 'MECE分析（漏れなく・ダブりなく）',
+  logictree: 'ロジックツリー（Why/How/What）',
+  hypothesis: '仮説フレームワーク',
+  issuetree: 'イシューツリー',
+};
+```
+
+---
+
+## 🚀 統合ソルバー
+
+ユーザーの課題を自動判定して解決：
+
+```typescript
+import * as katashiro from '@nahisaho/katashiro';
+
+async function solveProblem(userInput: string, context?: any) {
+  // 課題タイプを判定
+  const problemType = detectProblemType(userInput);
+  
+  switch (problemType) {
+    case 'research':
+      return solveResearchProblem(extractTopic(userInput));
+    case 'deepResearch':
+      return deepResearch(extractTopic(userInput));
+    case 'strategy':
+      return solveStrategyProblem(extractTopic(userInput), detectFrameworkType(userInput));
+    case 'analyze':
+      return solveAnalysisProblem(context?.text || userInput);
+    case 'summarize':
+      return solveSummaryProblem(context?.text || userInput, extractMaxLength(userInput));
+    case 'report':
+      return solveReportProblem(context?.data, extractTitle(userInput));
+    case 'extract':
+      return solveExtractionProblem(context?.text || userInput, extractEntityTypes(userInput));
+    case 'knowledge':
+      return solveKnowledgeProblem(detectKnowledgeAction(userInput), context);
+    case 'compare':
+      const [itemA, itemB] = extractComparisonItems(userInput);
+      return solveComparisonProblem(itemA, itemB);
+    default:
+      // 汎用的なリサーチとして処理
+      return solveResearchProblem(userInput);
+  }
+}
+
+// フレームワークタイプの検出
+function detectFrameworkType(input: string): string {
+  if (/swot/i.test(input) || /強み.*弱み|脅威.*機会/.test(input)) return 'swot';
+  if (/3c|自社.*顧客.*競合/.test(input)) return '3c';
+  if (/4p|マーケティング.*ミックス|製品.*価格.*流通/.test(input)) return '4p';
+  if (/5forces|ファイブフォース|競争.*力/.test(input)) return '5forces';
+  if (/バリューチェーン|価値連鎖/.test(input)) return 'valuechain';
+  if (/mece|ミーシー|漏れなく/.test(input)) return 'mece';
+  return 'swot'; // デフォルト
 }
 ```
 
 ---
 
-## 🏗️ プロジェクト構造
+## 🔬 Deep Research パターン
 
+複雑な調査課題に対して、**幅広い情報収集 → 反復的な深掘り → 統合分析**のパターンを適用します。
+
+### 課題タイプの判定
+
+以下のキーワードがある場合、Deep Researchパターンを適用：
+
+| トリガー | キーワード例 |
+|---------|-------------|
+| **深い調査** | 詳しく調べて、徹底的に、包括的に、網羅的に |
+| **多角的分析** | 様々な観点から、複数の視点で |
+| **戦略的調査** | 戦略を立てて、計画を策定 |
+| **市場調査** | 市場分析、競合調査、トレンド分析 |
+
+### Deep Research ワークフロー
+
+```typescript
+/**
+ * Deep Research パターン
+ * 
+ * Phase 1: 幅広い情報収集（Broad Search）
+ * Phase 2: 反復的深掘り（Iterative Deepening）
+ * Phase 3: 統合・合成（Synthesis）
+ */
+async function deepResearch(topic: string, options?: DeepResearchOptions) {
+  const searchClient = new WebSearchClient();
+  const scraper = new WebScraper();
+  const analyzer = new TextAnalyzer();
+  const extractor = new EntityExtractor();
+  const summarizer = new SummaryGenerator();
+  const reportGen = new ReportGenerator();
+  const kg = new KnowledgeGraph();
+
+  // ========== Phase 1: 幅広い情報収集 ==========
+  // 複数の検索クエリを生成して並列実行
+  const searchQueries = generateSearchQueries(topic);
+  // 例: ["topic overview", "topic latest news", "topic expert opinions"]
+  
+  const allResults = await Promise.all(
+    searchQueries.map(q => searchClient.search(q, { maxResults: 10 }))
+  );
+  
+  // 重複除去してユニークなURLを取得
+  const uniqueUrls = [...new Set(allResults.flatMap(r => r.map(item => item.url)))];
+  
+  // 上位N件のページを取得
+  const contents: Array<{ url: string; content: string }> = [];
+  for (const url of uniqueUrls.slice(0, 15)) {
+    const page = await scraper.scrape(url);
+    if (isOk(page)) {
+      contents.push({ url, content: page.value.content });
+    }
+  }
+
+  // ========== Phase 2: 反復的深掘り ==========
+  // 収集した内容を分析してギャップを特定
+  const analyses = await Promise.all(
+    contents.map(c => analyzer.analyze(c.content))
+  );
+  
+  // エンティティ抽出で関連トピックを発見
+  const entities = await Promise.all(
+    contents.map(c => extractor.extract(c.content))
+  );
+  
+  // 新たに発見したキーワードで追加検索（反復）
+  const discoveredTopics = extractNewTopics(entities, topic);
+  if (discoveredTopics.length > 0) {
+    const additionalResults = await Promise.all(
+      discoveredTopics.slice(0, 3).map(t => 
+        searchClient.search(`${topic} ${t}`, { maxResults: 5 })
+      )
+    );
+    // 追加コンテンツを収集...
+  }
+  
+  // ナレッジグラフに情報を蓄積
+  for (const entity of entities.flatMap(e => e.all)) {
+    kg.addNode({
+      id: `entity-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      type: entity.type,
+      properties: { name: entity.text, topic },
+    });
+  }
+
+  // ========== Phase 3: 統合・合成 ==========
+  // 全コンテンツを統合して要約
+  const combinedContent = contents.map(c => c.content).join('\n\n---\n\n');
+  const executiveSummary = await summarizer.generate(combinedContent, { 
+    maxLength: 1000,
+    style: 'paragraph'
+  });
+  
+  // キーワードを集約
+  const allKeywords = [...new Set(analyses.flatMap(a => a.keywords))];
+  
+  // 参照元を整理
+  const sources = contents.map(c => c.url);
+  
+  // 構造化レポート生成
+  const report = await reportGen.generate({
+    title: `${topic} - Deep Research Report`,
+    sections: [
+      { heading: 'エグゼクティブサマリー', content: executiveSummary },
+      { heading: '主要な発見', content: formatKeyFindings(analyses) },
+      { heading: '関連キーワード', content: allKeywords.slice(0, 20).join(', ') },
+      { heading: '関連エンティティ', content: formatEntities(entities) },
+      { heading: '情報ソース', content: sources.map(s => `- ${s}`).join('\n') },
+    ],
+    format: 'markdown',
+    metadata: { 
+      author: 'KATASHIRO Deep Research',
+      date: new Date().toISOString(),
+      sourceCount: contents.length,
+    },
+  });
+  
+  return { report, knowledgeGraph: kg };
+}
+
+// 補助関数
+function generateSearchQueries(topic: string): string[] {
+  return [
+    topic,
+    `${topic} 最新動向`,
+    `${topic} 専門家 意見`,
+    `${topic} 事例 ケーススタディ`,
+    `${topic} 課題 問題点`,
+  ];
+}
+
+function extractNewTopics(entities: ExtractedEntities[], baseTopic: string): string[] {
+  const allNames = entities.flatMap(e => [
+    ...e.organizations,
+    ...e.persons,
+  ]);
+  // 元のトピックと異なる関連トピックを抽出
+  return [...new Set(allNames)].filter(n => !baseTopic.includes(n)).slice(0, 5);
+}
 ```
-katashiro/
-├── packages/
-│   ├── katashiro/        # @nahisaho/katashiro（オールインワン）
-│   ├── core/             # @nahisaho/katashiro-core
-│   ├── collector/        # @nahisaho/katashiro-collector
-│   ├── analyzer/         # @nahisaho/katashiro-analyzer
-│   ├── generator/        # @nahisaho/katashiro-generator
-│   ├── knowledge/        # @nahisaho/katashiro-knowledge
-│   ├── feedback/         # @nahisaho/katashiro-feedback
-│   ├── mcp-server/       # @nahisaho/katashiro-mcp-server
-│   └── vscode-extension/ # katashiro VS Code拡張
-└── docs/
-    ├── USER-GUIDE.md
-    └── USER-GUIDE.ja.md
+
+### Deep Research 実行例
+
+**ユーザー例**: 「生成AIの企業活用について詳しく調べてレポートにまとめて」
+
+```typescript
+// Deep Researchを実行
+const result = await deepResearch('生成AI 企業活用', {
+  maxSources: 20,        // 最大ソース数
+  iterationDepth: 2,     // 深掘り反復回数
+  includeKnowledgeGraph: true,
+});
+
+// 結果: 構造化されたレポート + ナレッジグラフ
+console.log(result.report);
+```
+
+### Plan-and-Execute パターン（複雑な調査）
+
+複数のサブタスクに分解して実行する高度なパターン：
+
+```typescript
+async function planAndExecuteResearch(complexQuery: string) {
+  // 1. クエリを分解してサブタスクを生成
+  const subTasks = decomposeQuery(complexQuery);
+  // 例: "AIと教育の未来" → ["AI教育ツール", "教育改革トレンド", "AI倫理と教育"]
+  
+  // 2. 各サブタスクを並列実行
+  const subResults = await Promise.all(
+    subTasks.map(task => deepResearch(task))
+  );
+  
+  // 3. 結果を統合
+  const synthesizer = new ReportGenerator();
+  return synthesizer.generate({
+    title: `${complexQuery} - 包括的調査レポート`,
+    sections: subResults.map((r, i) => ({
+      heading: subTasks[i],
+      content: r.report,
+    })),
+    format: 'markdown',
+  });
+}
+
+function decomposeQuery(query: string): string[] {
+  // AIエージェントがクエリを分解
+  // KATASHIROはツールとして分解されたサブタスクを実行
+  return [
+    `${query} 現状分析`,
+    `${query} 成功事例`,
+    `${query} 課題と対策`,
+    `${query} 将来展望`,
+  ];
+}
+```
+
+### MCP経由でのDeep Research
+
+MCP Serverを通じてDeep Researchパターンを実行：
+
+```typescript
+// MCP経由で利用可能なツール
+const mcpTools = {
+  web_search: 'Web検索（DuckDuckGo/SearXNG）',
+  web_scrape: 'Webページスクレイピング',
+  analyze_content: 'テキスト分析',
+  extract_entities: 'エンティティ抽出',
+  generate_summary: '要約生成',
+  knowledge_add_node: 'ナレッジグラフ追加',
+  knowledge_query: 'ナレッジグラフ検索',
+  generate_report: 'レポート生成',
+};
+
+// AIエージェント（GitHub Copilot等）がこれらのツールを
+// 組み合わせてDeep Researchワークフローを実行
 ```
 
 ---
 
-## 🛠️ 開発コマンド
+## 🎭 KOTODAMA4Biz プロンプトテンプレート統合
+
+ユーザーの課題が**ビジネス課題**の場合、[KOTODAMA4Biz](https://github.com/nahisaho/KOTODAMA4Biz)のプロンプトテンプレートを参照して、専門家視点でのアドバイスを提供してください。
+
+### ビジネス課題領域マッピング
+
+| 課題領域 | キーワード | 推奨テンプレート | GitHub URL |
+|---------|-----------|-----------------|------------|
+| **経営戦略** | 戦略、成長、競争優位、M&A | strategy-consultant | [strategy-consultant.md](https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/strategy-consultant.md) |
+| **新規事業** | 新規事業、スタートアップ、起業 | startup-advisor, business-development | [startup-advisor.md](https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/startup-advisor.md) |
+| **DX・デジタル** | DX、デジタル化、IT戦略 | dx-consultant, it-strategist | [dx-consultant.md](https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/dx-consultant.md) |
+| **データ・AI** | データ活用、AI導入、分析基盤 | data-strategist, ai-business-consultant | [data-strategist.md](https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/data-strategist.md) |
+| **財務・会計** | 財務分析、予算、資金調達 | cfo-advisor, financial-analyst | [cfo-advisor.md](https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/cfo-advisor.md) |
+| **マーケティング** | マーケティング、ブランド、広告 | marketing-strategist, brand-strategist | [marketing-strategist.md](https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/marketing-strategist.md) |
+| **営業** | 営業、セールス、商談 | sales-consultant | [sales-consultant.md](https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/sales-consultant.md) |
+| **人事・組織** | 人事、採用、組織、人材育成 | hr-strategist, talent-development | [hr-strategist.md](https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/hr-strategist.md) |
+| **業務改善** | 業務効率、オペレーション、コスト削減 | operations-consultant, lean-sixsigma | [operations-consultant.md](https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/operations-consultant.md) |
+| **リスク管理** | リスク、危機管理、コンプライアンス | risk-management, crisis-management | [risk-management.md](https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/risk-management.md) |
+| **サプライチェーン** | 調達、物流、SCM | supply-chain-consultant | [supply-chain-consultant.md](https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/supply-chain-consultant.md) |
+| **顧客体験** | CX、顧客満足、カスタマーサクセス | cx-strategist, customer-success | [cx-strategist.md](https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/cx-strategist.md) |
+| **変革管理** | 変革、チェンジマネジメント | change-management | [change-management.md](https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/change-management.md) |
+| **リーダーシップ** | リーダーシップ、マネジメント | leadership-coach | [leadership-coach.md](https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/leadership-coach.md) |
+| **事業再生** | 再生、ターンアラウンド | turnaround-consultant | [turnaround-consultant.md](https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/turnaround-consultant.md) |
+
+### 全テンプレート一覧（43種）
+
+<details>
+<summary>クリックで展開</summary>
+
+| テンプレート | 説明 |
+|-------------|------|
+| ai-business-consultant | AI/ML導入・活用戦略 |
+| brand-strategist | ブランド戦略・ブランディング |
+| business-development | 事業開発・新規事業 |
+| cfo-advisor | CFO視点の財務アドバイス |
+| change-management | 変革管理・チェンジマネジメント |
+| cloud-strategy | クラウド戦略・移行 |
+| compliance-advisor | コンプライアンス・法令遵守 |
+| crisis-management | 危機管理・BCP |
+| crm-consultant | CRM・顧客管理 |
+| customer-success | カスタマーサクセス |
+| cx-strategist | 顧客体験・CX戦略 |
+| data-strategist | データ戦略・データドリブン経営 |
+| digital-marketing | デジタルマーケティング |
+| diversity-consultant | D&I・ダイバーシティ |
+| dx-consultant | DX・デジタルトランスフォーメーション |
+| financial-analyst | 財務分析・投資判断 |
+| global-expansion | 海外展開・グローバル戦略 |
+| hr-strategist | 人事戦略・CHRO視点 |
+| innovation-consultant | イノベーション・新規事業創出 |
+| ip-strategy | 知財戦略・IP |
+| it-strategist | IT戦略・CIO視点 |
+| leadership-coach | リーダーシップ・エグゼクティブコーチング |
+| lean-sixsigma | リーンシックスシグマ・業務改善 |
+| m-and-a-advisor | M&A・企業買収 |
+| management-accounting | 管理会計・経営分析 |
+| marketing-strategist | マーケティング戦略・CMO視点 |
+| operations-consultant | オペレーション・業務効率化 |
+| organization-development | 組織開発・OD |
+| pricing-strategist | 価格戦略・プライシング |
+| project-manager | プロジェクトマネジメント |
+| quality-management | 品質管理・TQM |
+| recruitment-consultant | 採用・リクルーティング |
+| risk-management | リスク管理・ERM |
+| sales-consultant | 営業戦略・セールス |
+| startup-advisor | スタートアップ・起業支援 |
+| strategy-consultant | 経営戦略・競争戦略 |
+| succession-planning | 事業承継・後継者育成 |
+| supply-chain-consultant | サプライチェーン・調達 |
+| sustainability-consultant | サステナビリティ・ESG |
+| talent-development | 人材開発・タレントマネジメント |
+| tax-strategy | 税務戦略・タックスプランニング |
+| turnaround-consultant | 事業再生・ターンアラウンド |
+| venture-capital | ベンチャー投資・VC |
+
+</details>
+
+### ビジネス課題解決ワークフロー
+
+```typescript
+async function solveBusinessProblem(userInput: string, context?: any) {
+  // 1. ビジネス課題領域を判定
+  const domain = detectBusinessDomain(userInput);
+  
+  // 2. 課題領域に応じたKOTODAMA4Bizテンプレートを取得
+  const templateUrl = getKotodamaTemplate(domain);
+  
+  // 3. テンプレートのフレームワークに基づいて情報収集
+  const scraper = new WebScraper();
+  const template = await scraper.scrape(templateUrl);
+  
+  // 4. ユーザーの課題に対してフレームワークを適用
+  // （テンプレートの「フェーズ」に従って対話を進める）
+  
+  // 5. KATASHIROの情報収集・分析機能で補完
+  const searchClient = new WebSearchClient();
+  const results = await searchClient.search(userInput, { maxResults: 10 });
+  
+  // 6. 専門家視点でのレポート生成
+  const reportGen = new ReportGenerator();
+  return reportGen.generate({
+    title: `${domain} 分析レポート`,
+    sections: [
+      { heading: 'エグゼクティブサマリー', content: summary },
+      { heading: '現状分析', content: analysis },
+      { heading: '推奨アクション', content: recommendations },
+    ],
+    format: 'markdown',
+  });
+}
+
+function detectBusinessDomain(input: string): string {
+  const domains = {
+    'strategy': ['戦略', '成長', '競争', 'M&A', '買収'],
+    'dx': ['DX', 'デジタル', 'IT', 'システム'],
+    'data': ['データ', 'AI', '分析', '機械学習'],
+    'finance': ['財務', '予算', '資金', '投資'],
+    'marketing': ['マーケティング', 'ブランド', '広告', '集客'],
+    'hr': ['人事', '採用', '組織', '人材'],
+    'operations': ['業務', 'オペレーション', '効率', 'コスト'],
+    'risk': ['リスク', '危機', 'コンプライアンス'],
+  };
+  
+  for (const [domain, keywords] of Object.entries(domains)) {
+    if (keywords.some(k => input.includes(k))) return domain;
+  }
+  return 'strategy'; // デフォルト
+}
+
+function getKotodamaTemplate(domain: string): string {
+  const templates: Record<string, string> = {
+    'strategy': 'https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/strategy-consultant.md',
+    'dx': 'https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/dx-consultant.md',
+    'data': 'https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/data-strategist.md',
+    'finance': 'https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/cfo-advisor.md',
+    'marketing': 'https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/marketing-strategist.md',
+    'hr': 'https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/hr-strategist.md',
+    'operations': 'https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/operations-consultant.md',
+    'risk': 'https://raw.githubusercontent.com/nahisaho/KOTODAMA4Biz/main/templates/claude/risk-management.md',
+  };
+  return templates[domain] || templates['strategy'];
+}
+```
+
+---
+
+## 📦 インストール
 
 ```bash
-npm install          # 依存関係インストール
-npm run build        # 全パッケージビルド
-npm run test         # テスト実行（448テスト）
-npm run lint         # ESLint
-npm run typecheck    # TypeScript型チェック
+npm install @nahisaho/katashiro
 ```
+
+---
+
+## �️ CLI（コマンドラインインターフェース）
+
+KATASHIROはCLIツールとしても使用できます。
+
+### 基本コマンド
+
+```bash
+# npxで直接実行（推奨）
+npx katashiro <command> [options]
+
+# スコープ付きでも実行可能
+npx @nahisaho/katashiro <command> [options]
+
+# グローバルインストール後
+npm install -g katashiro
+katashiro <command> [options]
+```
+
+### 利用可能なコマンド
+
+#### 🔍 search - Web検索
+
+```bash
+# 基本検索
+npx katashiro search "検索クエリ"
+
+# プロバイダー指定（duckduckgo / searxng）
+npx katashiro search "AI" --provider duckduckgo
+
+# 結果数指定
+npx katashiro search "TypeScript" --max 20
+```
+
+#### 🌐 scrape - Webページスクレイピング
+
+```bash
+# URLからコンテンツ取得
+npx katashiro scrape https://example.com
+```
+
+#### 📊 analyze - テキスト分析
+
+```bash
+# ファイル分析
+npx katashiro analyze document.txt
+
+# または標準入力から
+echo "分析対象のテキスト" | npx katashiro analyze
+```
+
+#### 🏷️ extract - エンティティ抽出
+
+```bash
+# ファイルからエンティティ抽出
+npx katashiro extract article.txt
+
+# 抽出される情報:
+# - 人名、組織名、場所
+# - URL、メールアドレス、電話番号
+# - 日付、金額、パーセンテージ
+```
+
+#### 📝 summarize - 要約生成
+
+```bash
+# ファイルを要約
+npx katashiro summarize long-document.txt
+
+# 文字数指定
+npx katashiro summarize document.txt --length 500
+```
+
+#### 🔬 deep-research - Deep Research（反復的深掘り調査）
+
+```bash
+# 基本的なDeep Research
+npx katashiro deep-research "AI倫理"
+
+# イテレーション数を指定
+npx katashiro deep-research "量子コンピューティング" --iterations 10
+
+# 収束閾値を指定（0.0-1.0）
+npx katashiro deep-research "再生可能エネルギー" --threshold 0.1
+
+# フォーカスエリアを指定（カンマ区切り）
+npx katashiro deep-research "デジタルヘルス" --focus "遠隔医療,ウェアラブル,AI診断"
+
+# JSON形式で出力
+npx katashiro deep-research "フィンテック" --format json
+```
+
+Deep Researchは以下のプロセスを自動実行します：
+1. **幅広い情報収集**: 複数の検索エンジン（Web、ニュース、学術、百科事典）から並列検索
+2. **反復的な深掘り**: ギャップ分析で不足情報を特定し、追加調査
+3. **収束判定**: 新規情報率が閾値以下になるか、最大イテレーションに達するまで反復
+4. **知識統合**: ナレッジグラフに情報を蓄積し、主要な発見を抽出
+
+### 検索プロバイダー
+
+| プロバイダー | 説明 | オプション |
+|------------|------|----------|
+| `duckduckgo` | DuckDuckGo検索（デフォルト） | `--provider duckduckgo` |
+| `searxng` | SearXNG分散検索エンジン | `--provider searxng` |
+
+---
+
+## 🔗 関連リンク
+
+- **npm**: https://www.npmjs.com/package/@nahisaho/katashiro
+- **GitHub**: https://github.com/nahisaho/katashiro
+- **KOTODAMA4Biz**: https://github.com/nahisaho/KOTODAMA4Biz
 
 ---
 
 **Project**: KATASHIRO
 **npm**: @nahisaho/katashiro
-**Last Updated**: 2026-01-10
-**Version**: 0.1.18
+**Last Updated**: 2026-01-12
+**Version**: 0.2.6
