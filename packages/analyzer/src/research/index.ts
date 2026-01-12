@@ -31,4 +31,5 @@ export type {
   CompletionReason,
   DepthPriority,
   ReasoningStep,
+  MermaidDiagrams,
 } from './types.js';

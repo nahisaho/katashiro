@@ -19,6 +19,7 @@ import type {
   IterationRecord,
   UserGuidance,
   ReasoningStep,
+  MermaidDiagrams,
 } from './types.js';
 import { GapAnalyzer } from './GapAnalyzer.js';
 import { ConvergenceDetector } from './ConvergenceDetector.js';
@@ -253,6 +254,15 @@ export class DeepResearchOrchestrator {
       completionReason
     );
 
+    // Mermaidダイアグラムを生成
+    const mermaidDiagrams = this.generateMermaidDiagrams(
+      query.topic,
+      simpleGraph,
+      keyFindings,
+      iterations,
+      reasoningChain
+    );
+
     this.currentResult = {
       topic: query.topic,
       knowledgeGraph: simpleGraph,
@@ -272,6 +282,7 @@ export class DeepResearchOrchestrator {
       },
       completionReason,
       reasoningChain,
+      mermaidDiagrams,
     };
 
     // 最終進捗
@@ -465,5 +476,192 @@ export class DeepResearchOrchestrator {
     confidence -= Math.min(remainingGaps.length * 0.03, 0.15);
 
     return Math.max(0.3, Math.min(0.95, confidence));
+  }
+
+  /**
+   * Mermaidダイアグラムを生成
+   */
+  private generateMermaidDiagrams(
+    topic: string,
+    graph: SimpleKnowledgeGraph,
+    keyFindings: KeyFinding[],
+    iterations: IterationRecord[],
+    reasoningChain: ReasoningStep[]
+  ): MermaidDiagrams {
+    return {
+      knowledgeGraph: this.generateKnowledgeGraphMermaid(topic, graph),
+      reasoningFlow: this.generateReasoningFlowMermaid(reasoningChain),
+      researchProcess: this.generateResearchProcessMermaid(iterations),
+      findingsRelation: this.generateFindingsRelationMermaid(keyFindings),
+    };
+  }
+
+  /**
+   * ナレッジグラフのMermaidダイアグラムを生成（mindmap形式）
+   */
+  private generateKnowledgeGraphMermaid(topic: string, graph: SimpleKnowledgeGraph): string {
+    const lines: string[] = ['mindmap'];
+    lines.push(`  root((${this.escapeMermaid(topic)}))`);
+
+    // ノードをタイプ別にグループ化
+    const nodesByType = new Map<string, typeof graph.nodes>();
+    for (const node of graph.nodes.slice(0, 30)) {
+      const type = node.type || 'other';
+      if (!nodesByType.has(type)) {
+        nodesByType.set(type, []);
+      }
+      nodesByType.get(type)!.push(node);
+    }
+
+    // 各タイプのノードを追加
+    for (const [type, nodes] of nodesByType) {
+      if (type === 'topic') continue;
+      lines.push(`    ${this.escapeMermaid(type)}`);
+      for (const node of nodes.slice(0, 5)) {
+        lines.push(`      ${this.escapeMermaid(node.label || node.id)}`);
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * 推論チェーンのMermaidフローチャートを生成
+   */
+  private generateReasoningFlowMermaid(reasoningChain: ReasoningStep[]): string {
+    const lines: string[] = ['flowchart TB'];
+    
+    // ノードを定義
+    for (const step of reasoningChain) {
+      const shape = this.getReasoningStepShape(step.type);
+      const label = this.escapeMermaid(step.description.slice(0, 50) + (step.description.length > 50 ? '...' : ''));
+      lines.push(`  step${step.step}${shape.open}"${label}"${shape.close}`);
+    }
+
+    // エッジを定義
+    for (let i = 0; i < reasoningChain.length - 1; i++) {
+      const current = reasoningChain[i];
+      const next = reasoningChain[i + 1];
+      if (current && next) {
+        lines.push(`  step${current.step} --> step${next.step}`);
+      }
+    }
+
+    // スタイルを追加
+    lines.push('');
+    lines.push('  classDef observation fill:#e1f5fe,stroke:#01579b');
+    lines.push('  classDef inference fill:#fff3e0,stroke:#e65100');
+    lines.push('  classDef synthesis fill:#e8f5e9,stroke:#1b5e20');
+    lines.push('  classDef conclusion fill:#f3e5f5,stroke:#4a148c');
+
+    for (const step of reasoningChain) {
+      lines.push(`  class step${step.step} ${step.type}`);
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * 推論ステップの形状を取得
+   */
+  private getReasoningStepShape(type: ReasoningStep['type']): { open: string; close: string } {
+    switch (type) {
+      case 'observation':
+        return { open: '([', close: '])' }; // stadium
+      case 'inference':
+        return { open: '{{', close: '}}' }; // hexagon
+      case 'synthesis':
+        return { open: '[[', close: ']]' }; // subroutine
+      case 'conclusion':
+        return { open: '(((', close: ')))' }; // circle
+      default:
+        return { open: '[', close: ']' };
+    }
+  }
+
+  /**
+   * 調査プロセスのMermaidシーケンス図を生成
+   */
+  private generateResearchProcessMermaid(iterations: IterationRecord[]): string {
+    const lines: string[] = ['sequenceDiagram'];
+    lines.push('  participant U as User');
+    lines.push('  participant O as Orchestrator');
+    lines.push('  participant S as Search');
+    lines.push('  participant A as Analyzer');
+
+    for (const iter of iterations.slice(0, 5)) {
+      lines.push(`  Note over O: Iteration ${iter.iterationNumber}`);
+      lines.push(`  O->>S: Query (${iter.queries.length} queries)`);
+      lines.push(`  S-->>O: ${iter.findingsCount} findings`);
+      lines.push(`  O->>A: Integrate findings`);
+      lines.push(`  A-->>O: +${iter.newNodesCount} nodes, +${iter.newEdgesCount} edges`);
+      lines.push(`  Note over O: Novelty: ${(iter.noveltyRate * 100).toFixed(0)}%`);
+    }
+
+    if (iterations.length > 5) {
+      lines.push(`  Note over O: ... ${iterations.length - 5} more iterations`);
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * 発見事項の関係図のMermaidダイアグラムを生成
+   */
+  private generateFindingsRelationMermaid(keyFindings: KeyFinding[]): string {
+    const lines: string[] = ['graph LR'];
+
+    // 発見事項をノードとして追加
+    for (const finding of keyFindings.slice(0, 10)) {
+      const importance = finding.importance === 'high' ? ':::high' : finding.importance === 'medium' ? ':::medium' : ':::low';
+      const label = this.escapeMermaid(finding.title.slice(0, 30) + (finding.title.length > 30 ? '...' : ''));
+      lines.push(`  ${this.normalizeId(finding.id)}["${label}"]${importance}`);
+    }
+
+    // 関連コンセプトによるエッジを追加
+    const conceptMap = new Map<string, string[]>();
+    for (const finding of keyFindings.slice(0, 10)) {
+      for (const concept of finding.relatedConcepts.slice(0, 3)) {
+        if (!conceptMap.has(concept)) {
+          conceptMap.set(concept, []);
+        }
+        conceptMap.get(concept)!.push(this.normalizeId(finding.id));
+      }
+    }
+
+    // 同じコンセプトを共有するノード間にエッジを追加
+    for (const [_concept, nodeIds] of conceptMap) {
+      for (let i = 0; i < nodeIds.length - 1; i++) {
+        const from = nodeIds[i];
+        const to = nodeIds[i + 1];
+        if (from && to) {
+          lines.push(`  ${from} --- ${to}`);
+        }
+      }
+    }
+
+    // スタイル定義
+    lines.push('');
+    lines.push('  classDef high fill:#ffcdd2,stroke:#b71c1c');
+    lines.push('  classDef medium fill:#fff9c4,stroke:#f57f17');
+    lines.push('  classDef low fill:#e8f5e9,stroke:#1b5e20');
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Mermaid用にテキストをエスケープ
+   */
+  private escapeMermaid(text: string): string {
+    return text
+      .replace(/"/g, "'")
+      .replace(/\[/g, '(')
+      .replace(/\]/g, ')')
+      .replace(/\{/g, '(')
+      .replace(/\}/g, ')')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\n/g, ' ')
+      .trim();
   }
 }

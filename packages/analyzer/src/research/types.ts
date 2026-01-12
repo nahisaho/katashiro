@@ -81,6 +81,9 @@ export interface DeepResearchResult {
 
   /** 推論チェーン（結論に至った論理的説明） */
   reasoningChain: ReasoningStep[];
+
+  /** Mermaidダイアグラム（視覚化） */
+  mermaidDiagrams: MermaidDiagrams;
 }
 
 /**
@@ -104,6 +107,23 @@ export interface ReasoningStep {
 
   /** 信頼度 (0-1) */
   confidence: number;
+}
+
+/**
+ * Mermaidダイアグラム集
+ */
+export interface MermaidDiagrams {
+  /** ナレッジグラフの可視化（mindmap or flowchart） */
+  knowledgeGraph: string;
+
+  /** 推論チェーンのフローチャート */
+  reasoningFlow: string;
+
+  /** 調査プロセスのシーケンス図 */
+  researchProcess: string;
+
+  /** 発見事項の関係図 */
+  findingsRelation: string;
 }
 
 /**

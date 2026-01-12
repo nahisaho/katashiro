@@ -814,6 +814,34 @@ export class KatashiroMCPServer {
           ]
         : [];
 
+      // Mermaidダイアグラムをフォーマット
+      const mermaidSection = result.mermaidDiagrams
+        ? [
+            '',
+            '## Mermaid Diagrams (視覚化)',
+            '',
+            '### Knowledge Graph (mindmap)',
+            '```mermaid',
+            result.mermaidDiagrams.knowledgeGraph,
+            '```',
+            '',
+            '### Reasoning Flow (flowchart)',
+            '```mermaid',
+            result.mermaidDiagrams.reasoningFlow,
+            '```',
+            '',
+            '### Research Process (sequence)',
+            '```mermaid',
+            result.mermaidDiagrams.researchProcess,
+            '```',
+            '',
+            '### Findings Relation (graph)',
+            '```mermaid',
+            result.mermaidDiagrams.findingsRelation,
+            '```',
+          ]
+        : [];
+
       // Format comprehensive output
       const output = [
         `# Deep Research Results: "${topic}"`,
@@ -832,6 +860,7 @@ export class KatashiroMCPServer {
         ...result.keyFindings.slice(0, 15).map((f, i) => `${i + 1}. ${f.title}: ${f.summary}`),
         result.keyFindings.length > 15 ? `... and ${result.keyFindings.length - 15} more findings` : '',
         ...reasoningSection,
+        ...mermaidSection,
         '',
         '## Sources',
         ...result.sources.slice(0, 10).map((s, i) => `${i + 1}. ${s.title} (${s.url})`),

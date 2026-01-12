@@ -311,6 +311,31 @@ program
           });
         }
         
+        // Mermaidダイアグラムを表示
+        if (result.mermaidDiagrams) {
+          console.log('\n📊 Mermaidダイアグラム:');
+          
+          console.log('\n### ナレッジグラフ (mindmap)');
+          console.log('```mermaid');
+          console.log(result.mermaidDiagrams.knowledgeGraph);
+          console.log('```');
+          
+          console.log('\n### 推論フロー (flowchart)');
+          console.log('```mermaid');
+          console.log(result.mermaidDiagrams.reasoningFlow);
+          console.log('```');
+          
+          console.log('\n### 調査プロセス (sequence)');
+          console.log('```mermaid');
+          console.log(result.mermaidDiagrams.researchProcess);
+          console.log('```');
+          
+          console.log('\n### 発見事項の関係 (graph)');
+          console.log('```mermaid');
+          console.log(result.mermaidDiagrams.findingsRelation);
+          console.log('```');
+        }
+        
         console.log('\n🔗 情報ソース:');
         result.sources.slice(0, 5).forEach((source, i) => {
           console.log(`   ${i + 1}. ${source.title} (${source.url})`);
