@@ -9,4 +9,5 @@ export {
 export type {
   ReportConfig,
   ReportSection,
+  ExtendedReportOptions,
 } from './report-generator.js';

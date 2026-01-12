@@ -108,6 +108,7 @@ export class SummaryGenerator {
 
   /**
    * キーポイントを抽出
+   * @since 0.2.11 - 重複除去・元の順序維持
    */
   extractKeyPoints(text: string, maxPoints: number): string[] {
     // Split into sentences
@@ -120,13 +121,17 @@ export class SummaryGenerator {
       return [];
     }
 
-    // Score sentences by importance indicators
-    const scored = sentences.map(sentence => {
+    // Score sentences by importance indicators while preserving original index
+    const scored = sentences.map((sentence, originalIndex) => {
       let score = 0;
       
       // Boost sentences with key phrases
       if (/第[一二三四五]に|まず|次に|最後に|重要/u.test(sentence)) {
         score += 3;
+      }
+      // Boost sentences that appear to be conclusions or summaries
+      if (/結論|結果|まとめ|要約|つまり|したがって|このため/u.test(sentence)) {
+        score += 4;
       }
       if (/です|ます|である/u.test(sentence)) {
         score += 1;
@@ -139,15 +144,58 @@ export class SummaryGenerator {
       if (sentence.length > 30 && sentence.length < 100) {
         score += 2;
       }
+      // Boost first few sentences (often contain key info)
+      if (originalIndex < 3) {
+        score += 2;
+      }
 
-      return { sentence, score };
+      return { sentence, score, originalIndex };
     });
 
-    // Sort by score and take top points
-    return scored
+    // Sort by score, select top points, then restore original order
+    const topScored = scored
       .sort((a, b) => b.score - a.score)
-      .slice(0, maxPoints)
+      .slice(0, maxPoints);
+    
+    // Remove duplicates based on similarity
+    const unique = this.removeSimilarSentences(topScored);
+    
+    // Restore original order for coherent reading
+    return unique
+      .sort((a, b) => a.originalIndex - b.originalIndex)
       .map(s => s.sentence);
+  }
+
+  /**
+   * 類似した文を除去
+   * @since 0.2.11
+   */
+  private removeSimilarSentences(
+    sentences: Array<{ sentence: string; score: number; originalIndex: number }>
+  ): Array<{ sentence: string; score: number; originalIndex: number }> {
+    const unique: Array<{ sentence: string; score: number; originalIndex: number }> = [];
+    
+    for (const item of sentences) {
+      const isDuplicate = unique.some(u => {
+        // Check for high similarity (> 70% character overlap)
+        const shorter = Math.min(item.sentence.length, u.sentence.length);
+        const longer = Math.max(item.sentence.length, u.sentence.length);
+        if (shorter / longer < 0.5) return false;
+        
+        // Simple overlap check
+        const words1 = new Set(item.sentence.split(/\s+/));
+        const words2 = new Set(u.sentence.split(/\s+/));
+        const intersection = [...words1].filter(w => words2.has(w)).length;
+        const union = new Set([...words1, ...words2]).size;
+        return union > 0 && intersection / union > 0.7;
+      });
+      
+      if (!isDuplicate) {
+        unique.push(item);
+      }
+    }
+    
+    return unique;
   }
 
   /**

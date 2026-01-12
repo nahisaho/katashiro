@@ -160,8 +160,21 @@ export class TemplateEngine {
     
     return template.replace(varRegex, (_, key) => {
       const value = this.getValue(data, key);
-      return value !== undefined ? String(value) : '';
+      if (value === undefined) return '';
+      // Normalize escape sequences in string values
+      return this.normalizeEscapes(String(value));
     });
+  }
+
+  /**
+   * エスケープ文字を正規化
+   * @since 0.2.11 - \nを実際の改行に変換
+   */
+  private normalizeEscapes(value: string): string {
+    return value
+      .replace(/\\n/g, '\n')
+      .replace(/\\t/g, '\t')
+      .replace(/\\r/g, '\r');
   }
 
   /**

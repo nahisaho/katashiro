@@ -307,11 +307,13 @@ export class CitationGenerator {
    * 引用をフォーマット
    */
   private formatCitation(source: Source, style: CitationStyle): string {
-    const title = source.metadata?.title ?? source.url;
-    const author = source.metadata?.author ?? '';
+    const url = source.url;
+    // URLからメタデータを推測
+    const inferred = this.inferMetadataFromUrl(url);
+    const title = source.metadata?.title || inferred.title || this.extractTitleFromUrl(url);
+    const author = source.metadata?.author || inferred.organization || '';
     const date = source.metadata?.publishedAt;
     const year = date ? new Date(date).getFullYear().toString() : 'n.d.';
-    const url = source.url;
     const accessDate = new Date(source.fetchedAt).toLocaleDateString('ja-JP');
 
     switch (style) {
@@ -331,7 +333,8 @@ export class CitationGenerator {
   }
 
   /**
-   * APAスタイル
+   * APAスタイル（第7版準拠）
+   * @since 0.2.11 - 著者不明時はタイトル先頭形式に変更
    */
   private formatAPA(
     author: string,
@@ -340,12 +343,16 @@ export class CitationGenerator {
     url: string,
     accessDate: string
   ): string {
-    const authorPart = author || 'Author Unknown';
-    return `${authorPart}. (${year}). ${title}. Retrieved ${accessDate}, from ${url}`;
+    // APA 7th edition: 著者不明の場合はタイトルを先頭に
+    if (!author) {
+      return `${title}. (${year}). Retrieved ${accessDate}, from ${url}`;
+    }
+    return `${author}. (${year}). *${title}*. Retrieved ${accessDate}, from ${url}`;
   }
 
   /**
-   * MLAスタイル
+   * MLAスタイル（第9版準拠）
+   * @since 0.2.11 - 著者不明時の処理改善
    */
   private formatMLA(
     author: string,
@@ -353,12 +360,16 @@ export class CitationGenerator {
     url: string,
     accessDate: string
   ): string {
-    const authorPart = author || 'Author Unknown';
-    return `${authorPart}. "${title}." Web. ${accessDate}. <${url}>.`;
+    // MLA 9th edition: 著者不明の場合はタイトルから開始
+    if (!author) {
+      return `"${title}." *Web*. ${accessDate}. <${url}>.`;
+    }
+    return `${author}. "${title}." *Web*. ${accessDate}. <${url}>.`;
   }
 
   /**
    * IEEEスタイル
+   * @since 0.2.11 - 著者不明時の処理改善
    */
   private formatIEEE(
     author: string,
@@ -366,12 +377,16 @@ export class CitationGenerator {
     url: string,
     accessDate: string
   ): string {
-    const authorPart = author || 'Author Unknown';
-    return `[#] ${authorPart}, "${title}," [Online]. Available: ${url}. [Accessed: ${accessDate}].`;
+    // IEEE: 著者不明の場合は省略
+    if (!author) {
+      return `"${title}," [Online]. Available: ${url}. [Accessed: ${accessDate}].`;
+    }
+    return `${author}, "${title}," [Online]. Available: ${url}. [Accessed: ${accessDate}].`;
   }
 
   /**
    * Chicagoスタイル
+   * @since 0.2.11 - 著者不明時の処理改善
    */
   private formatChicago(
     author: string,
@@ -380,12 +395,16 @@ export class CitationGenerator {
     url: string,
     accessDate: string
   ): string {
-    const authorPart = author || 'Author Unknown';
-    return `${authorPart}. "${title}." ${year}. Accessed ${accessDate}. ${url}.`;
+    // Chicago: 著者不明の場合はタイトルから開始
+    if (!author) {
+      return `"${title}." ${year}. Accessed ${accessDate}. ${url}.`;
+    }
+    return `${author}. "${title}." ${year}. Accessed ${accessDate}. ${url}.`;
   }
 
   /**
    * Harvardスタイル
+   * @since 0.2.11 - 著者不明時の処理改善
    */
   private formatHarvard(
     author: string,
@@ -394,8 +413,11 @@ export class CitationGenerator {
     url: string,
     accessDate: string
   ): string {
-    const authorPart = author || 'Author Unknown';
-    return `${authorPart} (${year}) ${title}. Available at: ${url} (Accessed: ${accessDate}).`;
+    // Harvard: 著者不明の場合はタイトルから開始
+    if (!author) {
+      return `*${title}* (${year}). Available at: ${url} (Accessed: ${accessDate}).`;
+    }
+    return `${author} (${year}) *${title}*. Available at: ${url} (Accessed: ${accessDate}).`;
   }
 
   /**
@@ -407,5 +429,87 @@ export class CitationGenerator {
     // Japanese name: typically first character(s) are family name
     const parts = author.split(/[\s　]+/);
     return parts[0] ?? author;
+  }
+
+  /**
+   * URLからメタデータを推測
+   * @since 0.2.11
+   */
+  private inferMetadataFromUrl(url: string): { title?: string; organization?: string } {
+    if (!url) return {};
+    
+    try {
+      const parsed = new URL(url);
+      const hostname = parsed.hostname.toLowerCase();
+      
+      // 既知のドメインから組織名を推測
+      const domainMap: Record<string, { org: string; name?: string }> = {
+        'mext.go.jp': { org: '文部科学省', name: 'Ministry of Education, Culture, Sports, Science and Technology' },
+        'unesco.org': { org: 'UNESCO', name: 'United Nations Educational, Scientific and Cultural Organization' },
+        'microsoft.com': { org: 'Microsoft Corporation' },
+        'google.com': { org: 'Google LLC' },
+        'apple.com': { org: 'Apple Inc.' },
+        'github.com': { org: 'GitHub' },
+        'wikipedia.org': { org: 'Wikipedia' },
+        'nii.ac.jp': { org: '国立情報学研究所', name: 'National Institute of Informatics' },
+        'jst.go.jp': { org: '科学技術振興機構', name: 'Japan Science and Technology Agency' },
+      };
+      
+      for (const [domain, info] of Object.entries(domainMap)) {
+        if (hostname.includes(domain)) {
+          return { organization: info.org };
+        }
+      }
+      
+      // 一般的なパターンから組織を推測
+      if (hostname.endsWith('.go.jp')) {
+        return { organization: '日本政府機関' };
+      }
+      if (hostname.endsWith('.ac.jp') || hostname.endsWith('.edu')) {
+        return { organization: '学術機関' };
+      }
+      if (hostname.endsWith('.or.jp') || hostname.endsWith('.org')) {
+        return { organization: '非営利組織' };
+      }
+      
+      return {};
+    } catch {
+      return {};
+    }
+  }
+
+  /**
+   * URLからタイトルを抽出
+   * @since 0.2.11
+   */
+  private extractTitleFromUrl(url: string): string {
+    if (!url) return 'Untitled';
+    
+    try {
+      const parsed = new URL(url);
+      const path = parsed.pathname;
+      
+      // パスの最後の部分を取得
+      const segments = path.split('/').filter(s => s.length > 0);
+      if (segments.length > 0) {
+        const lastSegment = segments[segments.length - 1];
+        if (lastSegment) {
+          // ファイル拡張子を除去し、ハイフン/アンダースコアをスペースに
+          const title = lastSegment
+            .replace(/\.[^.]+$/, '')
+            .replace(/[-_]/g, ' ')
+            .replace(/([a-z])([A-Z])/g, '$1 $2');
+          
+          if (title.length > 3) {
+            return title.charAt(0).toUpperCase() + title.slice(1);
+          }
+        }
+      }
+      
+      // フォールバック: ホスト名を使用
+      return `Content from ${parsed.hostname}`;
+    } catch {
+      return 'Untitled';
+    }
   }
 }
