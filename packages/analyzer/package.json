@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-analyzer",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "KATASHIRO Analyzer - 分析・推論パッケージ",
   "type": "module",
   "main": "./dist/index.js",
@@ -20,9 +20,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "^0.3.0",
-    "@nahisaho/katashiro-collector": "^0.3.0",
-    "@nahisaho/katashiro-knowledge": "^0.3.0"
+    "@nahisaho/katashiro-core": "^0.3.1",
+    "@nahisaho/katashiro-collector": "^0.3.1",
+    "@nahisaho/katashiro-knowledge": "^0.3.1"
   },
   "author": "nahisaho",
   "license": "MIT",

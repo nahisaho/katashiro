@@ -31,12 +31,12 @@ export interface PatternCompressorConfig {
  * デフォルト設定
  */
 const DEFAULT_CONFIG: PatternCompressorConfig = {
-  minCompressionRatio: 1.1,
-  similarityThreshold: 0.7,
+  minCompressionRatio: 1.05,   // v0.3.1: より積極的な圧縮
+  similarityThreshold: 0.4,    // v0.3.1: 閾値を下げてマージ促進
   maxMergeDepth: 3,
   minPatternsPerType: 2,       // v0.3.0: タイプ別最低2パターン保証
-  dynamicThreshold: true,     // v0.3.0: 動的閾値ON
-  preserveDiversity: true,    // v0.3.0: 多様性優先ON
+  dynamicThreshold: true,      // v0.3.0: 動的閾値ON
+  preserveDiversity: true,     // v0.3.0: 多様性優先ON
 };
 
 /**
@@ -309,22 +309,30 @@ export class PatternCompressor {
 
   /**
    * パターン間の類似度を計算
+   * v0.3.1: ドメインベースの類似度を追加
    */
   calculateSimilarity(a: LearnedPattern, b: LearnedPattern): number {
     // タイプが異なれば類似度0
     if (a.type !== b.type) return 0;
 
+    // v0.3.1: 同じドメインの場合は類似度を上げる
+    const domainA = a.contexts.find(c => c.startsWith('domain:'))?.split(':')[1];
+    const domainB = b.contexts.find(c => c.startsWith('domain:'))?.split(':')[1];
+    const sameDomain = domainA && domainB && domainA === domainB;
+    const domainBonus = sameDomain ? 0.3 : 0;
+
     // 入力テンプレートの類似度
     const inputSim = this.stringSimilarity(a.inputTemplate, b.inputTemplate);
 
-    // 出力テンプレートの類似度
+    // 出力テンプレートの類似度（出力は構造が似ていれば良い）
     const outputSim = this.stringSimilarity(a.outputTemplate, b.outputTemplate);
 
     // コンテキストの重複度
     const contextOverlap = this.calculateContextOverlap(a.contexts, b.contexts);
 
-    // 重み付き平均
-    return inputSim * 0.4 + outputSim * 0.4 + contextOverlap * 0.2;
+    // v0.3.1: 重み付き平均 + ドメインボーナス
+    const baseSim = inputSim * 0.35 + outputSim * 0.25 + contextOverlap * 0.4;
+    return Math.min(baseSim + domainBonus, 1.0);
   }
 
   /**
