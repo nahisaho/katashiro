@@ -1,0 +1,13 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/collector" },
+    { "path": "packages/analyzer" },
+    { "path": "packages/generator" },
+    { "path": "packages/knowledge" },
+    { "path": "packages/feedback" },
+    { "path": "packages/vscode-extension" },
+    { "path": "packages/mcp-server" }
+  ]
+}

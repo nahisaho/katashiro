@@ -1,0 +1,43 @@
+{
+  "name": "katashiro",
+  "version": "0.2.4",
+  "description": "KATASHIRO CLI - AI Research & Analysis Tool",
+  "type": "module",
+  "bin": {
+    "katashiro": "bin/katashiro.js"
+  },
+  "files": [
+    "bin"
+  ],
+  "scripts": {
+    "build": "echo 'No build required'"
+  },
+  "keywords": [
+    "katashiro",
+    "cli",
+    "ai",
+    "research",
+    "analysis",
+    "web-search"
+  ],
+  "author": "nahisaho",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nahisaho/katashiro.git",
+    "directory": "packages/katashiro-cli"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/nahisaho/katashiro#readme",
+  "bugs": {
+    "url": "https://github.com/nahisaho/katashiro/issues"
+  },
+  "dependencies": {
+    "@nahisaho/katashiro": "^0.1.19"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

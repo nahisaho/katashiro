@@ -1,0 +1,44 @@
+{
+  "name": "@nahisaho/katashiro-collector",
+  "version": "0.2.4",
+  "description": "KATASHIRO Collector - 情報収集パッケージ",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@nahisaho/katashiro-core": "*"
+  },
+  "keywords": [
+    "katashiro",
+    "collector"
+  ],
+  "author": "nahisaho",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nahisaho/katashiro.git",
+    "directory": "packages/collector"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/nahisaho/katashiro#readme",
+  "bugs": {
+    "url": "https://github.com/nahisaho/katashiro/issues"
+  }
+}

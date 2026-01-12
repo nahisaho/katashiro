@@ -1,0 +1,184 @@
+{
+  "name": "katashiro-vscode",
+  "displayName": "KATASHIRO",
+  "description": "AI-powered research assistant with web search, content analysis, and knowledge graph",
+  "version": "0.2.4",
+  "publisher": "nahisaho",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nahisaho/katashiro"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Data Science",
+    "Machine Learning"
+  ],
+  "keywords": [
+    "research",
+    "ai",
+    "knowledge graph",
+    "web search",
+    "content analysis",
+    "mcp",
+    "agent"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "katashiro.webSearch",
+        "title": "KATASHIRO: Web Search",
+        "category": "KATASHIRO"
+      },
+      {
+        "command": "katashiro.analyzeContent",
+        "title": "KATASHIRO: Analyze Content",
+        "category": "KATASHIRO"
+      },
+      {
+        "command": "katashiro.generateSummary",
+        "title": "KATASHIRO: Generate Summary",
+        "category": "KATASHIRO"
+      },
+      {
+        "command": "katashiro.researchTopic",
+        "title": "KATASHIRO: Research Topic",
+        "category": "KATASHIRO"
+      },
+      {
+        "command": "katashiro.generateReport",
+        "title": "KATASHIRO: Generate Report",
+        "category": "KATASHIRO"
+      },
+      {
+        "command": "katashiro.showKnowledgeGraph",
+        "title": "KATASHIRO: Show Knowledge Graph",
+        "category": "KATASHIRO"
+      },
+      {
+        "command": "katashiro.startMcpServer",
+        "title": "KATASHIRO: Start MCP Server",
+        "category": "KATASHIRO"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "katashiro",
+          "title": "KATASHIRO",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "katashiro": [
+        {
+          "id": "katashiro.research",
+          "name": "Research"
+        },
+        {
+          "id": "katashiro.knowledge",
+          "name": "Knowledge Graph"
+        },
+        {
+          "id": "katashiro.history",
+          "name": "History"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "KATASHIRO",
+      "properties": {
+        "katashiro.searchEngine": {
+          "type": "string",
+          "default": "duckduckgo",
+          "enum": [
+            "duckduckgo",
+            "google",
+            "bing"
+          ],
+          "description": "Default search engine for web searches"
+        },
+        "katashiro.maxSearchResults": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 50,
+          "description": "Maximum number of search results to return"
+        },
+        "katashiro.outputFormat": {
+          "type": "string",
+          "default": "markdown",
+          "enum": [
+            "markdown",
+            "html",
+            "json"
+          ],
+          "description": "Default output format for reports"
+        },
+        "katashiro.autoSaveKnowledge": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically save research to knowledge graph"
+        },
+        "katashiro.mcpServerPort": {
+          "type": "number",
+          "default": 3000,
+          "description": "Port for MCP server HTTP transport"
+        }
+      }
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "katashiro.analyzeContent",
+          "when": "editorHasSelection",
+          "group": "katashiro"
+        },
+        {
+          "command": "katashiro.generateSummary",
+          "when": "editorHasSelection",
+          "group": "katashiro"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "katashiro.webSearch",
+          "when": "view == katashiro.research",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "tsc",
+    "watch": "tsc -watch",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "dependencies": {
+    "@nahisaho/katashiro-core": "*",
+    "@nahisaho/katashiro-collector": "*",
+    "@nahisaho/katashiro-analyzer": "*",
+    "@nahisaho/katashiro-generator": "*",
+    "@nahisaho/katashiro-knowledge": "*",
+    "@nahisaho/katashiro-feedback": "*",
+    "@nahisaho/katashiro-mcp-server": "*"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.22.0"
+  },
+  "author": "nahisaho",
+  "license": "MIT"
+}

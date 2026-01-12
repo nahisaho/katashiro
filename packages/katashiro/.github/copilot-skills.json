@@ -1,0 +1,319 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vscode-copilot-skill-schema/main/schema.json",
+  "name": "katashiro",
+  "displayName": "KATASHIRO Research Assistant",
+  "description": "VS Code Agent Mode向け情報収集・分析・コンテンツ生成システム",
+  "version": "0.1.0",
+  "publisher": "nahisaho",
+  "skills": [
+    {
+      "name": "web-search",
+      "displayName": "Web検索",
+      "description": "Webを検索して情報を収集します",
+      "when": "ユーザーが「〜について調べて」「検索して」「最新情報を探して」と依頼した場合",
+      "examples": [
+        "TypeScriptのベストプラクティスについて調べて",
+        "2026年のAIトレンドを検索して",
+        "〇〇社の最新ニュースを調べて"
+      ],
+      "tool": "katashiro_search",
+      "parameters": {
+        "query": {
+          "type": "string",
+          "description": "検索クエリ"
+        },
+        "maxResults": {
+          "type": "number",
+          "description": "最大結果数",
+          "default": 10
+        }
+      }
+    },
+    {
+      "name": "web-scrape",
+      "displayName": "Webページ取得",
+      "description": "指定したURLのWebページ内容を取得します",
+      "when": "ユーザーが「このURLの内容を取得して」「ページをスクレイピングして」と依頼した場合",
+      "examples": [
+        "https://example.com の内容を取得して",
+        "このページの本文を抽出して",
+        "URLの記事を読み込んで"
+      ],
+      "tool": "katashiro_scrape",
+      "parameters": {
+        "url": {
+          "type": "string",
+          "description": "取得するURL"
+        }
+      }
+    },
+    {
+      "name": "text-analyze",
+      "displayName": "テキスト分析",
+      "description": "テキストを分析してキーワード、複雑度、構造を抽出します",
+      "when": "ユーザーが「分析して」「キーワードを抽出して」「テキストを調べて」と依頼した場合",
+      "examples": [
+        "この文章を分析して",
+        "キーワードを抽出して",
+        "テキストの複雑度を調べて"
+      ],
+      "tool": "katashiro_analyze",
+      "parameters": {
+        "text": {
+          "type": "string",
+          "description": "分析するテキスト"
+        }
+      }
+    },
+    {
+      "name": "entity-extract",
+      "displayName": "エンティティ抽出",
+      "description": "テキストから人名、組織名、地名などの固有表現を抽出します",
+      "when": "ユーザーが「人名を抽出して」「組織名を見つけて」「固有表現をリストアップして」と依頼した場合",
+      "examples": [
+        "この記事に出てくる人名をリストアップして",
+        "組織名と地名を抽出して",
+        "固有表現を見つけて"
+      ],
+      "tool": "katashiro_extract_entities",
+      "parameters": {
+        "text": {
+          "type": "string",
+          "description": "抽出元のテキスト"
+        },
+        "types": {
+          "type": "array",
+          "description": "抽出するエンティティタイプ",
+          "items": {
+            "type": "string",
+            "enum": ["PERSON", "ORGANIZATION", "LOCATION", "DATE", "PRODUCT"]
+          }
+        }
+      }
+    },
+    {
+      "name": "topic-model",
+      "displayName": "トピック分析",
+      "description": "複数の文書からトピックを抽出・分類します",
+      "when": "ユーザーが「トピックを分析して」「テーマを分類して」と依頼した場合",
+      "examples": [
+        "これらの文書のトピックを分析して",
+        "記事のテーマを分類して"
+      ],
+      "tool": "katashiro_topics",
+      "parameters": {
+        "documents": {
+          "type": "array",
+          "description": "分析する文書の配列",
+          "items": {
+            "type": "string"
+          }
+        },
+        "numTopics": {
+          "type": "number",
+          "description": "抽出するトピック数",
+          "default": 5
+        }
+      }
+    },
+    {
+      "name": "generate-report",
+      "displayName": "レポート生成",
+      "description": "収集・分析した情報からレポートを生成します",
+      "when": "ユーザーが「レポートを作成して」「まとめて」「報告書を生成して」と依頼した場合",
+      "examples": [
+        "調査結果をレポートにまとめて",
+        "分析結果からレポートを生成して",
+        "報告書を作成して"
+      ],
+      "tool": "katashiro_generate_report",
+      "parameters": {
+        "title": {
+          "type": "string",
+          "description": "レポートのタイトル"
+        },
+        "sections": {
+          "type": "array",
+          "description": "セクションの配列",
+          "items": {
+            "type": "object",
+            "properties": {
+              "heading": { "type": "string" },
+              "content": { "type": "string" }
+            }
+          }
+        },
+        "format": {
+          "type": "string",
+          "description": "出力形式",
+          "enum": ["markdown", "html", "pdf"],
+          "default": "markdown"
+        }
+      }
+    },
+    {
+      "name": "summarize",
+      "displayName": "要約生成",
+      "description": "長文テキストを要約します",
+      "when": "ユーザーが「要約して」「まとめて」「〜文字でまとめて」と依頼した場合",
+      "examples": [
+        "この長文を要約して",
+        "300文字以内でまとめて",
+        "3行で要点をまとめて"
+      ],
+      "tool": "katashiro_summarize",
+      "parameters": {
+        "text": {
+          "type": "string",
+          "description": "要約するテキスト"
+        },
+        "maxLength": {
+          "type": "number",
+          "description": "最大文字数"
+        },
+        "style": {
+          "type": "string",
+          "description": "要約スタイル",
+          "enum": ["paragraph", "bullets", "headline"],
+          "default": "paragraph"
+        }
+      }
+    },
+    {
+      "name": "generate-citation",
+      "displayName": "引用生成",
+      "description": "参照元から引用を生成します",
+      "when": "ユーザーが「引用を生成して」「参考文献を作成して」と依頼した場合",
+      "examples": [
+        "APA形式で引用を生成して",
+        "参考文献リストを作成して"
+      ],
+      "tool": "katashiro_citation",
+      "parameters": {
+        "source": {
+          "type": "object",
+          "description": "引用元情報",
+          "properties": {
+            "title": { "type": "string" },
+            "author": { "type": "string" },
+            "url": { "type": "string" },
+            "date": { "type": "string" }
+          }
+        },
+        "style": {
+          "type": "string",
+          "description": "引用スタイル",
+          "enum": ["APA", "MLA", "Chicago", "IEEE"],
+          "default": "APA"
+        }
+      }
+    },
+    {
+      "name": "knowledge-add",
+      "displayName": "知識グラフ追加",
+      "description": "情報を知識グラフに追加・保存します",
+      "when": "ユーザーが「知識グラフに追加して」「保存して」「登録して」と依頼した場合",
+      "examples": [
+        "この情報を知識グラフに登録して",
+        "エンティティを保存して",
+        "調査結果を知識ベースに追加して"
+      ],
+      "tool": "katashiro_knowledge_add",
+      "parameters": {
+        "node": {
+          "type": "object",
+          "description": "追加するノード",
+          "properties": {
+            "id": { "type": "string" },
+            "type": { "type": "string" },
+            "properties": { "type": "object" }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "description": "関連するエッジ",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source": { "type": "string" },
+              "target": { "type": "string" },
+              "type": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "knowledge-query",
+      "displayName": "知識グラフ検索",
+      "description": "知識グラフから関連情報を検索します",
+      "when": "ユーザーが「知識グラフから検索して」「関連情報を探して」「保存した情報を調べて」と依頼した場合",
+      "examples": [
+        "〇〇に関連する情報を知識グラフから検索して",
+        "保存した情報を検索して",
+        "関連するエンティティを探して"
+      ],
+      "tool": "katashiro_knowledge_query",
+      "parameters": {
+        "query": {
+          "type": "string",
+          "description": "検索クエリ"
+        },
+        "type": {
+          "type": "string",
+          "description": "ノードタイプでフィルタ"
+        },
+        "limit": {
+          "type": "number",
+          "description": "最大結果数",
+          "default": 10
+        }
+      }
+    },
+    {
+      "name": "read-feed",
+      "displayName": "RSSフィード読み込み",
+      "description": "RSS/Atomフィードを読み込んで記事を取得します",
+      "when": "ユーザーが「RSSフィードを読み込んで」「フィードを取得して」と依頼した場合",
+      "examples": [
+        "このRSSフィードを読み込んで",
+        "ブログの最新記事を取得して"
+      ],
+      "tool": "katashiro_feed",
+      "parameters": {
+        "url": {
+          "type": "string",
+          "description": "フィードURL"
+        },
+        "maxItems": {
+          "type": "number",
+          "description": "最大取得件数",
+          "default": 20
+        }
+      }
+    },
+    {
+      "name": "research-workflow",
+      "displayName": "調査ワークフロー",
+      "description": "検索→スクレイピング→分析→レポート生成の一連のワークフローを実行します",
+      "when": "ユーザーが「〜について調査してレポートにまとめて」「〜を調べて報告書を作成して」と依頼した場合",
+      "examples": [
+        "〇〇社について調査してレポートにまとめて",
+        "TypeScriptの最新動向を調べて報告書を作成して",
+        "競合分析してまとめて"
+      ],
+      "workflow": [
+        { "step": 1, "tool": "katashiro_search", "description": "関連情報を検索" },
+        { "step": 2, "tool": "katashiro_scrape", "description": "上位結果のページを取得" },
+        { "step": 3, "tool": "katashiro_analyze", "description": "取得内容を分析" },
+        { "step": 4, "tool": "katashiro_extract_entities", "description": "エンティティを抽出" },
+        { "step": 5, "tool": "katashiro_generate_report", "description": "レポートを生成" }
+      ]
+    }
+  ],
+  "mcpServer": {
+    "command": "npx",
+    "args": ["@nahisaho/katashiro-mcp-server"],
+    "env": {}
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "name": "@nahisaho/katashiro",
+  "version": "0.2.4",
+  "description": "KATASHIRO - VS Code Agent Mode向け情報収集・分析・生成システム（オールインワンパッケージ）",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "bin": {
+    "katashiro": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "src",
+    "scripts",
+    ".github",
+    "AGENTS.md",
+    "CLAUDE.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./core": {
+      "types": "./dist/core.d.ts",
+      "import": "./dist/core.js"
+    },
+    "./collector": {
+      "types": "./dist/collector.d.ts",
+      "import": "./dist/collector.js"
+    },
+    "./analyzer": {
+      "types": "./dist/analyzer.d.ts",
+      "import": "./dist/analyzer.js"
+    },
+    "./generator": {
+      "types": "./dist/generator.d.ts",
+      "import": "./dist/generator.js"
+    },
+    "./knowledge": {
+      "types": "./dist/knowledge.d.ts",
+      "import": "./dist/knowledge.js"
+    },
+    "./feedback": {
+      "types": "./dist/feedback.d.ts",
+      "import": "./dist/feedback.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"No tests for meta package\"",
+    "postinstall": "node scripts/postinstall.js"
+  },
+  "keywords": [
+    "katashiro",
+    "vscode",
+    "agent",
+    "ai",
+    "research",
+    "analysis",
+    "generation",
+    "knowledge-graph"
+  ],
+  "author": "nahisaho",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nahisaho/katashiro.git",
+    "directory": "packages/katashiro"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/nahisaho/katashiro#readme",
+  "bugs": {
+    "url": "https://github.com/nahisaho/katashiro/issues"
+  },
+  "dependencies": {
+    "@nahisaho/katashiro-analyzer": "file:../analyzer",
+    "@nahisaho/katashiro-collector": "file:../collector",
+    "@nahisaho/katashiro-core": "file:../core",
+    "@nahisaho/katashiro-feedback": "file:../feedback",
+    "@nahisaho/katashiro-generator": "file:../generator",
+    "@nahisaho/katashiro-knowledge": "file:../knowledge",
+    "@nahisaho/katashiro-mcp-server": "file:../mcp-server",
+    "commander": "^12.1.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

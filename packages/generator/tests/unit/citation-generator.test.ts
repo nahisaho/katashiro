@@ -1,0 +1,335 @@
+/**
+ * CitationGenerator Unit Tests
+ *
+ * @task TSK-033
+ */
+
+import { describe, it, expect, beforeEach } from 'vitest';
+import {
+  CitationGenerator,
+  CitationStyle,
+} from '../../src/citation/citation-generator.js';
+import type { Source } from '@nahisaho/katashiro-core';
+
+describe('CitationGenerator', () => {
+  let generator: CitationGenerator;
+
+  beforeEach(() => {
+    generator = new CitationGenerator();
+  });
+
+  const mockSource: Source = {
+    id: 'src-001',
+    url: 'https://example.com/article',
+    metadata: {
+      title: 'TypeScript入門ガイド',
+      author: '田中太郎',
+      publishedAt: '2024-01-15',
+    },
+    fetchedAt: new Date().toISOString(),
+  };
+
+  describe('generateCitation', () => {
+    it('should generate APA style citation', () => {
+      const citation = generator.generateCitation(mockSource, 'apa');
+      
+      expect(citation.formatted).toContain('田中太郎');
+      expect(citation.formatted).toContain('TypeScript入門ガイド');
+      expect(citation.style).toBe('apa');
+    });
+
+    it('should generate MLA style citation', () => {
+      const citation = generator.generateCitation(mockSource, 'mla');
+      
+      expect(citation.formatted).toContain('TypeScript入門ガイド');
+      expect(citation.style).toBe('mla');
+    });
+
+    it('should generate IEEE style citation', () => {
+      const citation = generator.generateCitation(mockSource, 'ieee');
+      
+      expect(citation.formatted).toContain('[');
+      expect(citation.style).toBe('ieee');
+    });
+
+    it('should handle missing author', () => {
+      const sourceNoAuthor: Source = {
+        ...mockSource,
+        metadata: { title: 'タイトル' },
+      };
+      
+      const citation = generator.generateCitation(sourceNoAuthor, 'apa');
+      expect(citation.formatted).toBeDefined();
+    });
+
+    it('should handle missing date', () => {
+      const sourceNoDate: Source = {
+        ...mockSource,
+        metadata: { title: 'タイトル', author: '著者' },
+      };
+      
+      const citation = generator.generateCitation(sourceNoDate, 'apa');
+      expect(citation.formatted).toContain('n.d.');
+    });
+  });
+
+  describe('generateBibliography', () => {
+    it('should generate sorted bibliography', () => {
+      const sources: Source[] = [
+        mockSource,
+        {
+          id: 'src-002',
+          url: 'https://example.com/article2',
+          metadata: { title: 'Aから始まる記事', author: '阿部' },
+          fetchedAt: new Date().toISOString(),
+        },
+      ];
+
+      const bibliography = generator.generateBibliography(sources, 'apa');
+      
+      expect(bibliography).toContain('阿部');
+      expect(bibliography).toContain('田中太郎');
+    });
+
+    it('should handle empty sources', () => {
+      const bibliography = generator.generateBibliography([], 'apa');
+      expect(bibliography).toBe('');
+    });
+  });
+
+  describe('formatInlineCitation', () => {
+    it('should format inline citation for APA', () => {
+      const inline = generator.formatInlineCitation(mockSource, 'apa');
+      
+      expect(inline).toContain('田中');
+      expect(inline).toContain('2024');
+    });
+
+    it('should format inline citation for IEEE', () => {
+      const inline = generator.formatInlineCitation(mockSource, 'ieee', 1);
+      
+      expect(inline).toBe('[1]');
+    });
+  });
+
+  describe('validate', () => {
+    it('should validate complete source', () => {
+      const result = generator.validate(mockSource);
+      
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it('should report missing URL and title', () => {
+      const invalidSource = {
+        ...mockSource,
+        url: '',
+        metadata: {
+          ...mockSource.metadata,
+          title: undefined,
+        },
+      };
+      
+      const result = generator.validate(invalidSource);
+      
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('URL') || e.includes('title'))).toBe(true);
+    });
+
+    it('should validate URL format', () => {
+      const invalidSource = {
+        ...mockSource,
+        url: 'not-a-valid-url',
+      };
+      
+      const result = generator.validate(invalidSource);
+      
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('URL'))).toBe(true);
+    });
+
+    it('should suggest adding metadata', () => {
+      const minimalSource = {
+        id: 'src-002',
+        url: 'https://example.com',
+        fetchedAt: new Date().toISOString(),
+      };
+      
+      const result = generator.validate(minimalSource);
+      
+      // メタデータがなくても有効だが、suggestionsが出る
+      expect(result.suggestions.length).toBeGreaterThan(0);
+    });
+
+    it('should validate date formats', () => {
+      const sourceWithBadDate = {
+        ...mockSource,
+        metadata: {
+          ...mockSource.metadata,
+          publishedAt: 'invalid-date',
+        },
+      };
+      
+      const result = generator.validate(sourceWithBadDate);
+      
+      expect(result.warnings.some(w => 
+        w.includes('日付') || w.includes('date')
+      )).toBe(true);
+    });
+
+    it('should warn about future dates', () => {
+      const futureDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+      const sourceWithFutureDate = {
+        ...mockSource,
+        metadata: {
+          ...mockSource.metadata,
+          publishedAt: futureDate,
+        },
+      };
+      
+      const result = generator.validate(sourceWithFutureDate);
+      
+      expect(result.warnings.some(w => w.includes('future'))).toBe(true);
+    });
+
+    it('should warn about short titles', () => {
+      const sourceShortTitle = {
+        ...mockSource,
+        metadata: { ...mockSource.metadata, title: 'AB' },
+      };
+      
+      const result = generator.validate(sourceShortTitle);
+      
+      expect(result.warnings.some(w => w.includes('short'))).toBe(true);
+    });
+
+    it('should warn about URL-like titles', () => {
+      const sourceUrlTitle = {
+        ...mockSource,
+        metadata: { ...mockSource.metadata, title: 'https://example.com' },
+      };
+      
+      const result = generator.validate(sourceUrlTitle);
+      
+      expect(result.warnings.some(w => w.includes('URL'))).toBe(true);
+    });
+  });
+
+  describe('generate (simple API)', () => {
+    it('should generate citation from SourceInput', () => {
+      const input = {
+        title: 'テスト記事',
+        author: '著者名',
+        url: 'https://example.com',
+        date: '2024-01-01',
+      };
+      
+      const citation = generator.generate(input);
+      
+      expect(citation.formatted).toContain('著者名');
+      expect(citation.formatted).toContain('テスト記事');
+    });
+
+    it('should use default style when not specified', () => {
+      const input = { title: 'テスト', url: 'https://example.com' };
+      const citation = generator.generate(input);
+      
+      expect(citation.style).toBe('apa');
+    });
+
+    it('should handle Source type directly', () => {
+      const citation = generator.generate(mockSource, 'mla');
+      
+      expect(citation.style).toBe('mla');
+      expect(citation.source).toBe(mockSource);
+    });
+  });
+
+  describe('formatInlineCitation additional styles', () => {
+    it('should format Chicago style', () => {
+      const inline = generator.formatInlineCitation(mockSource, 'chicago');
+      
+      expect(inline).toContain('田中');
+      expect(inline).toContain('2024');
+    });
+
+    it('should format Harvard style', () => {
+      const inline = generator.formatInlineCitation(mockSource, 'harvard');
+      
+      expect(inline).toContain('田中');
+      expect(inline).toContain('2024');
+    });
+
+    it('should handle missing author in inline citation', () => {
+      const sourceNoAuthor: Source = {
+        ...mockSource,
+        metadata: { title: 'タイトル' },
+      };
+      
+      const inline = generator.formatInlineCitation(sourceNoAuthor, 'apa');
+      
+      expect(inline).toContain('Unknown');
+    });
+  });
+
+  describe('generateCitation additional styles', () => {
+    it('should generate Chicago style citation', () => {
+      const citation = generator.generateCitation(mockSource, 'chicago');
+      
+      expect(citation.formatted).toContain('田中太郎');
+      expect(citation.style).toBe('chicago');
+    });
+
+    it('should generate Harvard style citation', () => {
+      const citation = generator.generateCitation(mockSource, 'harvard');
+      
+      expect(citation.formatted).toContain('Available at');
+      expect(citation.style).toBe('harvard');
+    });
+  });
+
+  describe('generateBibliography sorting', () => {
+    it('should sort by title when author is missing', () => {
+      const sources: Source[] = [
+        {
+          id: 'src-z',
+          url: 'https://example.com/z',
+          metadata: { title: 'Zから始まる' },
+          fetchedAt: new Date().toISOString(),
+        },
+        {
+          id: 'src-a',
+          url: 'https://example.com/a',
+          metadata: { title: 'Aから始まる' },
+          fetchedAt: new Date().toISOString(),
+        },
+      ];
+
+      const bibliography = generator.generateBibliography(sources, 'apa');
+      
+      // Aから始まるが先に来るべき
+      const aIndex = bibliography.indexOf('Aから始まる');
+      const zIndex = bibliography.indexOf('Zから始まる');
+      expect(aIndex).toBeLessThan(zIndex);
+    });
+  });
+
+  describe('validate SourceInput type', () => {
+    it('should validate SourceInput without URL', () => {
+      const input = { title: 'タイトル' };
+      
+      const result = generator.validate(input);
+      
+      expect(result.warnings.some(w => w.includes('URL') || w.includes('author'))).toBe(true);
+    });
+
+    it('should report error for empty title in SourceInput', () => {
+      const input = { title: '' };
+      
+      const result = generator.validate(input);
+      
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('Title'))).toBe(true);
+    });
+  });
+});

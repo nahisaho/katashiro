@@ -1,0 +1,39 @@
+{
+  "name": "@nahisaho/katashiro-knowledge",
+  "version": "0.2.4",
+  "description": "KATASHIRO Knowledge - 知識管理・LLMパッケージ",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@nahisaho/katashiro-core": "*"
+  },
+  "author": "nahisaho",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nahisaho/katashiro.git",
+    "directory": "packages/knowledge"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/nahisaho/katashiro#readme",
+  "bugs": {
+    "url": "https://github.com/nahisaho/katashiro/issues"
+  }
+}
