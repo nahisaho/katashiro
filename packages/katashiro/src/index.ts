@@ -35,4 +35,5 @@ export { KnowledgeGraph, GraphQuery, GraphPersistence, GraphVisualization, Graph
 export * as feedback from '@nahisaho/katashiro-feedback';
 export { FeedbackCollector, FeedbackStorage, LearningEngine, PatternDetector, AdaptiveRecommender } from '@nahisaho/katashiro-feedback';
 
-
+// Wake-Sleep Learning (v0.2.12)
+export { WakeSleepCycle, PatternQualityEvaluator, PatternCompressor } from '@nahisaho/katashiro-feedback';

@@ -23,6 +23,24 @@ export type {
   LearningStats,
 } from './learning/learning-engine.js';
 
+// Wake-Sleep Learning (v0.2.12)
+export { WakeSleepCycle } from './learning/wake-sleep-cycle.js';
+export { PatternQualityEvaluator } from './learning/quality-evaluator.js';
+export type { QualityEvaluatorConfig } from './learning/quality-evaluator.js';
+export { PatternCompressor } from './learning/pattern-compressor.js';
+export type { PatternCompressorConfig, MDLResult } from './learning/pattern-compressor.js';
+export type {
+  WakeSleepConfig,
+  WakeObservation,
+  ObservationType,
+  LearnedPattern,
+  PatternQuality,
+  SleepResult,
+  WakeSleepStats,
+  PatternMatch,
+  LibraryExport,
+} from './learning/wake-sleep-types.js';
+
 // Patterns
 export { PatternDetector } from './patterns/pattern-detector.js';
 export type {
