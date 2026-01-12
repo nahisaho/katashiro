@@ -2,7 +2,7 @@
   "name": "katashiro-vscode",
   "displayName": "KATASHIRO",
   "description": "AI-powered research assistant with web search, content analysis, and knowledge graph",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "publisher": "nahisaho",
   "icon": "media/icon.png",
   "repository": {

@@ -7,6 +7,7 @@
  */
 
 import { Command } from 'commander';
+import { createRequire } from 'module';
 import { WebSearchClient, WebScraper, TextAnalyzer, EntityExtractor, SummaryGenerator, isOk, isErr } from './index.js';
 import {
   createContent,
@@ -18,12 +19,16 @@ import {
   truncateText
 } from './cli-helpers.js';
 
+// package.json からバージョンを取得
+const require = createRequire(import.meta.url);
+const pkg = require('../package.json');
+
 const program = new Command();
 
 program
   .name('katashiro')
   .description('KATASHIRO CLI - AI Research & Analysis Tool')
-  .version('0.1.9');
+  .version(pkg.version, '-v, --version', 'バージョンを表示');
 
 // 検索コマンド
 program
