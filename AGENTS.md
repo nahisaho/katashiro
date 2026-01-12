@@ -1002,6 +1002,32 @@ Deep Researchは以下のプロセスを自動実行します：
 2. **反復的な深掘り**: ギャップ分析で不足情報を特定し、追加調査
 3. **収束判定**: 新規情報率が閾値以下になるか、最大イテレーションに達するまで反復
 4. **知識統合**: ナレッジグラフに情報を蓄積し、主要な発見を抽出
+5. **推論チェーン生成**: 結論に至った論理的説明を自動生成（観察→推論→統合→結論）
+
+### 推論チェーン（Reasoning Chain）
+
+Deep Researchは結果に「なぜその結論に至ったか」の論理的説明を含めます：
+
+```typescript
+interface ReasoningStep {
+  step: number;           // ステップ番号
+  type: 'observation' | 'inference' | 'synthesis' | 'conclusion';
+  description: string;    // 説明
+  sourceIds: string[];    // 根拠となるソースID
+  findingIds: string[];   // 関連する発見事項ID
+  confidence: number;     // 信頼度 (0-1)
+}
+
+// 出力例
+{
+  reasoningChain: [
+    { step: 1, type: 'observation', description: '「AI倫理」について調査を開始...', confidence: 1.0 },
+    { step: 2, type: 'inference', description: 'イテレーション1: プライバシー、バイアスについて調査...', confidence: 0.85 },
+    { step: 3, type: 'synthesis', description: '主要な発見を統合: プライバシー保護、公平性確保...', confidence: 0.85 },
+    { step: 4, type: 'conclusion', description: '調査完了。10件の主要な発見を特定...', confidence: 0.78 },
+  ]
+}
+```
 
 ### 検索プロバイダー
 
@@ -1023,4 +1049,4 @@ Deep Researchは以下のプロセスを自動実行します：
 **Project**: KATASHIRO
 **npm**: @nahisaho/katashiro
 **Last Updated**: 2026-01-12
-**Version**: 0.2.6
+**Version**: 0.2.7

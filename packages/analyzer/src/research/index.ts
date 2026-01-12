@@ -30,4 +30,5 @@ export type {
   DeepResearchStatistics,
   CompletionReason,
   DepthPriority,
+  ReasoningStep,
 } from './types.js';

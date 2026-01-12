@@ -295,6 +295,22 @@ program
           console.log(`   ... 他 ${result.keyFindings.length - 10} 件`);
         }
         
+        // 推論チェーン（論理的説明）を表示
+        if (result.reasoningChain && result.reasoningChain.length > 0) {
+          console.log('\n🧠 推論チェーン（結論に至った論理的説明）:');
+          result.reasoningChain.forEach((step) => {
+            const typeLabels: Record<string, string> = {
+              observation: '📊 観察',
+              inference: '💭 推論',
+              synthesis: '🔗 統合',
+              conclusion: '✅ 結論',
+            };
+            const label = typeLabels[step.type] || step.type;
+            console.log(`   ${step.step}. [${label}] ${step.description}`);
+            console.log(`      信頼度: ${(step.confidence * 100).toFixed(0)}%`);
+          });
+        }
+        
         console.log('\n🔗 情報ソース:');
         result.sources.slice(0, 5).forEach((source, i) => {
           console.log(`   ${i + 1}. ${source.title} (${source.url})`);

@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-analyzer",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "KATASHIRO Analyzer - 分析・推論パッケージ",
   "type": "module",
   "main": "./dist/index.js",

@@ -795,6 +795,25 @@ export class KatashiroMCPServer {
         });
       }
 
+      // 推論チェーンをフォーマット
+      const reasoningSection = result.reasoningChain && result.reasoningChain.length > 0
+        ? [
+            '',
+            '## Reasoning Chain (論理的説明)',
+            '',
+            ...result.reasoningChain.map((step) => {
+              const typeLabels: Record<string, string> = {
+                observation: '📊 Observation',
+                inference: '💭 Inference',
+                synthesis: '🔗 Synthesis',
+                conclusion: '✅ Conclusion',
+              };
+              const label = typeLabels[step.type] || step.type;
+              return `### Step ${step.step}: ${label}\n\n${step.description}\n\n*Confidence: ${(step.confidence * 100).toFixed(0)}%*`;
+            }),
+          ]
+        : [];
+
       // Format comprehensive output
       const output = [
         `# Deep Research Results: "${topic}"`,
@@ -812,6 +831,7 @@ export class KatashiroMCPServer {
         '## Key Findings',
         ...result.keyFindings.slice(0, 15).map((f, i) => `${i + 1}. ${f.title}: ${f.summary}`),
         result.keyFindings.length > 15 ? `... and ${result.keyFindings.length - 15} more findings` : '',
+        ...reasoningSection,
         '',
         '## Sources',
         ...result.sources.slice(0, 10).map((s, i) => `${i + 1}. ${s.title} (${s.url})`),

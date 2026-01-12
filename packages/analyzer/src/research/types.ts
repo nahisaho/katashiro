@@ -78,6 +78,32 @@ export interface DeepResearchResult {
 
   /** 完了理由 */
   completionReason: CompletionReason;
+
+  /** 推論チェーン（結論に至った論理的説明） */
+  reasoningChain: ReasoningStep[];
+}
+
+/**
+ * 推論ステップ（論理的説明の一単位）
+ */
+export interface ReasoningStep {
+  /** ステップ番号 */
+  step: number;
+
+  /** ステップの種類 */
+  type: 'observation' | 'inference' | 'synthesis' | 'conclusion';
+
+  /** 説明 */
+  description: string;
+
+  /** 根拠となるソースID */
+  sourceIds: string[];
+
+  /** 関連する発見事項ID */
+  findingIds: string[];
+
+  /** 信頼度 (0-1) */
+  confidence: number;
 }
 
 /**

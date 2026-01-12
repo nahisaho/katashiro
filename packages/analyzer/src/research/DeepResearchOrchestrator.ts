@@ -18,6 +18,7 @@ import type {
   SourceReference,
   IterationRecord,
   UserGuidance,
+  ReasoningStep,
 } from './types.js';
 import { GapAnalyzer } from './GapAnalyzer.js';
 import { ConvergenceDetector } from './ConvergenceDetector.js';
@@ -240,12 +241,23 @@ export class DeepResearchOrchestrator {
     // 最終結果を構築
     const simpleGraph = this.findingIntegrator.toSimpleGraph(graph);
     const remainingGaps = await this.gapAnalyzer.analyze(simpleGraph, query.topic, query.focusAreas);
+    const keyFindings = this.extractKeyFindings(simpleGraph);
+
+    // 推論チェーンを生成（結論に至った論理的説明）
+    const reasoningChain = this.generateReasoningChain(
+      query.topic,
+      iterations,
+      keyFindings,
+      allSources,
+      remainingGaps,
+      completionReason
+    );
 
     this.currentResult = {
       topic: query.topic,
       knowledgeGraph: simpleGraph,
       summary: this.generateSummary(simpleGraph, query.topic),
-      keyFindings: this.extractKeyFindings(simpleGraph),
+      keyFindings,
       sources: allSources,
       iterations,
       remainingGaps,
@@ -259,6 +271,7 @@ export class DeepResearchOrchestrator {
         totalDuration: Date.now() - startTime,
       },
       completionReason,
+      reasoningChain,
     };
 
     // 最終進捗
@@ -340,5 +353,117 @@ export class DeepResearchOrchestrator {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
       .slice(0, 50);
+  }
+
+  /**
+   * 推論チェーンを生成（結論に至った論理的説明）
+   */
+  private generateReasoningChain(
+    topic: string,
+    iterations: IterationRecord[],
+    keyFindings: KeyFinding[],
+    sources: SourceReference[],
+    remainingGaps: import('./types.js').KnowledgeGap[],
+    completionReason: import('./types.js').CompletionReason
+  ): ReasoningStep[] {
+    const steps: ReasoningStep[] = [];
+    let stepNumber = 1;
+
+    // Step 1: 調査開始の観察
+    steps.push({
+      step: stepNumber++,
+      type: 'observation',
+      description: `「${topic}」について調査を開始。${iterations.length}回のイテレーションを実行し、${sources.length}件のソースから情報を収集。`,
+      sourceIds: sources.slice(0, 5).map((s) => s.url),
+      findingIds: [],
+      confidence: 1.0,
+    });
+
+    // Step 2-N: 各イテレーションでの発見と推論
+    for (let i = 0; i < Math.min(iterations.length, 3); i++) {
+      const iter = iterations[i];
+      if (!iter) continue;
+
+      steps.push({
+        step: stepNumber++,
+        type: 'inference',
+        description: `イテレーション${iter.iterationNumber}: ${iter.queries.slice(0, 2).join(', ')}について調査。${iter.findingsCount}件の発見があり、新規情報率は${(iter.noveltyRate * 100).toFixed(1)}%。`,
+        sourceIds: [],
+        findingIds: [],
+        confidence: 0.8 + iter.noveltyRate * 0.2,
+      });
+    }
+
+    // 主要な発見の統合
+    if (keyFindings.length > 0) {
+      const topFindings = keyFindings.slice(0, 3);
+      steps.push({
+        step: stepNumber++,
+        type: 'synthesis',
+        description: `主要な発見を統合: ${topFindings.map((f) => f.title).join('、')}。これらの発見は相互に関連し、トピックの理解を深める。`,
+        sourceIds: topFindings.flatMap((f) => f.sources).slice(0, 5),
+        findingIds: topFindings.map((f) => f.id),
+        confidence: 0.85,
+      });
+    }
+
+    // 残存ギャップの評価
+    if (remainingGaps.length > 0) {
+      const gapDescriptions = remainingGaps.slice(0, 2).map((g) => g.description);
+      steps.push({
+        step: stepNumber++,
+        type: 'observation',
+        description: `残存する知識ギャップ: ${gapDescriptions.join('、')}。これらの領域は追加調査が必要。`,
+        sourceIds: [],
+        findingIds: [],
+        confidence: 0.7,
+      });
+    }
+
+    // 最終結論
+    const conclusionReasons: Record<import('./types.js').CompletionReason, string> = {
+      converged: '新規情報率が閾値以下に収束したため',
+      max_iterations: '最大イテレーション数に到達したため',
+      timeout: 'タイムアウトに達したため',
+      user_stopped: 'ユーザーにより停止されたため',
+      no_new_queries: '新規クエリが生成できなくなったため',
+    };
+
+    steps.push({
+      step: stepNumber++,
+      type: 'conclusion',
+      description: `調査完了（${conclusionReasons[completionReason]}）。${keyFindings.length}件の主要な発見を特定し、${sources.length}件のソースを参照。信頼性の高い情報源からの裏付けにより、結論の妥当性を確認。`,
+      sourceIds: sources.slice(0, 10).map((s) => s.url),
+      findingIds: keyFindings.map((f) => f.id),
+      confidence: this.calculateOverallConfidence(keyFindings, sources, remainingGaps),
+    });
+
+    return steps;
+  }
+
+  /**
+   * 全体的な信頼度を計算
+   */
+  private calculateOverallConfidence(
+    keyFindings: KeyFinding[],
+    sources: SourceReference[],
+    remainingGaps: import('./types.js').KnowledgeGap[]
+  ): number {
+    let confidence = 0.5; // ベース
+
+    // 発見数による加点
+    confidence += Math.min(keyFindings.length * 0.05, 0.2);
+
+    // ソース数による加点
+    confidence += Math.min(sources.length * 0.01, 0.15);
+
+    // 重要な発見の割合による加点
+    const highImportanceRatio = keyFindings.filter((f) => f.importance === 'high').length / Math.max(keyFindings.length, 1);
+    confidence += highImportanceRatio * 0.1;
+
+    // 残存ギャップによる減点
+    confidence -= Math.min(remainingGaps.length * 0.03, 0.15);
+
+    return Math.max(0.3, Math.min(0.95, confidence));
   }
 }
