@@ -23,6 +23,7 @@ export type {
   ScrapingOptions,
   ScrapingResult,
   FeedItem,
+  Feed,
   TranscriptSegment,
   MediaMetadata,
 } from './types.js';

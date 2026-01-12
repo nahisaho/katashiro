@@ -63,6 +63,14 @@ export interface GraphEdgeInput {
 }
 
 /**
+ * エッジ追加オプション
+ */
+export interface AddEdgeOptions {
+  /** 存在しないノードを自動作成するか */
+  readonly autoCreateNodes?: boolean;
+}
+
+/**
  * KnowledgeGraph
  *
  * In-memory graph for storing entities and relationships
@@ -112,15 +120,34 @@ export class KnowledgeGraph {
    * AGENTS.md互換: エッジオブジェクトを返す
    *
    * @param edge - Edge to add
+   * @param options - Optional settings (autoCreateNodes)
    * @returns The added edge (AGENTS.md互換)
    */
-  addEdge(edge: GraphEdge | GraphEdgeInput): GraphEdge {
+  addEdge(edge: GraphEdge | GraphEdgeInput, options?: AddEdgeOptions): GraphEdge {
+    const autoCreate = options?.autoCreateNodes ?? false;
+
+    // Source node check
     if (!this.nodes.has(edge.source)) {
-      throw new Error(`Source node ${edge.source} does not exist`);
+      if (autoCreate) {
+        this.addNode({ id: edge.source, type: 'stub', properties: { autoCreated: true } });
+      } else {
+        const availableIds = Array.from(this.nodes.keys()).slice(0, 10);
+        throw new Error(
+          `Source node ${edge.source} does not exist. Available node IDs: [${availableIds.join(', ')}${this.nodes.size > 10 ? ', ...' : ''}]`
+        );
+      }
     }
 
+    // Target node check
     if (!this.nodes.has(edge.target)) {
-      throw new Error(`Target node ${edge.target} does not exist`);
+      if (autoCreate) {
+        this.addNode({ id: edge.target, type: 'stub', properties: { autoCreated: true } });
+      } else {
+        const availableIds = Array.from(this.nodes.keys()).slice(0, 10);
+        throw new Error(
+          `Target node ${edge.target} does not exist. Available node IDs: [${availableIds.join(', ')}${this.nodes.size > 10 ? ', ...' : ''}]`
+        );
+      }
     }
 
     // Normalize input to full GraphEdge
@@ -354,12 +381,28 @@ export class KnowledgeGraph {
   }
 
   /**
+   * Get all nodes (alias for AGENTS.md compatibility)
+   * @returns Array of all nodes
+   */
+  getNodes(): GraphNode[] {
+    return this.getAllNodes();
+  }
+
+  /**
    * Get all edges
    *
    * @returns Array of all edges
    */
   getAllEdges(): GraphEdge[] {
     return Array.from(this.edges.values());
+  }
+
+  /**
+   * Get all edges (alias for AGENTS.md compatibility)
+   * @returns Array of all edges
+   */
+  getEdges(): GraphEdge[] {
+    return this.getAllEdges();
   }
 
   /**

@@ -29,6 +29,7 @@ describe('APIClient', () => {
       const mockData = { id: 1, name: 'Test' };
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
         json: () => Promise.resolve(mockData),
       });
 
@@ -42,6 +43,7 @@ describe('APIClient', () => {
     it('should append query parameters', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
         json: () => Promise.resolve([]),
       });
 
@@ -88,6 +90,7 @@ describe('APIClient', () => {
       const responseData = { id: 1, name: 'New User' };
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
         json: () => Promise.resolve(responseData),
       });
 
@@ -127,6 +130,7 @@ describe('APIClient', () => {
 
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
         json: () => Promise.resolve({}),
       });
 
@@ -149,6 +153,7 @@ describe('APIClient', () => {
     it('should include default headers', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
         json: () => Promise.resolve({}),
       });
 
@@ -172,6 +177,7 @@ describe('APIClient', () => {
 
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
         json: () => Promise.resolve({}),
       });
 

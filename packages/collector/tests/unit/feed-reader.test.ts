@@ -43,10 +43,11 @@ describe('FeedReader', () => {
       const result = feedReader.parseFeed(rssFeed, 'rss');
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
-        expect(result.value.length).toBe(2);
-        expect(result.value[0].title).toBe('Article 1');
-        expect(result.value[0].link).toBe('https://example.com/article1');
-        expect(result.value[1].title).toBe('Article 2');
+        expect(result.value.title).toBe('Test Feed');
+        expect(result.value.items.length).toBe(2);
+        expect(result.value.items[0].title).toBe('Article 1');
+        expect(result.value.items[0].link).toBe('https://example.com/article1');
+        expect(result.value.items[1].title).toBe('Article 2');
       }
     });
 
@@ -67,9 +68,10 @@ describe('FeedReader', () => {
       const result = feedReader.parseFeed(atomFeed, 'atom');
       expect(isOk(result)).toBe(true);
       if (isOk(result)) {
-        expect(result.value.length).toBe(1);
-        expect(result.value[0].title).toBe('Entry 1');
-        expect(result.value[0].link).toBe('https://example.com/entry1');
+        expect(result.value.title).toBe('Test Atom Feed');
+        expect(result.value.items.length).toBe(1);
+        expect(result.value.items[0].title).toBe('Entry 1');
+        expect(result.value.items[0].link).toBe('https://example.com/entry1');
       }
     });
 

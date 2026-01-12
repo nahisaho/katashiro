@@ -326,20 +326,27 @@ export class GraphPersistence {
 
   /**
    * ファイルからグラフを読み込み（簡易API）
-   * AGENTS.md互換API
+   * AGENTS.md互換API - KnowledgeGraphインスタンスを直接返す
    *
    * @param filePath - ファイルパス
    * @returns 読み込んだグラフ
+   * @throws Error ファイルが存在しないまたは無効なJSONの場合
    */
-  async load(filePath: string): Promise<Result<KnowledgeGraph, Error>> {
+  async load(filePath: string): Promise<KnowledgeGraph> {
+    const fs = await import('fs/promises');
+    const json = await fs.readFile(filePath, 'utf-8');
+    return this.deserialize(json);
+  }
+
+  /**
+   * ファイルからグラフを読み込み（Result API）
+   *
+   * @param filePath - ファイルパス
+   * @returns Result with loaded graph or error
+   */
+  async loadSafe(filePath: string): Promise<Result<KnowledgeGraph, Error>> {
     try {
-      const fs = await import('fs/promises');
-      const json = await fs.readFile(filePath, 'utf-8');
-      const graph = new KnowledgeGraph();
-      const result = this.fromJSON(json, graph);
-      if (!isOk(result)) {
-        return err(result.error);
-      }
+      const graph = await this.load(filePath);
       return ok(graph);
     } catch (error) {
       return err(error instanceof Error ? error : new Error(String(error)));

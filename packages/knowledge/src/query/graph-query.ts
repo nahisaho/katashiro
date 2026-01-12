@@ -51,13 +51,24 @@ export class GraphQuery {
   /**
    * Find all nodes of a given type
    * AGENTS.md互換: 直接配列を返す
+   * 大文字小文字を区別しない
    *
    * @param type - Node type to find
    * @returns Array of matching nodes
    */
   findByType(type: string): GraphNode[] {
     try {
-      return this.graph.getNodesByType(type);
+      // まず完全一致を試す
+      let results = this.graph.getNodesByType(type);
+      if (results.length > 0) {
+        return results;
+      }
+      
+      // 大文字小文字を無視して検索
+      const lowerType = type.toLowerCase();
+      const allNodes = this.graph.getAllNodes();
+      results = allNodes.filter(node => node.type.toLowerCase() === lowerType);
+      return results;
     } catch {
       return [];
     }

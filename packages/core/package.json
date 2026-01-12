@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-core",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "KATASHIRO Core - 共通型・ユーティリティ",
   "type": "module",
   "main": "./dist/index.js",

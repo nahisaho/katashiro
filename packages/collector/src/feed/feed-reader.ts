@@ -13,7 +13,7 @@ import {
   validateUrl,
   isErr,
 } from '@nahisaho/katashiro-core';
-import type { IFeedReader, FeedItem } from '../index.js';
+import type { IFeedReader, FeedItem, Feed } from '../index.js';
 
 type FeedType = 'rss' | 'atom' | 'auto';
 
@@ -24,24 +24,41 @@ export class FeedReader implements IFeedReader {
   private readonly userAgent = 'Mozilla/5.0 (compatible; KATASHIRO/0.1.0)';
 
   /**
-   * フィードを読み込み（簡易API）
+   * フィードを読み込み（AGENTS.md互換API）
    * @param feedUrl フィードURL
+   * @returns Feed object with title and items
    */
-  async read(feedUrl: string): Promise<Result<FeedItem[], Error>> {
-    return this.fetch(feedUrl);
+  async read(feedUrl: string): Promise<Feed> {
+    const result = await this.fetchFeed(feedUrl);
+    if (isErr(result)) {
+      throw result.error;
+    }
+    return result.value;
+  }
+
+  /**
+   * フィードを取得・パース（安全版）
+   */
+  async readSafe(feedUrl: string): Promise<Result<Feed, Error>> {
+    return this.fetchFeed(feedUrl);
   }
 
   /**
    * フィードを取得・パース（IFeedReaderインターフェース実装）
+   * @deprecated readSafe()を使用してください
    */
   async fetch(feedUrl: string): Promise<Result<FeedItem[], Error>> {
-    return this.fetchFeed(feedUrl);
+    const result = await this.fetchFeed(feedUrl);
+    if (isErr(result)) {
+      return err(result.error);
+    }
+    return ok(result.value.items);
   }
 
   /**
    * フィードを取得・パース
    */
-  async fetchFeed(url: string): Promise<Result<FeedItem[], Error>> {
+  async fetchFeed(url: string): Promise<Result<Feed, Error>> {
     const urlValidation = validateUrl(url);
     if (isErr(urlValidation)) {
       return err(new Error(`Invalid URL: ${urlValidation.error}`));
@@ -97,7 +114,7 @@ export class FeedReader implements IFeedReader {
   /**
    * フィードをパース
    */
-  parseFeed(xml: string, type: FeedType): Result<FeedItem[], Error> {
+  parseFeed(xml: string, type: FeedType): Result<Feed, Error> {
     try {
       const feedType = type === 'auto' ? this.detectFeedType(xml) : type;
 
@@ -114,8 +131,20 @@ export class FeedReader implements IFeedReader {
   /**
    * RSS 2.0フィードをパース
    */
-  private parseRssFeed(xml: string): Result<FeedItem[], Error> {
+  private parseRssFeed(xml: string): Result<Feed, Error> {
     const items: FeedItem[] = [];
+    
+    // フィードメタデータを抽出
+    const channelMatch = xml.match(/<channel[^>]*>([\s\S]*?)<\/channel>/i);
+    const channelXml = channelMatch?.[1] || xml;
+    
+    // channel直下のtitleを抽出（item内のtitleではなく）
+    const feedTitle = this.extractChannelTag(channelXml, 'title') || 'Untitled Feed';
+    const feedDescription = this.extractChannelTag(channelXml, 'description');
+    const feedLink = this.extractChannelTag(channelXml, 'link');
+    const feedLanguage = this.extractChannelTag(channelXml, 'language');
+    const feedLastBuildDate = this.extractChannelTag(channelXml, 'lastBuildDate');
+    
     const itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/gi;
     let match;
 
@@ -153,14 +182,38 @@ export class FeedReader implements IFeedReader {
       }
     }
 
-    return ok(items);
+    return ok({
+      title: this.extractTextContent(feedTitle),
+      description: feedDescription ? this.extractTextContent(feedDescription) : undefined,
+      link: feedLink || undefined,
+      language: feedLanguage || undefined,
+      lastBuildDate: feedLastBuildDate || undefined,
+      items,
+    });
+  }
+
+  /**
+   * channel直下のタグを抽出（item内のタグは除外）
+   */
+  private extractChannelTag(channelXml: string, tagName: string): string | null {
+    // item要素を一時的に除去してchannel直下のタグを取得
+    const withoutItems = channelXml.replace(/<item[^>]*>[\s\S]*?<\/item>/gi, '');
+    return this.extractTag(withoutItems, tagName);
   }
 
   /**
    * Atomフィードをパース
    */
-  private parseAtomFeed(xml: string): Result<FeedItem[], Error> {
+  private parseAtomFeed(xml: string): Result<Feed, Error> {
     const items: FeedItem[] = [];
+    
+    // フィードメタデータを抽出（entry要素を除外）
+    const withoutEntries = xml.replace(/<entry[^>]*>[\s\S]*?<\/entry>/gi, '');
+    const feedTitle = this.extractTag(withoutEntries, 'title') || 'Untitled Feed';
+    const feedSubtitle = this.extractTag(withoutEntries, 'subtitle');
+    const feedLink = this.extractAtomLink(withoutEntries);
+    const feedUpdated = this.extractTag(withoutEntries, 'updated');
+    
     const entryRegex = /<entry[^>]*>([\s\S]*?)<\/entry>/gi;
     let match;
 
@@ -198,7 +251,13 @@ export class FeedReader implements IFeedReader {
       }
     }
 
-    return ok(items);
+    return ok({
+      title: this.extractTextContent(feedTitle),
+      description: feedSubtitle ? this.extractTextContent(feedSubtitle) : undefined,
+      link: feedLink || undefined,
+      lastBuildDate: feedUpdated || undefined,
+      items,
+    });
   }
 
   /**

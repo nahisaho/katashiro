@@ -36,8 +36,9 @@ export interface Entity {
 
 /**
  * extract() メソッドの戻り値型
+ * AGENTS.md互換: イテラブルで配列メソッドも使用可能
  */
-export interface ExtractedEntities {
+export interface ExtractedEntities extends Iterable<Entity> {
   readonly persons: string[];
   readonly organizations: string[];
   readonly locations: string[];
@@ -50,6 +51,82 @@ export interface ExtractedEntities {
   readonly percentages: string[];
   readonly numbers: string[];
   readonly all: Entity[];
+  /** 配列互換: 長さを取得 */
+  readonly length: number;
+  /** 配列互換: slice() */
+  slice(start?: number, end?: number): Entity[];
+  /** 配列互換: map() */
+  map<T>(callback: (entity: Entity, index: number) => T): T[];
+  /** 配列互換: filter() */
+  filter(callback: (entity: Entity, index: number) => boolean): Entity[];
+  /** 配列互換: forEach() */
+  forEach(callback: (entity: Entity, index: number) => void): void;
+  /** 配列互換: find() */
+  find(callback: (entity: Entity, index: number) => boolean): Entity | undefined;
+}
+
+/**
+ * ExtractedEntitiesの実装クラス
+ */
+class ExtractedEntitiesImpl implements ExtractedEntities {
+  readonly persons: string[];
+  readonly organizations: string[];
+  readonly locations: string[];
+  readonly dates: string[];
+  readonly times: string[];
+  readonly urls: string[];
+  readonly emails: string[];
+  readonly phones: string[];
+  readonly money: string[];
+  readonly percentages: string[];
+  readonly numbers: string[];
+  readonly all: Entity[];
+
+  constructor(
+    entities: Entity[],
+    filterByType: (entities: Entity[], type: EntityType) => string[]
+  ) {
+    this.all = entities;
+    this.persons = filterByType(entities, 'person');
+    this.organizations = filterByType(entities, 'organization');
+    this.locations = filterByType(entities, 'location');
+    this.dates = filterByType(entities, 'date');
+    this.times = filterByType(entities, 'time');
+    this.urls = filterByType(entities, 'url');
+    this.emails = filterByType(entities, 'email');
+    this.phones = filterByType(entities, 'phone');
+    this.money = filterByType(entities, 'money');
+    this.percentages = filterByType(entities, 'percentage');
+    this.numbers = filterByType(entities, 'number');
+  }
+
+  get length(): number {
+    return this.all.length;
+  }
+
+  [Symbol.iterator](): Iterator<Entity> {
+    return this.all[Symbol.iterator]();
+  }
+
+  slice(start?: number, end?: number): Entity[] {
+    return this.all.slice(start, end);
+  }
+
+  map<T>(callback: (entity: Entity, index: number) => T): T[] {
+    return this.all.map(callback);
+  }
+
+  filter(callback: (entity: Entity, index: number) => boolean): Entity[] {
+    return this.all.filter(callback);
+  }
+
+  forEach(callback: (entity: Entity, index: number) => void): void {
+    this.all.forEach(callback);
+  }
+
+  find(callback: (entity: Entity, index: number) => boolean): Entity | undefined {
+    return this.all.find(callback);
+  }
 }
 
 /**
@@ -117,24 +194,11 @@ export class EntityExtractor {
   /**
    * テキストからエンティティを抽出（推奨API）
    * AGENTS.md/CLAUDE.md のドキュメントと一致するメソッド
+   * 戻り値はイテラブルで配列メソッドも使用可能
    */
   async extract(text: string): Promise<ExtractedEntities> {
     const entities = this.extractEntities(text);
-    
-    return {
-      persons: this.filterByType(entities, 'person'),
-      organizations: this.filterByType(entities, 'organization'),
-      locations: this.filterByType(entities, 'location'),
-      dates: this.filterByType(entities, 'date'),
-      times: this.filterByType(entities, 'time'),
-      urls: this.filterByType(entities, 'url'),
-      emails: this.filterByType(entities, 'email'),
-      phones: this.filterByType(entities, 'phone'),
-      money: this.filterByType(entities, 'money'),
-      percentages: this.filterByType(entities, 'percentage'),
-      numbers: this.filterByType(entities, 'number'),
-      all: entities,
-    };
+    return new ExtractedEntitiesImpl(entities, this.filterByType.bind(this));
   }
 
   /**

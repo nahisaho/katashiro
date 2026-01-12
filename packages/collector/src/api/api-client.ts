@@ -132,7 +132,27 @@ export class APIClient implements IAPIClient {
         );
       }
 
-      const data = (await response.json()) as T;
+      // Content-Typeに応じてレスポンスをパース
+      const contentType = response.headers.get('content-type') || '';
+      let data: T;
+      
+      if (contentType.includes('application/json')) {
+        data = (await response.json()) as T;
+      } else if (contentType.includes('text/')) {
+        // テキストレスポンスをラップして返す
+        const text = await response.text();
+        data = { text, contentType } as T;
+      } else {
+        // その他の形式はJSONとして試行
+        try {
+          data = (await response.json()) as T;
+        } catch {
+          // JSONパース失敗時はテキストとして返す
+          const text = await response.text();
+          data = { text, contentType } as T;
+        }
+      }
+      
       return ok(data);
     } catch (error) {
       if (error instanceof Error) {

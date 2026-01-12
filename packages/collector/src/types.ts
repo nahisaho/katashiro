@@ -46,6 +46,19 @@ export interface ScrapingResult {
 }
 
 /**
+ * フィード情報
+ * AGENTS.md互換API
+ */
+export interface Feed {
+  readonly title: string;
+  readonly description?: string;
+  readonly link?: string;
+  readonly language?: string;
+  readonly lastBuildDate?: string;
+  readonly items: FeedItem[];
+}
+
+/**
  * フィードアイテム
  */
 export interface FeedItem {
