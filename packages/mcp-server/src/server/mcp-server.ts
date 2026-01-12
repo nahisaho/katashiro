@@ -10,7 +10,7 @@
 
 import { ok, err, isOk, type Result } from '@nahisaho/katashiro-core';
 import { WebSearchClient, WebScraper } from '@nahisaho/katashiro-collector';
-import { TextAnalyzer, EntityExtractor } from '@nahisaho/katashiro-analyzer';
+import { TextAnalyzer, EntityExtractor, DeepResearchOrchestrator } from '@nahisaho/katashiro-analyzer';
 import { SummaryGenerator, ReportGenerator } from '@nahisaho/katashiro-generator';
 import { KnowledgeGraph, GraphQuery } from '@nahisaho/katashiro-knowledge';
 
@@ -368,6 +368,26 @@ export class KatashiroMCPServer {
         required: ['title', 'sections'],
       },
     });
+
+    // Deep Research Tool
+    this.tools.set('deep_research', {
+      name: 'deep_research',
+      description: 'Execute iterative deep research on a topic with automatic convergence detection, gap analysis, and knowledge synthesis',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          topic: { type: 'string', description: 'Research topic to investigate' },
+          maxIterations: { type: 'number', description: 'Maximum number of research iterations (default: 5)' },
+          convergenceThreshold: { type: 'number', description: 'Convergence threshold 0.0-1.0 (default: 0.15)' },
+          focusAreas: { 
+            type: 'array', 
+            description: 'Optional focus areas to prioritize',
+            items: { type: 'string' },
+          },
+        },
+        required: ['topic'],
+      },
+    });
   }
 
   /**
@@ -451,6 +471,8 @@ export class KatashiroMCPServer {
         return this.executeKnowledgeQuery(args);
       case 'generate_report':
         return this.executeGenerateReport(args);
+      case 'deep_research':
+        return this.executeDeepResearch(args);
       default:
         return err(new Error(`Unhandled tool: ${name}`));
     }
@@ -729,6 +751,84 @@ export class KatashiroMCPServer {
     } catch (error) {
       return ok({
         content: [{ type: 'text', text: `Report generation error: ${error}` }],
+        isError: true,
+      });
+    }
+  }
+
+  private async executeDeepResearch(
+    args: Record<string, unknown>
+  ): Promise<Result<ToolResult, Error>> {
+    try {
+      const topic = String(args['topic']);
+      const maxIterations = Number(args['maxIterations']) || 5;
+      const convergenceThreshold = Number(args['convergenceThreshold']) || 0.15;
+      const focusAreas = (args['focusAreas'] as string[]) || undefined;
+
+      const orchestrator = new DeepResearchOrchestrator();
+
+      // Execute deep research and collect progress
+      const progressUpdates: string[] = [];
+      const startTime = Date.now();
+
+      for await (const state of orchestrator.research({
+        topic,
+        maxIterations,
+        convergenceThreshold,
+        focusAreas,
+      })) {
+        progressUpdates.push(
+          `[Iteration ${state.iteration}] Phase: ${state.phase}, ` +
+          `Total Findings: ${state.totalFindingsCount}, Novelty: ${(state.noveltyRate * 100).toFixed(1)}%` +
+          `, Convergence: ${(state.convergenceScore * 100).toFixed(1)}%`
+        );
+      }
+
+      // Get final result
+      const result = orchestrator.getResult();
+      const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+
+      if (!result) {
+        return ok({
+          content: [{ type: 'text', text: 'Deep research completed but no results returned' }],
+          isError: true,
+        });
+      }
+
+      // Format comprehensive output
+      const output = [
+        `# Deep Research Results: "${topic}"`,
+        '',
+        '## Statistics',
+        `- Total Iterations: ${result.statistics.totalIterations}`,
+        `- Total Findings Processed: ${result.statistics.totalFindingsProcessed}`,
+        `- Total Nodes Created: ${result.statistics.totalNodesCreated}`,
+        `- Average Novelty Rate: ${(result.statistics.averageNoveltyRate * 100).toFixed(1)}%`,
+        `- Processing Time: ${totalTime}s`,
+        '',
+        '## Progress Log',
+        ...progressUpdates.map(p => `- ${p}`),
+        '',
+        '## Key Findings',
+        ...result.keyFindings.slice(0, 15).map((f, i) => `${i + 1}. ${f.title}: ${f.summary}`),
+        result.keyFindings.length > 15 ? `... and ${result.keyFindings.length - 15} more findings` : '',
+        '',
+        '## Sources',
+        ...result.sources.slice(0, 10).map((s, i) => `${i + 1}. ${s.title} (${s.url})`),
+        result.sources.length > 10 ? `... and ${result.sources.length - 10} more sources` : '',
+      ].filter(Boolean).join('\n');
+
+      return ok({
+        content: [
+          {
+            type: 'text',
+            text: output,
+          },
+        ],
+      });
+    } catch (error) {
+      return ok({
+        content: [{ type: 'text', text: `Deep research error: ${error}` }],
         isError: true,
       });
     }

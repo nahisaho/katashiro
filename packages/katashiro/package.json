@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "KATASHIRO - VS Code Agent Mode向け情報収集・分析・生成システム（オールインワンパッケージ）",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

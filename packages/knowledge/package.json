@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-knowledge",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "KATASHIRO Knowledge - 知識管理・LLMパッケージ",
   "type": "module",
   "main": "./dist/index.js",

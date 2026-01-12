@@ -12,7 +12,7 @@ export { WebScraper, APIClient, APIClient as ApiClient, FeedReader, WebSearchCli
 
 // Analyzer - Text analysis, entities, topics
 export * as analyzer from '@nahisaho/katashiro-analyzer';
-export { TextAnalyzer, EntityExtractor, TopicModeler, RelationAnalyzer, QualityScorer, StructureAnalyzer, FrameworkAnalyzer } from '@nahisaho/katashiro-analyzer';
+export { TextAnalyzer, EntityExtractor, TopicModeler, RelationAnalyzer, QualityScorer, StructureAnalyzer, FrameworkAnalyzer, DeepResearchOrchestrator } from '@nahisaho/katashiro-analyzer';
 
 // Generator - Reports, summaries, presentations
 export * as generator from '@nahisaho/katashiro-generator';

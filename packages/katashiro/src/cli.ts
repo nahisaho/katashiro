@@ -8,7 +8,7 @@
 
 import { Command } from 'commander';
 import { createRequire } from 'module';
-import { WebSearchClient, WebScraper, TextAnalyzer, EntityExtractor, SummaryGenerator, isOk, isErr } from './index.js';
+import { WebSearchClient, WebScraper, TextAnalyzer, EntityExtractor, SummaryGenerator, DeepResearchOrchestrator, isOk, isErr } from './index.js';
 import {
   createContent,
   isValidFormat,
@@ -212,6 +212,99 @@ program
         console.log('\n📝 要約結果\n');
         console.log(summary);
         console.log(`\n(元のテキスト: ${text.length}文字 → 要約: ${summary.length}文字)`);
+      }
+    } catch (error) {
+      console.error('❌ エラー:', error instanceof Error ? error.message : error);
+      process.exit(1);
+    }
+  });
+
+// =============================================================================
+// deep-research コマンド
+// =============================================================================
+program
+  .command('deep-research <topic>')
+  .description('Deep Research - 反復的な深掘り調査を実行')
+  .option('-i, --iterations <number>', '最大イテレーション数', '5')
+  .option('-t, --threshold <number>', '収束閾値 (0.0-1.0)', '0.15')
+  .option('-f, --focus <areas>', 'フォーカスエリア (カンマ区切り)')
+  .option('--format <type>', '出力形式 (text/json)', 'text')
+  .action(async (topic: string, options: { iterations: string; threshold: string; focus?: string; format: string }) => {
+    try {
+      console.log(`\n🔬 Deep Research: "${topic}"\n`);
+      console.log('設定:');
+      console.log(`  - 最大イテレーション: ${options.iterations}`);
+      console.log(`  - 収束閾値: ${options.threshold}`);
+      if (options.focus) {
+        console.log(`  - フォーカスエリア: ${options.focus}`);
+      }
+      console.log('\n調査を開始しています...\n');
+
+      const orchestrator = new DeepResearchOrchestrator();
+      const startTime = Date.now();
+
+      // AsyncGenerator を使用して反復的に結果を取得
+      for await (const state of orchestrator.research({
+        topic,
+        maxIterations: parseInt(options.iterations, 10),
+        convergenceThreshold: parseFloat(options.threshold),
+        focusAreas: options.focus ? options.focus.split(',').map(s => s.trim()) : undefined,
+      })) {
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        
+        console.log(`📊 イテレーション ${state.iteration}/${options.iterations} (${elapsed}s)`);
+        console.log(`   フェーズ: ${state.phase}`);
+        console.log(`   累計発見数: ${state.totalFindingsCount}`);
+        console.log(`   新規情報率: ${(state.noveltyRate * 100).toFixed(1)}%`);
+        console.log(`   収束スコア: ${(state.convergenceScore * 100).toFixed(1)}%`);
+        
+        if (state.gaps && state.gaps.length > 0) {
+          const gapDescriptions = state.gaps.slice(0, 3).map(g => g.description);
+          console.log(`   ギャップ: ${gapDescriptions.join(', ')}${state.gaps.length > 3 ? '...' : ''}`);
+        }
+        console.log();
+      }
+
+      // 最終結果を取得
+      const result = orchestrator.getResult();
+      const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+
+      if (!result) {
+        console.error('❌ 結果の取得に失敗しました');
+        process.exit(1);
+      }
+
+      if (options.format === 'json') {
+        console.log(JSON.stringify(result, null, 2));
+      } else {
+        console.log('━'.repeat(60));
+        console.log('🎯 Deep Research 完了\n');
+        console.log(`📈 統計:`);
+        console.log(`   - 総イテレーション: ${result.statistics.totalIterations}`);
+        console.log(`   - 総発見数: ${result.statistics.totalFindingsProcessed}`);
+        console.log(`   - 総ノード数: ${result.statistics.totalNodesCreated}`);
+        console.log(`   - 平均新規情報率: ${(result.statistics.averageNoveltyRate * 100).toFixed(1)}%`);
+        console.log(`   - 処理時間: ${totalTime}秒`);
+        
+        console.log('\n📋 主要な発見:');
+        result.keyFindings.slice(0, 10).forEach((finding, i) => {
+          console.log(`   ${i + 1}. ${finding.title}: ${finding.summary}`);
+        });
+        
+        if (result.keyFindings.length > 10) {
+          console.log(`   ... 他 ${result.keyFindings.length - 10} 件`);
+        }
+        
+        console.log('\n🔗 情報ソース:');
+        result.sources.slice(0, 5).forEach((source, i) => {
+          console.log(`   ${i + 1}. ${source.title} (${source.url})`);
+        });
+        
+        if (result.sources.length > 5) {
+          console.log(`   ... 他 ${result.sources.length - 5} 件`);
+        }
+        
+        console.log('\n💡 ヒント: --format json オプションで完全な結果を取得できます');
       }
     } catch (error) {
       console.error('❌ エラー:', error instanceof Error ? error.message : error);
