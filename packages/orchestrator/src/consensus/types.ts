@@ -1,12 +1,36 @@
 /**
- * KATASHIRO v1.2.0 - 反復合議型リサーチワークフロー 型定義
+ * KATASHIRO v1.3.0 - 反復合議型リサーチワークフロー 型定義
  * @module @nahisaho/katashiro-orchestrator/consensus
- * @version 1.2.0
+ * @version 1.3.0
  */
 
 // =============================================================================
 // 設定型
 // =============================================================================
+
+/**
+ * 後処理オプション（v1.3.0）
+ */
+export interface PostProcessorOptions {
+  /** 後処理有効化（デフォルト: true） */
+  enabled: boolean;
+  /** Mermaid優先フラグ（デフォルト: true） */
+  preferMermaid: boolean;
+  /** 元のASCII図も保持（デフォルト: false） */
+  preserveOriginal: boolean;
+  /** 変換失敗時にエラーを投げる（デフォルト: false） */
+  strictMode: boolean;
+}
+
+/**
+ * デフォルト後処理オプション
+ */
+export const DEFAULT_POST_PROCESSOR_OPTIONS: PostProcessorOptions = {
+  enabled: true,
+  preferMermaid: true,
+  preserveOriginal: false,
+  strictMode: false,
+};
 
 /**
  * 合議型リサーチ設定
@@ -26,6 +50,8 @@ export interface ConsensusResearchConfig {
   searchConfig: SearchConfig;
   /** 早期終了閾値（デフォルト: 0.05） */
   earlyTerminationThreshold: number;
+  /** 後処理オプション（v1.3.0） */
+  postProcess: PostProcessorOptions;
 }
 
 /**
@@ -52,6 +78,7 @@ export const DEFAULT_CONSENSUS_CONFIG: ConsensusResearchConfig = {
     maxResultsPerAgent: 10,
   },
   earlyTerminationThreshold: 0.05,
+  postProcess: DEFAULT_POST_PROCESSOR_OPTIONS,
 };
 
 // =============================================================================
@@ -449,4 +476,59 @@ export class ConsensusResearchError extends Error {
     super(message);
     this.name = 'ConsensusResearchError';
   }
+}
+
+// =============================================================================
+// 後処理型（v1.3.0）
+// =============================================================================
+
+/**
+ * ASCII図タイプ
+ */
+export type AsciiDiagramType = 'flowchart' | 'table' | 'tree' | 'box';
+
+/**
+ * 検出されたASCII図
+ */
+export interface AsciiDiagram {
+  /** 図のタイプ */
+  type: AsciiDiagramType;
+  /** 元のASCII図テキスト */
+  original: string;
+  /** 図の開始位置 */
+  startIndex: number;
+  /** 図の終了位置 */
+  endIndex: number;
+  /** 行番号（1-based） */
+  lineNumber: number;
+}
+
+/**
+ * 変換記録
+ */
+export interface ConversionRecord {
+  /** 元のASCII図 */
+  original: string;
+  /** 変換後の図 */
+  converted: string;
+  /** 図のタイプ */
+  type: AsciiDiagramType;
+  /** 変換成功フラグ */
+  success: boolean;
+  /** エラーメッセージ（失敗時） */
+  errorMessage?: string;
+}
+
+/**
+ * 後処理結果
+ */
+export interface PostProcessResult {
+  /** 変換後レポート */
+  processedReport: string;
+  /** 変換記録 */
+  conversions: ConversionRecord[];
+  /** 警告メッセージ */
+  warnings: string[];
+  /** 処理時間（ミリ秒） */
+  processingTimeMs: number;
 }

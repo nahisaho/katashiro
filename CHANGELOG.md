@@ -7,6 +7,127 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-01-14
+
+### Added
+
+#### @nahisaho/katashiro-orchestrator
+
+- **CascadingResearchEngine** (REQ-1.4.0-WFL-001～005): カスケード型リサーチワークフロー
+  - 5ステップ × 5エージェントのカスケード調査パターン
+  - ステップ間の情報伝播と反復的深掘り
+  - ギャップ分析と矛盾検出
+  - 早期終了判定（信頼度閾値達成時）
+  - v1.3.0の後処理機能との統合
+
+- **CascadingAgent** (REQ-1.4.0-AGT-001～002): カスケードエージェント
+  - 5つの役割（official/news/analysis/academic/community）
+  - 依存性注入（DI）パターンによるテスト容易性
+  - URL信頼度の自動推定（gov/edu/major media）
+  - 発見事項のカテゴリ分類（fact/opinion/analysis/question）
+
+- **StepExecutor** (REQ-1.4.0-STP-001): ステップ実行オーケストレーター
+  - 5エージェント並列実行
+  - タイムアウト制御
+  - イベント発行（stepStarted/stepCompleted）
+  - ソース重複除去
+
+- **StepResultIntegrator** (REQ-1.4.0-INT-001): ステップ結果統合
+  - 発見事項の重複除去と統合
+  - 矛盾検出アルゴリズム
+  - 信頼度計算
+  - 最終レポート生成
+
+- **StepContextBuilder** (REQ-1.4.0-CTX-001): ステップコンテキスト構築
+  - 前ステップ結果からのコンテキスト構築
+  - ギャップ・エンティティ・疑問点の伝播
+
+### New Types
+
+- `AgentRole`: エージェント役割（'official' | 'news' | 'analysis' | 'academic' | 'community'）
+- `StepFocus`: ステップフォーカス（'overview' | 'detail' | 'gap' | 'verify' | 'integrate'）
+- `FindingCategory`: 発見カテゴリ（'fact' | 'opinion' | 'analysis' | 'question' | 'contradiction'）
+- `Finding`: 発見事項（id/content/source/confidence/stepNumber/agentId/category）
+- `CascadingSource`: 情報ソース（url/title/fetchedAt/credibility/domain）
+- `Contradiction`: 矛盾情報（finding1/finding2/description/severity）
+- `CascadingAgentReport`: エージェントレポート
+- `StepContext`: ステップコンテキスト（前ステップ結果・ギャップ・エンティティ）
+- `StepResult`: ステップ結果（agentReports/findings/sources/gaps/confidence）
+- `CascadingResearchResult`: 最終結果
+- `CascadingResearchConfig`: 設定
+- `CascadingAgentStrategy`: エージェント戦略
+- `StepStrategyConfig`: ステップ戦略
+
+### New Constants
+
+- `DEFAULT_CASCADING_CONFIG`: デフォルト設定（5ステップ×5エージェント）
+- `DEFAULT_AGENT_STRATEGIES`: デフォルトエージェント戦略
+- `DEFAULT_STEP_STRATEGIES`: デフォルトステップ戦略
+- `DEFAULT_STEP_EXECUTOR_CONFIG`: デフォルトステップ実行設定
+- `DEFAULT_INTEGRATION_CONFIG`: デフォルト統合設定
+
+### New Utilities
+
+- `generateFindingId(stepNumber, agentId)`: 発見事項ID生成
+- `generateContradictionId()`: 矛盾ID生成
+- `calculateStepConfidence()`: ステップ信頼度計算
+- `getAgentRoleLabel()`: エージェント役割の日本語ラベル
+- `getStepFocusLabel()`: ステップフォーカスの日本語ラベル
+- `validateConfig()`: 設定バリデーション
+- `createCascadingAgents()`: エージェントファクトリー
+- `createCascadingResearchEngine()`: エンジンファクトリー
+
+### Tests
+
+- 4 new test files for v1.4.0 cascading research system
+  - types.test.ts: 型定義・ユーティリティ関数テスト
+  - CascadingAgent.test.ts: エージェントテスト
+  - StepExecutor.test.ts: ステップ実行テスト
+  - StepResultIntegrator.test.ts: 結果統合テスト
+
+## [1.3.0] - 2026-01-14
+
+### Added
+
+#### @nahisaho/katashiro-orchestrator
+
+- **AsciiDiagramConverter** (REQ-1.3.0-VIS-001): ASCII図の検出・変換
+  - テーブル検出: `+---+---+` 形式のASCIIテーブル
+  - ツリー検出: `├──`, `└──` 形式のファイルツリー
+  - ボックス検出: `┌───┐` 形式のボックス図
+  - フローチャート検出: `[A] --> [B]`, `(A) --> (B)` 形式
+  - Mermaid変換: 検出した図をMermaid記法に変換
+  - Markdown変換: テーブル・ツリーをMarkdown形式に変換
+
+- **ReportPostProcessor** (REQ-1.3.0-VIS-002): レポート後処理オーケストレーション
+  - 自動ASCII図検出と変換
+  - オプション設定: `enabled`, `preferMermaid`, `preserveOriginal`, `strictMode`
+  - 変換記録の追跡（ConversionRecord）
+  - 警告メッセージの収集
+
+- **ConsensusResearchEngine 統合** (REQ-1.3.0-INT-001): 後処理の自動実行
+  - `generateFinalReport()` で後処理を自動実行
+  - `postProcess` 設定オプションの追加
+  - バージョン表記を v1.3.0 に更新
+
+### New Types
+
+- `PostProcessorOptions`: 後処理オプション（enabled/preferMermaid/preserveOriginal/strictMode）
+- `PostProcessResult`: 後処理結果（processedReport/conversions/warnings）
+- `ConversionRecord`: 変換記録（type/original/converted/lineNumber）
+- `AsciiDiagram`: ASCII図情報（type/original/startIndex/endIndex/lineNumber）
+- `AsciiDiagramType`: 図タイプ（'table' | 'tree' | 'box' | 'flowchart'）
+
+### New Constants
+
+- `DEFAULT_POST_PROCESSOR_OPTIONS`: デフォルト後処理オプション
+
+### Tests
+
+- 25 new tests for v1.3.0 ASCII diagram conversion
+  - AsciiDiagramConverter.test.ts: 14 tests
+  - ReportPostProcessor.test.ts: 11 tests
+
 ## [1.2.0] - 2026-01-14
 
 ### Added

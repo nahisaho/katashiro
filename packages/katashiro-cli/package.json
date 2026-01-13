@@ -1,6 +1,6 @@
 {
   "name": "katashiro",
-  "version": "1.0.1",
+  "version": "1.4.0",
   "description": "KATASHIRO CLI - AI Research & Analysis Tool",
   "type": "module",
   "bin": {
@@ -35,7 +35,7 @@
     "url": "https://github.com/nahisaho/katashiro/issues"
   },
   "dependencies": {
-    "@nahisaho/katashiro": "0.7.0"
+    "@nahisaho/katashiro": "^1.2.0"
   },
   "engines": {
     "node": ">=20.0.0"

@@ -5,6 +5,7 @@
  * - 3エージェント × 3イテレーションの多視点調査
  * - レポートスコアリングと矛盾検出
  * - コンセンサスベースの最終レポート生成
+ * - ASCII図のMermaid/Markdown変換（v1.3.0）
  *
  * @packageDocumentation
  * @module consensus
@@ -19,6 +20,7 @@ export type {
   // Configuration
   ConsensusResearchConfig,
   SearchConfig,
+  PostProcessorOptions,
 
   // Report Types
   ReportScore,
@@ -40,6 +42,12 @@ export type {
   ConsensusResearchResult,
   ConsensusResearchMetadata,
 
+  // Post-Processing (v1.3.0)
+  PostProcessResult,
+  ConversionRecord,
+  AsciiDiagram,
+  AsciiDiagramType,
+
   // Events
   ConsensusResearchEvent,
   ResearchStartedEvent,
@@ -59,6 +67,7 @@ export type {
 export {
   DEFAULT_CONSENSUS_CONFIG,
   DEFAULT_AGENT_STRATEGIES,
+  DEFAULT_POST_PROCESSOR_OPTIONS,
   ConsensusResearchError,
   ConsensusResearchErrorCode,
 } from './types.js';
@@ -71,4 +80,8 @@ export { ReportScorer } from './ReportScorer.js';
 export { ConsensusSelector } from './ConsensusSelector.js';
 export { ResearchAgent } from './ResearchAgent.js';
 export { ConsensusResearchEngine } from './ConsensusResearchEngine.js';
+
+// Post-Processing (v1.3.0)
+export { AsciiDiagramConverter } from './AsciiDiagramConverter.js';
+export { ReportPostProcessor } from './ReportPostProcessor.js';
 

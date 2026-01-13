@@ -61,7 +61,10 @@ export * as orchestrator from '@nahisaho/katashiro-orchestrator';
 export { TaskDecomposer, ToolRegistry, MultiAgentOrchestrator, DialogueCollector, QuestionGenerator, IntentAnalyzer, runSimpleDialogue } from '@nahisaho/katashiro-orchestrator';
 
 // Orchestrator - Consensus Research (v1.2.0)
-export { ConsensusResearchEngine, ReportScorer, ConsensusSelector, ResearchAgent, ConsensusResearchError, ConsensusResearchErrorCode, DEFAULT_CONSENSUS_CONFIG, DEFAULT_AGENT_STRATEGIES } from '@nahisaho/katashiro-orchestrator';
+export { ConsensusResearchEngine, ReportScorer, ConsensusSelector, ResearchAgent, ConsensusResearchError, ConsensusResearchErrorCode, DEFAULT_CONSENSUS_CONFIG, CONSENSUS_AGENT_STRATEGIES as DEFAULT_AGENT_STRATEGIES } from '@nahisaho/katashiro-orchestrator';
+
+// Orchestrator - Cascading Research (v1.4.0)
+export { CascadingResearchEngine, CascadingAgent, StepExecutor, StepResultIntegrator, DEFAULT_CASCADING_CONFIG, CASCADING_AGENT_STRATEGIES, DEFAULT_STEP_STRATEGIES, createCascadingResearchEngine, createCascadingAgents } from '@nahisaho/katashiro-orchestrator';
 
 // TrendAnalyzer submodules
 export { ForecastEngine } from '@nahisaho/katashiro-analyzer';

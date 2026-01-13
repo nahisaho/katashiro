@@ -133,7 +133,7 @@ export {
   type ConsensusResearchEvent,
   // Constants
   DEFAULT_CONSENSUS_CONFIG,
-  DEFAULT_AGENT_STRATEGIES,
+  DEFAULT_AGENT_STRATEGIES as CONSENSUS_AGENT_STRATEGIES,
   ConsensusResearchError,
   ConsensusResearchErrorCode,
   // Classes
@@ -142,3 +142,57 @@ export {
   ResearchAgent,
   ConsensusResearchEngine,
 } from './consensus';
+
+// カスケード型リサーチワークフロー (REQ-v1.4.0)
+export {
+  // Types
+  type AgentRole as CascadingAgentRole,
+  type StepFocus,
+  type FindingCategory,
+  type Finding,
+  type CascadingSource,
+  type Contradiction,
+  type CascadingAgentReport,
+  type StepContext,
+  type StepResult,
+  type CascadingResearchResult,
+  type CascadingResearchConfig,
+  type CascadingAgentStrategy,
+  type StepStrategyConfig,
+  type CascadingResearchEvent,
+  type CascadingResearchEventListener,
+  type ISearchClient,
+  type IScraper,
+  type ITextAnalyzer,
+  type IEntityExtractor,
+  type CascadingAgentDependencies,
+  type CascadingAgentConfig,
+  type StepExecutorConfig,
+  type IntegrationConfig,
+  type IntegrationResult,
+  type EngineState,
+  type CascadingResearchEngineDependencies,
+  type PostProcessOptions,
+  type EarlyTerminationConfig,
+  // Constants
+  DEFAULT_CASCADING_CONFIG,
+  DEFAULT_AGENT_STRATEGIES as CASCADING_AGENT_STRATEGIES,
+  DEFAULT_STEP_STRATEGIES,
+  DEFAULT_STEP_EXECUTOR_CONFIG,
+  DEFAULT_INTEGRATION_CONFIG,
+  // Utilities
+  generateFindingId,
+  generateContradictionId,
+  calculateStepConfidence,
+  getAgentRoleLabel,
+  getStepFocusLabel,
+  validateConfig,
+  // Classes
+  CascadingAgent,
+  createCascadingAgents,
+  StepExecutor,
+  StepContextBuilder,
+  StepResultIntegrator,
+  CascadingResearchEngine,
+  createCascadingResearchEngine,
+} from './cascading';
