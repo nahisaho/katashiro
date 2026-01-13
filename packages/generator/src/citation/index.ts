@@ -8,6 +8,9 @@ export {
 
 export type {
   CitationStyle,
+  InlineCitationStyle,
+  CitationOptions,
+  InlineCitationLink,
   GeneratedCitation,
   CitationValidationResult,
   SourceInput,

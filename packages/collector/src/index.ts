@@ -180,3 +180,17 @@ export {
 // Search Cache (v0.4.3) - REQ-IMP-001
 export { SearchCache, type SearchCacheOptions } from './cache/index.js';
 
+// Real-Time Data Fetcher (v0.5.0) - REQ-EXT-RTD-001, REQ-EXT-RTD-002
+export { RealTimeDataFetcher } from './realtime-data/index.js';
+
+export type {
+  RealTimeDataSource,
+  RealTimeDataType,
+  RealTimeDataQuery,
+  RealTimeDataResult,
+  CommodityPrice,
+  StatisticsData,
+  DataPoint,
+  TimeSeriesData,
+  RealTimeDataFetcherOptions,
+} from './realtime-data/index.js';

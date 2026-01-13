@@ -4,6 +4,7 @@
  * @requirement REQ-GEN-003
  * @requirement REQ-CITE-001-ENH (v0.2.0)
  * @requirement REQ-FIX-012 (v0.2.10)
+ * @requirement REQ-EXT-CIT-001 (v0.5.0) - インライン引用リンク生成
  * @design DES-KATASHIRO-001 §2.3 Generator Container
  * @design DES-KATASHIRO-002 §3.1 CitationGenerator
  * @task TSK-033
@@ -17,12 +18,40 @@ import type { Source } from '@nahisaho/katashiro-core';
 export type CitationStyle = 'apa' | 'mla' | 'ieee' | 'chicago' | 'harvard';
 
 /**
+ * インライン引用スタイル
+ * @since 0.5.0
+ */
+export type InlineCitationStyle = 'markdown' | 'footnote' | 'endnote' | 'parenthetical';
+
+/**
  * 生成オプション
  * @since 0.2.10
  */
 export interface CitationOptions {
   readonly format?: CitationStyle;
   readonly includeAccessDate?: boolean;
+  /** インライン引用スタイル @since 0.5.0 */
+  readonly inlineStyle?: InlineCitationStyle;
+}
+
+/**
+ * インライン引用リンク
+ * @since 0.5.0
+ * @requirement REQ-EXT-CIT-001
+ */
+export interface InlineCitationLink {
+  /** 表示テキスト */
+  readonly text: string;
+  /** リンクURL */
+  readonly url: string;
+  /** Markdownフォーマット済み文字列 */
+  readonly markdown: string;
+  /** HTMLフォーマット済み文字列 */
+  readonly html: string;
+  /** ソースID */
+  readonly sourceId: string;
+  /** 引用番号（endnote/footnote用） */
+  readonly number?: number;
 }
 
 /**
@@ -301,6 +330,120 @@ export class CitationGenerator {
       default:
         return `(${this.getLastName(author)}, ${year})`;
     }
+  }
+
+  /**
+   * インライン引用リンクを生成
+   * 
+   * @requirement REQ-EXT-CIT-001
+   * @since 0.5.0
+   * 
+   * @example
+   * ```typescript
+   * const link = generator.generateInlineLink(source);
+   * // { text: 'Article Title', url: 'https://example.com', markdown: '[Article Title](https://example.com)', ... }
+   * 
+   * const footnote = generator.generateInlineLink(source, { style: 'footnote', number: 1 });
+   * // { markdown: '[^1]', ... }
+   * ```
+   */
+  generateInlineLink(
+    source: Source,
+    options?: { style?: InlineCitationStyle; number?: number }
+  ): InlineCitationLink {
+    const style = options?.style ?? 'markdown';
+    const number = options?.number;
+
+    // URLからメタデータを推測
+    const inferred = this.inferMetadataFromUrl(source.url);
+    const title = source.metadata?.title || inferred.title || this.extractTitleFromUrl(source.url);
+    const author = source.metadata?.author || inferred.organization || '';
+    const url = source.url;
+
+    // スタイルに応じたテキストとMarkdownを生成
+    let text: string;
+    let markdown: string;
+    let html: string;
+
+    switch (style) {
+      case 'markdown':
+        // [source title](URL) 形式
+        text = title;
+        markdown = `[${title}](${url})`;
+        html = `<a href="${this.escapeHtml(url)}">${this.escapeHtml(title)}</a>`;
+        break;
+
+      case 'footnote':
+        // [^1] 形式（Markdown脚注）
+        const fnNum = number ?? 1;
+        text = `[^${fnNum}]`;
+        markdown = `[^${fnNum}]`;
+        html = `<sup id="fnref:${fnNum}"><a href="#fn:${fnNum}">${fnNum}</a></sup>`;
+        break;
+
+      case 'endnote':
+        // [[1]](URL) 形式（番号付きリンク）
+        const enNum = number ?? 1;
+        text = `[${enNum}]`;
+        markdown = `[[${enNum}]](${url})`;
+        html = `<a href="${this.escapeHtml(url)}">[${enNum}]</a>`;
+        break;
+
+      case 'parenthetical':
+        // [(Author, Year)](URL) 形式
+        const date = source.metadata?.publishedAt;
+        const year = date ? new Date(date).getFullYear().toString() : 'n.d.';
+        const lastName = this.getLastName(author);
+        text = lastName ? `(${lastName}, ${year})` : `(${year})`;
+        markdown = `[${text}](${url})`;
+        html = `<a href="${this.escapeHtml(url)}">${this.escapeHtml(text)}</a>`;
+        break;
+
+      default:
+        text = title;
+        markdown = `[${title}](${url})`;
+        html = `<a href="${this.escapeHtml(url)}">${this.escapeHtml(title)}</a>`;
+    }
+
+    return {
+      text,
+      url,
+      markdown,
+      html,
+      sourceId: source.id,
+      number,
+    };
+  }
+
+  /**
+   * 複数ソースのインライン引用リンクを一括生成
+   * 
+   * @requirement REQ-EXT-CIT-001
+   * @since 0.5.0
+   */
+  generateInlineLinks(
+    sources: Source[],
+    options?: { style?: InlineCitationStyle }
+  ): InlineCitationLink[] {
+    return sources.map((source, index) => 
+      this.generateInlineLink(source, {
+        style: options?.style,
+        number: index + 1,
+      })
+    );
+  }
+
+  /**
+   * HTML特殊文字をエスケープ
+   * @private
+   */
+  private escapeHtml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   /**

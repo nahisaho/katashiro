@@ -121,6 +121,14 @@ export {
   type ExtractedClaim,
   type ClaimComparison,
   type ComparisonResult,
+  // Competitor Analyzer (v0.5.0) - REQ-EXT-CMP-001
+  CompetitorAnalyzer,
+  type CompetitorData,
+  type ComparisonDimension,
+  type ComparisonTableOptions,
+  type ComparisonTableResult,
+  type ComparisonSummary,
+  type CompetitorSwot,
 } from './comparator/index.js';
 
 // Deep Research (v0.2.3)

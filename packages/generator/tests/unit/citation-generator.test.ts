@@ -332,4 +332,131 @@ describe('CitationGenerator', () => {
       expect(result.errors.some(e => e.includes('Title'))).toBe(true);
     });
   });
+
+  /**
+   * REQ-EXT-CIT-001: Inline Citation Link Generation Tests
+   * @since 0.5.0
+   */
+  describe('generateInlineLink', () => {
+    it('should generate markdown style inline link by default', () => {
+      const link = generator.generateInlineLink(mockSource);
+      
+      expect(link.text).toBe('TypeScript入門ガイド');
+      expect(link.url).toBe('https://example.com/article');
+      expect(link.markdown).toBe('[TypeScript入門ガイド](https://example.com/article)');
+      expect(link.html).toBe('<a href="https://example.com/article">TypeScript入門ガイド</a>');
+      expect(link.sourceId).toBe('src-001');
+    });
+
+    it('should generate footnote style inline link', () => {
+      const link = generator.generateInlineLink(mockSource, { style: 'footnote', number: 3 });
+      
+      expect(link.text).toBe('[^3]');
+      expect(link.markdown).toBe('[^3]');
+      expect(link.html).toContain('fnref:3');
+      expect(link.number).toBe(3);
+    });
+
+    it('should generate endnote style inline link', () => {
+      const link = generator.generateInlineLink(mockSource, { style: 'endnote', number: 5 });
+      
+      expect(link.text).toBe('[5]');
+      expect(link.markdown).toBe('[[5]](https://example.com/article)');
+      expect(link.html).toBe('<a href="https://example.com/article">[5]</a>');
+    });
+
+    it('should generate parenthetical style inline link', () => {
+      const link = generator.generateInlineLink(mockSource, { style: 'parenthetical' });
+      
+      // getLastName returns full name for Japanese names
+      expect(link.text).toBe('(田中太郎, 2024)');
+      expect(link.markdown).toBe('[(田中太郎, 2024)](https://example.com/article)');
+      expect(link.html).toContain('(田中太郎, 2024)');
+    });
+
+    it('should handle source without author in parenthetical style', () => {
+      const sourceNoAuthor: Source = {
+        ...mockSource,
+        metadata: { title: 'タイトル', publishedAt: '2024-01-15' },
+      };
+      
+      const link = generator.generateInlineLink(sourceNoAuthor, { style: 'parenthetical' });
+      
+      // Empty author results in 'Unknown' from getLastName
+      expect(link.text).toContain('2024');
+      expect(link.markdown).toContain('2024');
+    });
+
+    it('should handle source without date in parenthetical style', () => {
+      const sourceNoDate: Source = {
+        ...mockSource,
+        metadata: { title: 'タイトル', author: '著者' },
+      };
+      
+      const link = generator.generateInlineLink(sourceNoDate, { style: 'parenthetical' });
+      
+      expect(link.text).toBe('(著者, n.d.)');
+    });
+
+    it('should escape HTML special characters', () => {
+      const sourceWithSpecialChars: Source = {
+        ...mockSource,
+        url: 'https://example.com/article?a=1&b=2',
+        metadata: { title: '<script>alert("XSS")</script>' },
+      };
+      
+      const link = generator.generateInlineLink(sourceWithSpecialChars);
+      
+      expect(link.html).not.toContain('<script>');
+      expect(link.html).toContain('&lt;script&gt;');
+      expect(link.html).toContain('&amp;');
+    });
+
+    it('should default to number 1 for footnote style without number', () => {
+      const link = generator.generateInlineLink(mockSource, { style: 'footnote' });
+      
+      expect(link.markdown).toBe('[^1]');
+    });
+  });
+
+  describe('generateInlineLinks', () => {
+    it('should generate links for multiple sources with incremental numbers', () => {
+      const sources: Source[] = [
+        mockSource,
+        {
+          id: 'src-002',
+          url: 'https://example.com/article2',
+          metadata: { title: 'Second Article', author: '田中太郎' },
+          fetchedAt: new Date().toISOString(),
+        },
+        {
+          id: 'src-003',
+          url: 'https://example.com/article3',
+          metadata: { title: 'Third Article' },
+          fetchedAt: new Date().toISOString(),
+        },
+      ];
+
+      const links = generator.generateInlineLinks(sources);
+      
+      expect(links).toHaveLength(3);
+      expect(links[0].number).toBe(1);
+      expect(links[1].number).toBe(2);
+      expect(links[2].number).toBe(3);
+    });
+
+    it('should apply style to all links', () => {
+      const sources: Source[] = [mockSource];
+
+      const links = generator.generateInlineLinks(sources, { style: 'endnote' });
+      
+      expect(links[0].markdown).toBe('[[1]](https://example.com/article)');
+    });
+
+    it('should handle empty sources array', () => {
+      const links = generator.generateInlineLinks([]);
+      
+      expect(links).toHaveLength(0);
+    });
+  });
 });

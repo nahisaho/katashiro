@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-workspace",
-  "version": "0.4.4",
+  "version": "0.5.0",
   "description": "KATASHIRO Workspace Management - Unified workspace interface for file operations",
   "type": "module",
   "main": "./dist/index.js",

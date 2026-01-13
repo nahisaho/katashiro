@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-01-13
+
+### Added
+
+#### @nahisaho/katashiro-generator
+- **generateInlineLink()** (REQ-EXT-CIT-001): インライン引用リンク生成
+  - `[source](URL)` 形式のMarkdownリンク生成
+  - 複数スタイル対応: markdown, footnote, endnote, parenthetical
+  - HTML出力（XSSエスケープ対応）
+  - **generateInlineLinks()**: 複数ソース一括生成
+  - 新しい型: `InlineCitationStyle`, `InlineCitationLink`
+
+#### @nahisaho/katashiro-collector
+- **RealTimeDataFetcher** (REQ-EXT-RTD-001, REQ-EXT-RTD-002): リアルタイムデータ取得
+  - コモディティ価格取得: 銅、金、銀、原油、リチウム等
+  - データソース対応: LME, USGS, COMEX, WTI, Brent
+  - 統計データ取得: JOGMEC, IEA, JETRO, World Bank, IMF, OECD
+  - キャッシュ機能（TTL付き）
+  - **fetchCommodityPrice()**: 単一コモディティ価格取得
+  - **fetchCommodityPrices()**: 複数コモディティ一括取得
+  - **fetchStatistics()**: 統計データ取得
+  - 新しい型: `CommodityPrice`, `StatisticsData`, `TimeSeriesData`
+
+#### @nahisaho/katashiro-analyzer
+- **CompetitorAnalyzer** (REQ-EXT-CMP-001): 競合比較分析
+  - **generateComparisonTable()**: 比較表生成（Markdown/HTML/CSV/JSON）
+  - **generateSwotMatrix()**: SWOT分析マトリクス生成
+  - **generatePositioningData()**: ポジショニングマップデータ生成
+  - ハイライト機能（最高値/最低値マーキング）
+  - サマリー自動生成（リーダー企業、主要差異）
+  - 新しい型: `CompetitorData`, `ComparisonTableResult`, `CompetitorSwot`
+
+### Changed
+- CitationGenerator: 新しいインライン引用スタイルオプション追加
+- 型エクスポート拡張: `InlineCitationStyle`, `CitationOptions`, `InlineCitationLink`
+
+### Tests
+- テスト追加: 86ケース（citation: 14, realtime: 24, competitor: 23, その他25）
+- 総テスト数: 1609 → 1667（+58）
+
 ## [0.4.3] - 2026-01-13
 
 ### Added

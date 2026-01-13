@@ -999,11 +999,11 @@ M365 CopilotとKATASHIROが同一課題（中国レアメタル輸出規制問�
 ### 8.8 実装ロードマップ
 
 ```
-Phase 1 (v0.5.0) - 2026 Q1
-├── REQ-EXT-CIT-001: インライン引用生成
-├── REQ-EXT-RTD-001: 価格データ取得
-├── REQ-EXT-RTD-002: 統計データ取得
-└── REQ-EXT-CMP-001: 競合比較表生成
+Phase 1 (v0.5.0) - 2026 Q1 ✅ **完了**
+├── REQ-EXT-CIT-001: インライン引用生成 ✅ CitationGenerator.generateInlineLink()
+├── REQ-EXT-RTD-001: 価格データ取得 ✅ RealTimeDataFetcher.fetchCommodityPrice()
+├── REQ-EXT-RTD-002: 統計データ取得 ✅ RealTimeDataFetcher.fetchStatistics()
+└── REQ-EXT-CMP-001: 競合比較表生成 ✅ CompetitorAnalyzer.generateComparisonTable()
 
 Phase 2 (v0.6.0) - 2026 Q2
 ├── REQ-EXT-FCK-001: ファクトチェック
@@ -1048,6 +1048,7 @@ Phase 4 (v1.0.0) - 2026 Q4
 | 1.2 | 2026-01-13 | 全クラスレビューによる要件追加（Collector 3件、Analyzer 4件、Generator 6件、Knowledge 2件）、52要件に拡充 | GitHub Copilot |
 | 1.3 | 2026-01-13 | M365 Copilot比較に基づく拡張要件21件追加（セクション8）、実装ロードマップ策定、73要件に拡充 | GitHub Copilot |
 | 1.4 | 2026-01-13 | レビュー結果に基づく修正: REQ-IMP-001〜004実装状態更新、Extension要件と既存実装の関係明確化、カバレッジ78%に更新 | GitHub Copilot |
+| 1.5 | 2026-01-13 | Phase 1 (v0.5.0)完了: REQ-EXT-CIT-001, REQ-EXT-RTD-001/002, REQ-EXT-CMP-001を実装、カバレッジ83%に更新 | GitHub Copilot |
 
 ---
 
