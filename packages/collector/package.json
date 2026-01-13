@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-collector",
-  "version": "0.3.1",
+  "version": "0.3.3",
   "description": "KATASHIRO Collector - 情報収集パッケージ",
   "type": "module",
   "main": "./dist/index.js",

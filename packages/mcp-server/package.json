@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-mcp-server",
-  "version": "0.3.1",
+  "version": "0.3.3",
   "description": "KATASHIRO MCP Server - Model Context Protocol server for AI-powered research",
   "type": "module",
   "main": "./dist/index.js",

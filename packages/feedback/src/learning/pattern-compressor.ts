@@ -21,6 +21,8 @@ export interface PatternCompressorConfig {
   readonly maxMergeDepth: number;
   /** v0.3.0: タイプ別最小パターン数 */
   readonly minPatternsPerType: number;
+  /** v0.3.2: タイプ別最小保持率（0.0-1.0）*/
+  readonly minRetentionRatioPerType: number;
   /** v0.3.0: 動的閾値調整を有効化 */
   readonly dynamicThreshold: boolean;
   /** v0.3.0: 多様性優先モード */
@@ -29,12 +31,14 @@ export interface PatternCompressorConfig {
 
 /**
  * デフォルト設定
+ * v0.3.2: タイプバランスド圧縮の強化
  */
 const DEFAULT_CONFIG: PatternCompressorConfig = {
   minCompressionRatio: 1.05,   // v0.3.1: より積極的な圧縮
-  similarityThreshold: 0.4,    // v0.3.1: 閾値を下げてマージ促進
+  similarityThreshold: 0.45,   // v0.3.2: 閾値を適度に調整（過度なマージ防止）
   maxMergeDepth: 3,
-  minPatternsPerType: 2,       // v0.3.0: タイプ別最低2パターン保証
+  minPatternsPerType: 3,       // v0.3.2: タイプ別最低3パターン保証（2→3）
+  minRetentionRatioPerType: 0.5, // v0.3.2: タイプ別最小保持率50%
   dynamicThreshold: true,      // v0.3.0: 動的閾値ON
   preserveDiversity: true,     // v0.3.0: 多様性優先ON
 };
@@ -155,7 +159,8 @@ export class PatternCompressor {
   }
 
   /**
-   * 多様性を保持しながらグループをマージ（v0.3.0）
+   * 多様性を保持しながらグループをマージ
+   * v0.3.2: minRetentionRatioPerTypeで最小保持率を保証
    */
   private mergeGroupsWithDiversity(
     groups: LearnedPattern[][],
@@ -164,6 +169,10 @@ export class PatternCompressor {
   ): LearnedPattern[] {
     const result: LearnedPattern[] = [];
     const minPatterns = this.config.minPatternsPerType;
+    
+    // v0.3.2: 最小保持率に基づく最小パターン数を計算
+    const minByRatio = Math.ceil(originalCount * this.config.minRetentionRatioPerType);
+    const effectiveMinPatterns = Math.max(minPatterns, minByRatio);
     
     // 品質順にグループをソート
     const sortedGroups = groups
@@ -185,7 +194,17 @@ export class PatternCompressor {
             if (subGroup.length === 1 && subGroup[0]) {
               result.push(subGroup[0]);
             } else if (subGroup.length > 1) {
-              result.push(this.mergePatterns(subGroup));
+              // v0.3.2: 保持率チェック - effectiveMinPatternsを超えそうなら分割保持
+              if (result.length + 1 < effectiveMinPatterns && subGroup.length >= 2) {
+                // 品質上位2つを個別に保持
+                const sorted = [...subGroup].sort((a, b) => b.quality - a.quality);
+                result.push(sorted[0]!);
+                if (sorted[1] && result.length < effectiveMinPatterns) {
+                  result.push(sorted[1]);
+                }
+              } else {
+                result.push(this.mergePatterns(subGroup));
+              }
             }
           }
         } else {
@@ -194,8 +213,8 @@ export class PatternCompressor {
       }
     }
     
-    // 最小パターン数を保証
-    if (result.length < minPatterns && originalCount >= minPatterns) {
+    // v0.3.2: effectiveMinPatternsを保証
+    if (result.length < effectiveMinPatterns && originalCount >= effectiveMinPatterns) {
       // 削除されたパターンを品質順に復活
       const missing = groups
         .flat()
@@ -203,7 +222,7 @@ export class PatternCompressor {
         .sort((a, b) => b.quality - a.quality);
       
       let i = 0;
-      while (result.length < minPatterns && i < missing.length) {
+      while (result.length < effectiveMinPatterns && i < missing.length) {
         result.push(missing[i]!);
         i++;
       }
@@ -309,7 +328,7 @@ export class PatternCompressor {
 
   /**
    * パターン間の類似度を計算
-   * v0.3.1: ドメインベースの類似度を追加
+   * v0.3.2: コンテキストキーマッチボーナスを追加
    */
   calculateSimilarity(a: LearnedPattern, b: LearnedPattern): number {
     // タイプが異なれば類似度0
@@ -321,6 +340,13 @@ export class PatternCompressor {
     const sameDomain = domainA && domainB && domainA === domainB;
     const domainBonus = sameDomain ? 0.3 : 0;
 
+    // v0.3.2: コンテキストキーマッチボーナス
+    // 同じキー（domain:, source:, intent: など）を持つ場合にボーナス
+    const keysA = new Set(a.contexts.map(c => c.split(':')[0]));
+    const keysB = new Set(b.contexts.map(c => c.split(':')[0]));
+    const commonKeys = [...keysA].filter(k => keysB.has(k));
+    const keyMatchBonus = commonKeys.length > 0 ? Math.min(commonKeys.length * 0.1, 0.2) : 0;
+
     // 入力テンプレートの類似度
     const inputSim = this.stringSimilarity(a.inputTemplate, b.inputTemplate);
 
@@ -330,9 +356,9 @@ export class PatternCompressor {
     // コンテキストの重複度
     const contextOverlap = this.calculateContextOverlap(a.contexts, b.contexts);
 
-    // v0.3.1: 重み付き平均 + ドメインボーナス
-    const baseSim = inputSim * 0.35 + outputSim * 0.25 + contextOverlap * 0.4;
-    return Math.min(baseSim + domainBonus, 1.0);
+    // v0.3.2: 重み付き平均 + ドメインボーナス + キーマッチボーナス
+    const baseSim = inputSim * 0.3 + outputSim * 0.25 + contextOverlap * 0.45;
+    return Math.min(baseSim + domainBonus + keyMatchBonus, 1.0);
   }
 
   /**

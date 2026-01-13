@@ -514,23 +514,23 @@ export class WakeSleepCycle {
     // 3. テンプレート構造マッチング
     const structureScore = this.calculateStructureMatchScore(pattern.inputTemplate, inputLower);
 
-    // 4. 品質・頻度ブースト
-    const qualityBoost = pattern.quality * 0.15;
-    const frequencyBoost = Math.min(Math.log10(pattern.frequency + 1) / 3, 0.15);
+    // 4. 品質ブースト（v0.3.3: さらに増加）
+    const qualityBoost = pattern.quality * 0.40;
 
     // 5. 鮮度ブースト（日数経過でペナルティ）
     const daysSinceUse = (Date.now() - new Date(pattern.lastUsedAt).getTime()) / (1000 * 60 * 60 * 24);
-    const freshnessMultiplier = Math.exp(-daysSinceUse / 7); // 7日で急激に減衰
+    // v0.3.3: 0.8日で減衰（非常に積極的な差別化）
+    const freshnessMultiplier = Math.exp(-daysSinceUse / 0.8);
 
-    // v0.3.1: より多様なスコア分布のための重み調整
-    // 品質による大きな差別化（0.5-1.5の範囲）
-    const qualityMultiplier = 0.5 + pattern.quality;
+    // v0.3.3: より多様なスコア分布のための重み調整
+    // 品質による大きな差別化（0.0-2.8の範囲）
+    const qualityMultiplier = pattern.quality * 2.8;
     
     // 頻度による緩やかなボーナス
-    const frequencyBonus = Math.min(Math.log10(pattern.frequency + 1) / 4, 0.2);
+    const frequencyBonus = Math.min(Math.log10(pattern.frequency + 1) / 4, 0.25);
     
-    // ベーススコア計算（キーワード重視）
-    const rawScore = keywordScore * 0.5 + contextScore * 0.25 + structureScore * 0.15;
+    // ベーススコア計算（キーワード重視75%）
+    const rawScore = keywordScore * 0.75 + contextScore * 0.15 + structureScore * 0.10;
     
     // 品質・鮮度で大きく差別化
     const score = rawScore * qualityMultiplier * freshnessMultiplier + frequencyBonus + qualityBoost;
@@ -894,8 +894,8 @@ export class WakeSleepCycle {
 
     const now = formatTimestamp(new Date());
 
-    // 品質を更新（指数移動平均）
-    const alpha = 0.3; // 新しいフィードバックの重み
+    // v0.3.3: 品質を更新（指数移動平均、係数さらに増加）
+    const alpha = 0.5; // 新しいフィードバックの重み（0.4→0.5）
     pattern.quality = pattern.quality * (1 - alpha) + feedback.rating * alpha;
 
     // 頻度を更新
@@ -981,12 +981,12 @@ export class WakeSleepCycle {
       rating = executionResult.outputQuality;
     }
 
-    // 実行時間によるペナルティ/ボーナス
+    // v0.3.2: 実行時間によるペナルティ/ボーナス（係数増加）
     if (executionResult.executionTimeMs !== undefined) {
       if (executionResult.executionTimeMs < 100) {
-        rating += 0.05; // 高速実行ボーナス
+        rating += 0.08; // 高速実行ボーナス（増加）
       } else if (executionResult.executionTimeMs > 5000) {
-        rating -= 0.1; // 低速ペナルティ
+        rating -= 0.15; // 低速ペナルティ（増加）
       }
     }
 
@@ -1018,8 +1018,8 @@ export class WakeSleepCycle {
   }
 
   /**
-   * パターンの改善提案を取得（v0.3.0）
-   * v0.3.1: type, quality情報も含める
+   * パターンの改善提案を取得
+   * v0.3.2: reason, action, impactフィールドを追加
    */
   getSuggestions(): Array<{
     patternId: string;
@@ -1028,6 +1028,9 @@ export class WakeSleepCycle {
     issue: string;
     suggestion: string;
     priority: 'high' | 'medium' | 'low';
+    reason: string;
+    action: string;
+    impact: 'critical' | 'significant' | 'minor';
   }> {
     const suggestions: Array<{
       patternId: string;
@@ -1036,6 +1039,9 @@ export class WakeSleepCycle {
       issue: string;
       suggestion: string;
       priority: 'high' | 'medium' | 'low';
+      reason: string;
+      action: string;
+      impact: 'critical' | 'significant' | 'minor';
     }> = [];
 
     for (const pattern of this.library.values()) {
@@ -1048,6 +1054,9 @@ export class WakeSleepCycle {
           issue: `品質スコアが低い (${pattern.quality.toFixed(2)})`,
           suggestion: 'より多くの成功例でトレーニングするか、テンプレートを改善してください',
           priority: 'high',
+          reason: `品質${pattern.quality.toFixed(2)}は閾値0.4を下回っており、マッチング精度に影響します`,
+          action: '成功例の追加 または テンプレートの具体化',
+          impact: 'critical',
         });
       }
 
@@ -1060,6 +1069,9 @@ export class WakeSleepCycle {
           issue: `使用頻度が低い (${pattern.frequency}回)`,
           suggestion: 'このパターンの使用ケースを増やすか、削除を検討してください',
           priority: 'medium',
+          reason: `使用回数${pattern.frequency}回は十分なデータ量に達していません`,
+          action: '類似入力での使用 または パターン削除',
+          impact: 'minor',
         });
       }
 
@@ -1073,6 +1085,9 @@ export class WakeSleepCycle {
           issue: `${Math.floor(daysSinceUse)}日間未使用`,
           suggestion: 'このパターンが必要かどうか確認し、不要なら削除してください',
           priority: 'low',
+          reason: `${Math.floor(daysSinceUse)}日間未使用のパターンは陳腐化している可能性があります`,
+          action: 'パターンの有効性確認 または 削除',
+          impact: 'minor',
         });
       }
 
@@ -1085,6 +1100,9 @@ export class WakeSleepCycle {
           issue: `テンプレートが汎用的すぎる (${pattern.holes}個のホール)`,
           suggestion: 'より具体的なテンプレートに分割することを検討してください',
           priority: 'medium',
+          reason: `${pattern.holes}個のホールはマッチング精度を低下させ、出力品質に影響します`,
+          action: 'テンプレート分割 または コンテキスト追加',
+          impact: 'significant',
         });
       }
     }
