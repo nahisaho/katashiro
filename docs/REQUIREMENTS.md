@@ -1,9 +1,9 @@
 # KATASHIRO 要件仕様書（EARS形式）
 
-**文書バージョン**: 1.2  
+**文書バージョン**: 1.3  
 **作成日**: 2026-01-13  
 **最終更新**: 2026-01-13  
-**基準**: テスト結果（1589テスト Pass）およびコードベースレビューに基づく
+**基準**: テスト結果（1609テスト Pass）、コードベースレビュー、M365 Copilot比較分析に基づく
 
 ---
 
@@ -719,9 +719,9 @@
 ## 6. テスト結果サマリー
 
 ```
-Test Files  : 81 passed (81)
-Tests       : 1589 passed | 4 skipped (1593)
-Duration    : 6.12s
+Test Files  : 82 passed (82)
+Tests       : 1609 passed | 4 skipped (1613)
+Duration    : 6.5s
 ```
 
 ### カバレッジ
@@ -738,8 +738,9 @@ Duration    : 6.12s
 | Browser | 1 | 1 | 100% |
 | Security | 2 | 2 | 100% |
 | Workspace | 1 | 1 | 100% |
-| Improvement | 4 | 1 | 25% |
-| **Total** | **52** | **49** | **94%** |
+| Improvement | 4 | 4 | 100% |
+| Extension | 21 | 0 | 0% |
+| **Total** | **73** | **52** | **71%** |
 
 ---
 
@@ -754,16 +755,266 @@ Duration    : 6.12s
 | **MoA** | Mixture of Agents - 複数のLLMエージェントを組み合わせて高品質な出力を生成する手法 |
 | **MUSUBIX** | 対話型情報収集システムのリファレンス実装 |
 | **Action-Observation** | ツール実行のための型安全なインターフェースパターン |
+| **FactChecker** | 複数ソースを用いた事実検証機能 |
+| **RealTimeDataFetcher** | リアルタイムの市場・統計データ取得機能 |
+| **CompetitorAnalyzer** | 競合企業の分析・比較機能 |
 
 ---
 
-## 8. 改訂履歴
+## 8. M365 Copilot比較に基づく拡張要件
+
+**追記日**: 2026-01-13  
+**基準**: M365 CopilotとKATASHIROのレポート生成機能比較分析結果
+
+### 8.1 背景
+
+M365 CopilotとKATASHIROが同一課題（中国レアメタル輸出規制問題）で生成したレポートを比較分析した結果、KATASHIROに不足している機能を特定した。
+
+#### 比較サマリー
+
+| 項目 | M365 Copilot | KATASHIRO | ギャップ |
+|------|-------------|-----------|---------|
+| インライン引用 | ✅ 本文中にリンク埋め込み | ❌ 付録にまとめて記載 | 高 |
+| ファクトチェック | ✅ 複数ソース参照 | ❌ 単一視点 | 高 |
+| リアルタイムデータ | ✅ 最新価格データ取得 | ❌ 静的データのみ | 高 |
+| 競合分析 | ✅ 詳細比較表 | △ 簡易的 | 中 |
+| ビジュアル | ✅ 画像埋め込み | △ ASCIIのみ | 中 |
+| アクションプラン | △ 概要レベル | ✅ 詳細（担当・期限・予算） | KATASHIROの強み |
+| KPI設定 | △ なし | ✅ 各フェーズで設定 | KATASHIROの強み |
+| 文書管理 | △ なし | ✅ メタデータ完備 | KATASHIROの強み |
+
+---
+
+### 8.2 インライン引用生成機能（InlineCitationGenerator）
+
+#### REQ-EXT-CIT-001: インライン引用リンク自動生成
+**[Ubiquitous]**
+> The **CitationGenerator** shall generate inline citation links in the format `[\[source\]](URL)` for each factual statement.
+
+**優先度**: 高  
+**根拠**: M365 Copilotは本文中に多数のインライン引用を埋め込み、読者が情報を検証可能にしている。
+
+#### REQ-EXT-CIT-002: 引用形式オプション
+**[Optional]**
+> Where citation style is configured, the **CitationGenerator** shall support inline, footnote, and endnote citation styles.
+
+**優先度**: 中
+
+#### REQ-EXT-CIT-003: 引用元アクセシビリティ検証
+**[Event-driven]**
+> When a citation URL is added, the **CitationGenerator** shall verify URL accessibility and retrieve the page title within 3 seconds.
+
+**優先度**: 中
+
+#### REQ-EXT-CIT-004: 引用エラー処理
+**[Unwanted]**
+> If a citation URL is inaccessible, then the **CitationGenerator** shall mark the citation as "[未検証]" and log the error.
+
+**優先度**: 中
+
+---
+
+### 8.3 ファクトチェック機能（FactChecker）
+
+#### REQ-EXT-FCK-001: 複数ソース検証
+**[Event-driven]**
+> When a factual statement is generated, the **FactChecker** shall cross-reference the statement with at least 2 independent sources.
+
+**優先度**: 高  
+**根拠**: M365 Copilotは複数ソースからの情報を統合し、信頼性を担保している。
+
+#### REQ-EXT-FCK-002: 信頼度スコア付与
+**[Ubiquitous]**
+> The **FactChecker** shall assign a confidence score (0-100) to each factual statement based on source agreement.
+
+**優先度**: 中
+
+#### REQ-EXT-FCK-003: 矛盾情報検出
+**[Event-driven]**
+> When sources provide conflicting information, the **FactChecker** shall flag the discrepancy and present multiple viewpoints.
+
+**優先度**: 中
+
+#### REQ-EXT-FCK-004: 未検証情報表示
+**[State-driven]**
+> While a statement remains unverified, the **FactChecker** shall display a visual indicator "[要検証]" next to the statement.
+
+**優先度**: 低
+
+---
+
+### 8.4 リアルタイムデータ取得機能（RealTimeDataFetcher）
+
+#### REQ-EXT-RTD-001: 商品価格データ取得
+**[Event-driven]**
+> When a commodity price is referenced, the **RealTimeDataFetcher** shall fetch the latest price from market data providers (e.g., USGS, LME).
+
+**優先度**: 高  
+**根拠**: M365 Copilotは「Gaの国際価格は約3倍に跳ね上がり」等の具体的数値を含む。
+
+#### REQ-EXT-RTD-002: 統計データ取得
+**[Event-driven]**
+> When statistical data is required, the **RealTimeDataFetcher** shall retrieve data from institutional sources (JOGMEC, IEA, JETRO).
+
+**優先度**: 高
+
+#### REQ-EXT-RTD-003: データ鮮度表示
+**[Ubiquitous]**
+> The **RealTimeDataFetcher** shall display the data retrieval timestamp for all real-time data.
+
+**優先度**: 中
+
+#### REQ-EXT-RTD-004: データ取得失敗処理
+**[Unwanted]**
+> If real-time data retrieval fails, then the **RealTimeDataFetcher** shall use cached data with age indicator, or display "データ取得不可".
+
+**優先度**: 中
+
+#### REQ-EXT-RTD-005: APIレート制限対応
+**[State-driven]**
+> While API rate limits are exceeded, the **RealTimeDataFetcher** shall queue requests and retry after limit reset.
+
+**優先度**: 低
+
+---
+
+### 8.5 競合分析機能（CompetitorAnalyzer）
+
+#### REQ-EXT-CMP-001: 競合比較表自動生成
+**[Event-driven]**
+> When competitor analysis is requested, the **CompetitorAnalyzer** shall generate a structured comparison table with strategies, strengths, and weaknesses.
+
+**優先度**: 高  
+**根拠**: M365 Copilotはトヨタ・ホンダ・日産・テスラの詳細比較表を自動生成している。
+
+#### REQ-EXT-CMP-002: 競合情報自動収集
+**[Event-driven]**
+> When a competitor is specified, the **CompetitorAnalyzer** shall collect press releases, financial data, and news articles.
+
+**優先度**: 中
+
+#### REQ-EXT-CMP-003: 差別化ポイント抽出
+**[Ubiquitous]**
+> The **CompetitorAnalyzer** shall identify and highlight key differentiators between target and competitor companies.
+
+**優先度**: 中
+
+#### REQ-EXT-CMP-004: 継続モニタリング
+**[Optional]**
+> Where continuous monitoring is enabled, the **CompetitorAnalyzer** shall track competitor announcements and update analysis periodically.
+
+**優先度**: 低
+
+---
+
+### 8.6 ビジュアル生成機能拡張（VisualizationGenerator）
+
+#### REQ-EXT-VIS-001: チャート生成
+**[Event-driven]**
+> When numerical data is presented, the **VisualizationGenerator** shall generate appropriate charts (bar, line, pie) in SVG or PNG format.
+
+**優先度**: 中  
+**根拠**: M365 CopilotはBase64エンコード画像をレポートに埋め込んでいる。
+
+#### REQ-EXT-VIS-002: フローチャート生成
+**[Event-driven]**
+> When a process is described, the **VisualizationGenerator** shall generate flowcharts in Mermaid or SVG format.
+
+**優先度**: 中
+
+#### REQ-EXT-VIS-003: ASCII図表高度化
+**[Ubiquitous]**
+> The **VisualizationGenerator** shall generate ASCII diagrams with improved Unicode box-drawing characters and alignment.
+
+**優先度**: 低
+
+#### REQ-EXT-VIS-004: Base64画像埋め込み
+**[Optional]**
+> Where image embedding is enabled, the **VisualizationGenerator** shall embed Base64 encoded images in Markdown output.
+
+**優先度**: 低
+
+---
+
+### 8.7 拡張要件優先度マトリクス
+
+| 優先度 | 要件ID | 機能 | 概要 |
+|-------|--------|------|------|
+| **高** | REQ-EXT-CIT-001 | 引用 | インライン引用リンク生成 |
+| **高** | REQ-EXT-FCK-001 | 検証 | 複数ソース検証 |
+| **高** | REQ-EXT-RTD-001 | データ | 商品価格取得 |
+| **高** | REQ-EXT-RTD-002 | データ | 統計データ取得 |
+| **高** | REQ-EXT-CMP-001 | 競合 | 比較表生成 |
+| 中 | REQ-EXT-CIT-002 | 引用 | 形式オプション |
+| 中 | REQ-EXT-CIT-003 | 引用 | アクセシビリティ検証 |
+| 中 | REQ-EXT-CIT-004 | 引用 | エラー処理 |
+| 中 | REQ-EXT-FCK-002 | 検証 | 信頼度スコア |
+| 中 | REQ-EXT-FCK-003 | 検証 | 矛盾検出 |
+| 中 | REQ-EXT-RTD-003 | データ | 鮮度表示 |
+| 中 | REQ-EXT-RTD-004 | データ | 失敗処理 |
+| 中 | REQ-EXT-CMP-002 | 競合 | 情報収集 |
+| 中 | REQ-EXT-CMP-003 | 競合 | 差別化抽出 |
+| 中 | REQ-EXT-VIS-001 | ビジュアル | チャート生成 |
+| 中 | REQ-EXT-VIS-002 | ビジュアル | フローチャート |
+| 低 | REQ-EXT-FCK-004 | 検証 | 未検証表示 |
+| 低 | REQ-EXT-RTD-005 | データ | レート制限 |
+| 低 | REQ-EXT-CMP-004 | 競合 | モニタリング |
+| 低 | REQ-EXT-VIS-003 | ビジュアル | ASCII高度化 |
+| 低 | REQ-EXT-VIS-004 | ビジュアル | 画像埋め込み |
+
+---
+
+### 8.8 実装ロードマップ
+
+```
+Phase 1 (v0.5.0) - 2026 Q1
+├── REQ-EXT-CIT-001: インライン引用生成
+├── REQ-EXT-RTD-001: 価格データ取得
+├── REQ-EXT-RTD-002: 統計データ取得
+└── REQ-EXT-CMP-001: 競合比較表生成
+
+Phase 2 (v0.6.0) - 2026 Q2
+├── REQ-EXT-FCK-001: ファクトチェック
+├── REQ-EXT-CIT-003: 引用元検証
+├── REQ-EXT-FCK-002: 信頼度スコア
+└── REQ-EXT-VIS-001: チャート生成
+
+Phase 3 (v0.7.0) - 2026 Q3
+├── REQ-EXT-VIS-002: フローチャート生成
+├── REQ-EXT-CMP-002: 競合情報収集
+├── その他中優先度要件
+└── パフォーマンス最適化
+
+Phase 4 (v1.0.0) - 2026 Q4
+├── 低優先度要件の実装
+├── 統合テスト
+└── GA (General Availability)
+```
+
+---
+
+### 8.9 KATASHIROの既存強み（維持すべき要件）
+
+以下はM365 Copilotより優れている点であり、引き続き維持・強化すべき機能：
+
+| 強み | 対応要件 | ステータス |
+|-----|---------|-----------|
+| 構造化アクションプラン | REQ-GENERATE-001 | ✅ 維持 |
+| 担当部門・期限・予算の明記 | REQ-GENERATE-001 | ✅ 維持 |
+| KPI設定 | REQ-GENERATE-001 | ✅ 維持 |
+| フェーズ分け（短期/中期/長期） | REQ-GENERATE-001 | ✅ 維持 |
+| 文書管理メタデータ | REQ-GENERATE-001 | ✅ 維持 |
+
+---
+
+## 9. 改訂履歴
 
 | バージョン | 日付 | 変更内容 | 作成者 |
 |-----------|------|----------|--------|
 | 1.0 | 2026-01-13 | 初版作成（10課題テスト結果に基づく） | KATASHIRO Test Suite |
 | 1.1 | 2026-01-13 | コードベースレビューに基づく要件追加（REQ-006〜012）、要件ID体系統一、トレーサビリティマトリクス拡充 | GitHub Copilot |
 | 1.2 | 2026-01-13 | 全クラスレビューによる要件追加（Collector 3件、Analyzer 4件、Generator 6件、Knowledge 2件）、52要件に拡充 | GitHub Copilot |
+| 1.3 | 2026-01-13 | M365 Copilot比較に基づく拡張要件21件追加（セクション8）、実装ロードマップ策定、73要件に拡充 | GitHub Copilot |
 
 ---
 
