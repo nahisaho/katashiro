@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-core",
-  "version": "0.7.0",
+  "version": "1.0.0",
   "description": "KATASHIRO Core - 共通型・ユーティリティ",
   "type": "module",
   "main": "./dist/index.js",
@@ -8,7 +8,8 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
   "files": [

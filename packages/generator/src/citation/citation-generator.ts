@@ -880,4 +880,464 @@ export class CitationGenerator {
       return 'Untitled';
     }
   }
+
+  // ====================
+  // 引用エラー処理 (REQ-EXT-CIT-004)
+  // ====================
+
+  /**
+   * 引用エラーの種類
+   * @since 1.0.0
+   * @requirement REQ-EXT-CIT-004
+   */
+  readonly CITATION_ERROR_LABELS = {
+    UNVERIFIED: '[未検証]',
+    URL_INACCESSIBLE: '[URL不可]',
+    METADATA_MISSING: '[情報不足]',
+    EXPIRED: '[期限切れ]',
+  } as const;
+
+  /**
+   * 引用エラー処理結果
+   * @since 1.0.0
+   * @requirement REQ-EXT-CIT-004
+   */
+  generateWithErrorHandling(
+    input: Source | SourceInput | (Source | SourceInput)[],
+    styleOrOptions: CitationStyle | CitationOptions = 'apa',
+    errorOptions?: CitationErrorOptions
+  ): CitationWithErrors {
+    const opts = errorOptions ?? {};
+    const labelUnverified = opts.labelUnverified ?? true;
+    const includeReason = opts.includeReason ?? false;
+
+    // 配列の場合
+    if (Array.isArray(input)) {
+      const results = input.map(item => this.processWithErrorHandling(item, labelUnverified, includeReason));
+      const validSources = results
+        .filter(r => r.status === 'valid' || r.status === 'warning')
+        .map(r => this.normalizeSource(r.source));
+      
+      const style = typeof styleOrOptions === 'string' 
+        ? styleOrOptions 
+        : (styleOrOptions.format ?? 'apa');
+      
+      const formatted = validSources.length > 0
+        ? this.generateBibliography(validSources, style)
+        : '';
+
+      return {
+        formatted,
+        results,
+        totalCount: input.length,
+        validCount: results.filter(r => r.status === 'valid').length,
+        warningCount: results.filter(r => r.status === 'warning').length,
+        errorCount: results.filter(r => r.status === 'error').length,
+      };
+    }
+
+    // 単一の場合
+    const result = this.processWithErrorHandling(input, labelUnverified, includeReason);
+    const style = typeof styleOrOptions === 'string' 
+      ? styleOrOptions 
+      : (styleOrOptions.format ?? 'apa');
+    
+    const source = this.normalizeSource(input);
+    const formatted = result.status !== 'error'
+      ? this.formatCitation(source, style)
+      : '';
+
+    return {
+      formatted: result.labeledFormatted ?? formatted,
+      results: [result],
+      totalCount: 1,
+      validCount: result.status === 'valid' ? 1 : 0,
+      warningCount: result.status === 'warning' ? 1 : 0,
+      errorCount: result.status === 'error' ? 1 : 0,
+    };
+  }
+
+  /**
+   * 引用エラーを検出してラベル付け
+   * @since 1.0.0
+   * @requirement REQ-EXT-CIT-004
+   */
+  private processWithErrorHandling(
+    input: Source | SourceInput,
+    labelUnverified: boolean,
+    includeReason: boolean
+  ): CitationErrorResult {
+    const errors: CitationErrorDetail[] = [];
+    const warnings: CitationErrorDetail[] = [];
+
+    // URL検証
+    const url = this.isSource(input) ? input.url : (input as SourceInput).url;
+    if (url) {
+      try {
+        new URL(url);
+      } catch {
+        errors.push({
+          type: 'invalid_url',
+          message: `Invalid URL format: ${url}`,
+          field: 'url',
+        });
+      }
+    } else {
+      warnings.push({
+        type: 'missing_url',
+        message: 'No URL provided',
+        field: 'url',
+      });
+    }
+
+    // タイトル検証
+    const title = this.isSource(input) ? input.metadata?.title : (input as SourceInput).title;
+    if (!title || title.trim() === '') {
+      errors.push({
+        type: 'missing_title',
+        message: 'Title is required',
+        field: 'title',
+      });
+    }
+
+    // 著者検証
+    const author = this.isSource(input) ? input.metadata?.author : (input as SourceInput).author;
+    if (!author) {
+      warnings.push({
+        type: 'missing_author',
+        message: 'Author information is missing',
+        field: 'author',
+      });
+    }
+
+    // 日付検証
+    const date = this.isSource(input) 
+      ? input.metadata?.publishedAt 
+      : ((input as SourceInput).publishedAt || (input as SourceInput).date);
+    if (!date) {
+      warnings.push({
+        type: 'missing_date',
+        message: 'Publication date is missing',
+        field: 'date',
+      });
+    } else {
+      const parsed = Date.parse(date);
+      if (isNaN(parsed)) {
+        warnings.push({
+          type: 'invalid_date',
+          message: `Invalid date format: ${date}`,
+          field: 'date',
+        });
+      } else if (parsed > Date.now()) {
+        warnings.push({
+          type: 'future_date',
+          message: 'Publication date is in the future',
+          field: 'date',
+        });
+      }
+    }
+
+    // ステータスを決定
+    let status: 'valid' | 'warning' | 'error';
+    let label: string | null = null;
+
+    if (errors.length > 0) {
+      status = 'error';
+      if (labelUnverified) {
+        label = this.CITATION_ERROR_LABELS.UNVERIFIED;
+      }
+    } else if (warnings.length > 0) {
+      status = 'warning';
+      if (labelUnverified && warnings.some(w => w.type === 'missing_url' || w.type === 'missing_author')) {
+        label = this.CITATION_ERROR_LABELS.METADATA_MISSING;
+      }
+    } else {
+      status = 'valid';
+    }
+
+    // ラベル付きフォーマットを生成
+    let labeledFormatted: string | undefined;
+    if (label && status !== 'error') {
+      const source = this.normalizeSource(input);
+      const style: CitationStyle = 'apa';
+      const baseFormatted = this.formatCitation(source, style);
+      const reason = includeReason && warnings.length > 0
+        ? ` (理由: ${warnings.map(w => w.message).join(', ')})`
+        : '';
+      labeledFormatted = `${label} ${baseFormatted}${reason}`;
+    }
+
+    return {
+      source: input,
+      status,
+      errors,
+      warnings,
+      label,
+      labeledFormatted,
+    };
+  }
+
+  /**
+   * URL検証付きの引用生成（非同期）
+   * @since 1.0.0
+   * @requirement REQ-EXT-CIT-004
+   * @description URLにアクセスできない場合は「[未検証]」ラベルを付与
+   */
+  async generateWithUrlVerification(
+    input: Source | SourceInput | (Source | SourceInput)[],
+    styleOrOptions: CitationStyle | CitationOptions = 'apa',
+    options?: {
+      timeout?: number;
+      retryCount?: number;
+      labelInaccessible?: boolean;
+    }
+  ): Promise<CitationWithVerificationResult> {
+    const timeout = options?.timeout ?? 3000;
+    const retryCount = options?.retryCount ?? 1;
+    const labelInaccessible = options?.labelInaccessible ?? true;
+
+    const style = typeof styleOrOptions === 'string' 
+      ? styleOrOptions 
+      : (styleOrOptions.format ?? 'apa');
+
+    const sources = Array.isArray(input) ? input : [input];
+    const results: VerificationResultDetail[] = [];
+
+    for (const source of sources) {
+      const url = this.isSource(source) ? source.url : (source as SourceInput).url;
+      
+      if (!url) {
+        // URLがない場合
+        const normalized = this.normalizeSource(source);
+        const formatted = this.formatCitation(normalized, style);
+        results.push({
+          source,
+          formatted,
+          labeledFormatted: null,
+          urlVerification: null,
+          status: 'no_url',
+        });
+        continue;
+      }
+
+      // URL検証を実行（リトライ付き）
+      let verification: UrlVerificationResult | null = null;
+      for (let attempt = 0; attempt <= retryCount; attempt++) {
+        verification = await this.verifyUrlWithTimeout(url, timeout);
+        if (verification.accessible) break;
+      }
+
+      const normalized = this.normalizeSource(source);
+      const formatted = this.formatCitation(normalized, style);
+      
+      if (verification?.accessible) {
+        results.push({
+          source,
+          formatted,
+          labeledFormatted: null,
+          urlVerification: verification,
+          status: 'verified',
+        });
+      } else {
+        const label = labelInaccessible ? this.CITATION_ERROR_LABELS.URL_INACCESSIBLE : null;
+        const labeledFormatted = label ? `${label} ${formatted}` : formatted;
+        results.push({
+          source,
+          formatted,
+          labeledFormatted,
+          urlVerification: verification,
+          status: 'unverified',
+        });
+      }
+    }
+
+    // 結合したフォーマット済み文字列を生成
+    const formattedEntries = results.map(r => r.labeledFormatted ?? r.formatted);
+    const combinedFormatted = formattedEntries.join('\n\n');
+
+    return {
+      formatted: combinedFormatted,
+      results,
+      totalCount: results.length,
+      verifiedCount: results.filter(r => r.status === 'verified').length,
+      unverifiedCount: results.filter(r => r.status === 'unverified').length,
+      noUrlCount: results.filter(r => r.status === 'no_url').length,
+    };
+  }
+
+  /**
+   * タイムアウト付きURL検証
+   */
+  private async verifyUrlWithTimeout(url: string, timeout: number): Promise<UrlVerificationResult> {
+    const startTime = Date.now();
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      const response = await fetch(url, {
+        method: 'HEAD', // HEAD リクエストで高速化
+        headers: {
+          'User-Agent': 'KATASHIRO-CitationVerifier/1.0.0',
+        },
+        signal: controller.signal,
+        redirect: 'follow',
+      });
+
+      clearTimeout(timeoutId);
+      const responseTimeMs = Date.now() - startTime;
+
+      return {
+        url,
+        accessible: response.ok,
+        title: null, // HEADリクエストではタイトル取得不可
+        statusCode: response.status,
+        responseTimeMs,
+        checkedAt: new Date(),
+        finalUrl: response.url !== url ? response.url : undefined,
+      };
+    } catch (error) {
+      const responseTimeMs = Date.now() - startTime;
+      let errorMessage = 'Unknown error';
+
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = `Timeout: Request exceeded ${timeout}ms`;
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      return {
+        url,
+        accessible: false,
+        title: null,
+        error: errorMessage,
+        responseTimeMs,
+        checkedAt: new Date(),
+      };
+    }
+  }
+
+  /**
+   * 引用リストに未検証ラベルを一括付与
+   * @since 1.0.0
+   * @requirement REQ-EXT-CIT-004
+   */
+  labelUnverifiedCitations(
+    citations: string[],
+    unverifiedIndices: number[]
+  ): string[] {
+    const unverifiedSet = new Set(unverifiedIndices);
+    return citations.map((citation, index) => {
+      if (unverifiedSet.has(index)) {
+        return `${this.CITATION_ERROR_LABELS.UNVERIFIED} ${citation}`;
+      }
+      return citation;
+    });
+  }
+}
+
+/**
+ * 引用エラー処理オプション
+ * @since 1.0.0
+ * @requirement REQ-EXT-CIT-004
+ */
+export interface CitationErrorOptions {
+  /** 未検証ラベルを付与するか */
+  labelUnverified?: boolean;
+  /** エラー理由を含めるか */
+  includeReason?: boolean;
+}
+
+/**
+ * 引用エラー詳細
+ * @since 1.0.0
+ * @requirement REQ-EXT-CIT-004
+ */
+export interface CitationErrorDetail {
+  /** エラータイプ */
+  type: 'invalid_url' | 'missing_url' | 'missing_title' | 'missing_author' | 'missing_date' | 'invalid_date' | 'future_date' | 'url_inaccessible';
+  /** エラーメッセージ */
+  message: string;
+  /** 関連フィールド */
+  field: 'url' | 'title' | 'author' | 'date';
+}
+
+/**
+ * 引用エラー処理結果（単一）
+ * @since 1.0.0
+ * @requirement REQ-EXT-CIT-004
+ */
+export interface CitationErrorResult {
+  /** 元のソース */
+  source: Source | SourceInput;
+  /** ステータス */
+  status: 'valid' | 'warning' | 'error';
+  /** エラー一覧 */
+  errors: CitationErrorDetail[];
+  /** 警告一覧 */
+  warnings: CitationErrorDetail[];
+  /** 付与されたラベル */
+  label: string | null;
+  /** ラベル付きフォーマット */
+  labeledFormatted?: string;
+}
+
+/**
+ * 引用エラー処理結果（一括）
+ * @since 1.0.0
+ * @requirement REQ-EXT-CIT-004
+ */
+export interface CitationWithErrors {
+  /** フォーマット済み引用 */
+  formatted: string;
+  /** 各ソースの結果 */
+  results: CitationErrorResult[];
+  /** 総数 */
+  totalCount: number;
+  /** 有効数 */
+  validCount: number;
+  /** 警告数 */
+  warningCount: number;
+  /** エラー数 */
+  errorCount: number;
+}
+
+/**
+ * URL検証結果詳細
+ * @since 1.0.0
+ * @requirement REQ-EXT-CIT-004
+ */
+export interface VerificationResultDetail {
+  /** 元のソース */
+  source: Source | SourceInput;
+  /** フォーマット済み引用 */
+  formatted: string;
+  /** ラベル付きフォーマット（未検証の場合） */
+  labeledFormatted: string | null;
+  /** URL検証結果 */
+  urlVerification: UrlVerificationResult | null;
+  /** ステータス */
+  status: 'verified' | 'unverified' | 'no_url';
+}
+
+/**
+ * URL検証付き引用結果
+ * @since 1.0.0
+ * @requirement REQ-EXT-CIT-004
+ */
+export interface CitationWithVerificationResult {
+  /** フォーマット済み引用（全体） */
+  formatted: string;
+  /** 各ソースの結果 */
+  results: VerificationResultDetail[];
+  /** 総数 */
+  totalCount: number;
+  /** 検証済み数 */
+  verifiedCount: number;
+  /** 未検証数 */
+  unverifiedCount: number;
+  /** URLなし数 */
+  noUrlCount: number;
 }

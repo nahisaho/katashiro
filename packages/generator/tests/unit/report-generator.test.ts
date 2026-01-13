@@ -169,4 +169,180 @@ describe('ReportGenerator', () => {
       expect(formatted).toBe('');
     });
   });
+
+  describe('generateInChunks', () => {
+    it('should generate report in chunks with callback', async () => {
+      const chunks: Array<{ type: string; content: string; progress: number }> = [];
+      
+      const result = await generator.generateInChunks({
+        title: 'テストレポート',
+        sections: [
+          { heading: 'セクション1', content: 'コンテンツ1' },
+          { heading: 'セクション2', content: 'コンテンツ2' },
+        ],
+        onChunk: async (chunk) => {
+          chunks.push({ type: chunk.type, content: chunk.content, progress: chunk.progress });
+        },
+      });
+      
+      expect(chunks.length).toBeGreaterThan(0);
+      expect(chunks[0].type).toBe('header');
+      expect(chunks[chunks.length - 1].type).toBe('footer');
+      expect(result).toContain('# テストレポート');
+      expect(result).toContain('セクション1');
+      expect(result).toContain('セクション2');
+    });
+
+    it('should include progress in each chunk', async () => {
+      const progressValues: number[] = [];
+      
+      await generator.generateInChunks({
+        title: 'テスト',
+        sections: [
+          { heading: 'S1', content: 'C1' },
+        ],
+        onChunk: (chunk) => {
+          progressValues.push(chunk.progress);
+        },
+      });
+      
+      // Progress should be increasing
+      for (let i = 1; i < progressValues.length; i++) {
+        expect(progressValues[i]).toBeGreaterThan(progressValues[i - 1]);
+      }
+      // Last chunk should have progress close to 1
+      expect(progressValues[progressValues.length - 1]).toBeCloseTo(1, 1);
+    });
+
+    it('should mark last chunk as isLast', async () => {
+      const lastFlags: boolean[] = [];
+      
+      await generator.generateInChunks({
+        title: 'テスト',
+        sections: [{ heading: 'S', content: 'C' }],
+        onChunk: (chunk) => {
+          lastFlags.push(chunk.isLast);
+        },
+      });
+      
+      expect(lastFlags.filter(f => f).length).toBe(1);
+      expect(lastFlags[lastFlags.length - 1]).toBe(true);
+    });
+
+    it('should include all sections separately', async () => {
+      const sectionNames: string[] = [];
+      
+      await generator.generateInChunks({
+        title: 'マルチセクション',
+        sections: [
+          { heading: '概要', content: '概要内容' },
+          { heading: '詳細', content: '詳細内容' },
+          { heading: '結論', content: '結論内容' },
+        ],
+        onChunk: (chunk) => {
+          if (chunk.type === 'section' && chunk.sectionName) {
+            sectionNames.push(chunk.sectionName);
+          }
+        },
+      });
+      
+      expect(sectionNames).toContain('概要');
+      expect(sectionNames).toContain('詳細');
+      expect(sectionNames).toContain('結論');
+    });
+
+    it('should delay between chunks when chunkDelayMs is set', async () => {
+      const startTime = Date.now();
+      const delayMs = 50;
+      
+      await generator.generateInChunks({
+        title: 'テスト',
+        sections: [
+          { heading: 'S1', content: 'C1' },
+          { heading: 'S2', content: 'C2' },
+        ],
+        chunkDelayMs: delayMs,
+        onChunk: () => {},
+      });
+      
+      const elapsed = Date.now() - startTime;
+      // Should have at least some delay (header + toc + 2 sections + footer = 5 chunks, 4 delays)
+      expect(elapsed).toBeGreaterThan(delayMs * 2);
+    });
+  });
+
+  describe('generateChunks (AsyncGenerator)', () => {
+    it('should yield chunks one by one', async () => {
+      const chunks: Array<{ type: string; sectionName?: string }> = [];
+      
+      for await (const chunk of generator.generateChunks({
+        title: 'ジェネレータテスト',
+        sections: [
+          { heading: '導入', content: '導入テキスト' },
+        ],
+      })) {
+        chunks.push({ type: chunk.type, sectionName: chunk.sectionName });
+      }
+      
+      expect(chunks.length).toBeGreaterThan(0);
+      expect(chunks.some(c => c.type === 'header')).toBe(true);
+      expect(chunks.some(c => c.type === 'section' && c.sectionName === '導入')).toBe(true);
+      expect(chunks.some(c => c.type === 'footer')).toBe(true);
+    });
+
+    it('should allow early termination', async () => {
+      const chunks: string[] = [];
+      
+      for await (const chunk of generator.generateChunks({
+        title: 'テスト',
+        sections: [
+          { heading: 'S1', content: 'C1' },
+          { heading: 'S2', content: 'C2' },
+          { heading: 'S3', content: 'C3' },
+        ],
+      })) {
+        chunks.push(chunk.type);
+        if (chunks.length >= 3) break; // Early termination
+      }
+      
+      expect(chunks.length).toBe(3);
+    });
+
+    it('should include entities chunk when entities data provided', async () => {
+      const chunkTypes: string[] = [];
+      
+      for await (const chunk of generator.generateChunks({
+        title: 'エンティティテスト',
+        sections: [],
+        data: {
+          entities: [
+            { name: '株式会社テスト', type: 'organization' },
+            { name: '山田太郎', type: 'person' },
+          ],
+        },
+      })) {
+        chunkTypes.push(chunk.type);
+      }
+      
+      expect(chunkTypes).toContain('entities');
+    });
+
+    it('should include sources chunk when sources provided', async () => {
+      const chunkTypes: string[] = [];
+      
+      for await (const chunk of generator.generateChunks({
+        title: 'ソーステスト',
+        sections: [],
+        data: {
+          sources: [
+            { title: 'ソース1', url: 'https://example.com/1' },
+          ],
+        },
+      })) {
+        chunkTypes.push(chunk.type);
+      }
+      
+      expect(chunkTypes).toContain('sources');
+    });
+  });
 });

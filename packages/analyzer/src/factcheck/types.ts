@@ -398,3 +398,134 @@ export type ConfidenceLevel =
   | 'moderate'     // 50-69
   | 'low'          // 30-49
   | 'very_low';    // 0-29
+
+/**
+ * 矛盾検出結果
+ * @requirement REQ-EXT-FCK-003
+ * @since 1.0.0
+ */
+export interface ConflictDetectionResult {
+  /** 矛盾が検出されたか */
+  readonly hasConflicts: boolean;
+  /** 検出された矛盾の数 */
+  readonly conflictCount: number;
+  /** 矛盾の詳細 */
+  readonly conflicts: ConflictDetail[];
+  /** 複数の観点の提示 */
+  readonly viewpoints: Viewpoint[];
+  /** 解決の推奨 */
+  readonly resolution?: ConflictResolution;
+  /** サマリー */
+  readonly summary: string;
+}
+
+/**
+ * 矛盾の詳細
+ */
+export interface ConflictDetail {
+  /** 矛盾ID */
+  readonly id: string;
+  /** 矛盾する2つのソースのエビデンス */
+  readonly conflictingSources: [Evidence, Evidence];
+  /** 矛盾のタイプ */
+  readonly conflictType: ConflictType;
+  /** 矛盾の深刻度 (1-5) */
+  readonly severity: number;
+  /** 矛盾の説明 */
+  readonly description: string;
+  /** 矛盾の解消に向けた提案 */
+  readonly suggestion?: string;
+}
+
+/**
+ * 矛盾のタイプ
+ */
+export type ConflictType =
+  | 'factual'         // 事実の矛盾
+  | 'numerical'       // 数値の矛盾
+  | 'temporal'        // 時間的矛盾
+  | 'contextual'      // コンテキストの違い
+  | 'interpretive';   // 解釈の違い
+
+/**
+ * 観点（複数視点の提示）
+ */
+export interface Viewpoint {
+  /** 観点のラベル */
+  readonly label: string;
+  /** この観点を支持するソース */
+  readonly supportingSources: Evidence[];
+  /** 主張の要約 */
+  readonly summary: string;
+  /** 信頼性スコア (0-1) */
+  readonly credibility: number;
+}
+
+/**
+ * 矛盾の解決提案
+ */
+export interface ConflictResolution {
+  /** 推奨される解釈 */
+  readonly recommendedInterpretation: string;
+  /** 追加調査が必要か */
+  readonly needsMoreResearch: boolean;
+  /** 調査すべき追加ソース */
+  readonly suggestedSources?: string[];
+  /** 理由 */
+  readonly rationale: string;
+}
+
+/**
+ * 未検証ステートメント
+ * @requirement REQ-EXT-FCK-004
+ * @since 1.0.0
+ */
+export interface UnverifiedStatement {
+  /** ステートメントID */
+  readonly id: string;
+  /** 元のテキスト */
+  readonly text: string;
+  /** ラベル（デフォルト: "[要検証]"） */
+  readonly label: string;
+  /** 未検証の理由 */
+  readonly reason: UnverificationReason;
+  /** 検証のための推奨アクション */
+  readonly suggestedActions: string[];
+  /** ステータス */
+  readonly status: VerificationStatus;
+}
+
+/**
+ * 未検証の理由
+ */
+export type UnverificationReason =
+  | 'no_sources_found'     // ソースが見つからない
+  | 'conflicting_info'     // 情報が矛盾している
+  | 'insufficient_evidence' // エビデンス不足
+  | 'timeout'              // タイムアウト
+  | 'source_unavailable'   // ソース利用不可
+  | 'unverifiable_claim';  // 検証不可能な主張
+
+/**
+ * 検証ステータス
+ */
+export type VerificationStatus =
+  | 'verified'      // 検証済み
+  | 'unverified'    // 未検証
+  | 'pending'       // 検証中
+  | 'failed';       // 検証失敗
+
+/**
+ * ラベル付きステートメント
+ * @requirement REQ-EXT-FCK-004
+ */
+export interface LabeledStatement {
+  /** 元のテキスト */
+  readonly original: string;
+  /** ラベル付きテキスト */
+  readonly labeled: string;
+  /** 検証ステータス */
+  readonly status: VerificationStatus;
+  /** 適用されたラベル（未検証の場合） */
+  readonly appliedLabel?: string;
+}

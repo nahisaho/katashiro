@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-generator",
-  "version": "0.7.0",
+  "version": "1.0.0",
   "description": "KATASHIRO Generator - コンテンツ生成パッケージ",
   "type": "module",
   "main": "./dist/index.js",
@@ -8,7 +8,8 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
   "files": [
@@ -20,7 +21,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "0.7.0"
+    "@nahisaho/katashiro-core": "1.0.0"
   },
   "author": "nahisaho",
   "license": "MIT",

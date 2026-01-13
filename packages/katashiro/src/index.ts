@@ -10,13 +10,31 @@ export type { Content, Source, ContentType, ID, Timestamp } from '@nahisaho/kata
 export * as collector from '@nahisaho/katashiro-collector';
 export { WebScraper, APIClient, APIClient as ApiClient, FeedReader, WebSearchClient, MediaExtractor, YouTubeTranscript } from '@nahisaho/katashiro-collector';
 
+// Collector - RealTimeDataFetcher (v1.0.0)
+export { RealTimeDataFetcher } from '@nahisaho/katashiro-collector';
+
+// Collector - WideResearch & DocumentParser
+export { WideResearchEngine, DocumentParser, PDFParser, DOCXParser, XLSXParser, BrowserAutomation, SearchCache } from '@nahisaho/katashiro-collector';
+
 // Analyzer - Text analysis, entities, topics
 export * as analyzer from '@nahisaho/katashiro-analyzer';
 export { TextAnalyzer, EntityExtractor, TopicModeler, RelationAnalyzer, QualityScorer, StructureAnalyzer, FrameworkAnalyzer, DeepResearchOrchestrator } from '@nahisaho/katashiro-analyzer';
 
+// Analyzer - FactChecker & CompetitorAnalyzer (v1.0.0)
+export { FactChecker, CompetitorAnalyzer } from '@nahisaho/katashiro-analyzer';
+
+// Analyzer - TrendAnalyzer, MoAEngine, CodeInterpreter
+export { TrendAnalyzer, MoAEngine, CodeInterpreter } from '@nahisaho/katashiro-analyzer';
+
 // Generator - Reports, summaries, presentations
 export * as generator from '@nahisaho/katashiro-generator';
 export { ReportGenerator, SummaryGenerator, PresentationGenerator, CitationGenerator, TemplateEngine, ExportService } from '@nahisaho/katashiro-generator';
+
+// Generator - Diagram (v1.0.0)
+export { DiagramGenerator } from '@nahisaho/katashiro-generator';
+
+// Generator - ChartGenerator & Media Generators
+export { ChartGenerator, OGPGenerator, ImageGenerator, AudioGenerator, VideoGenerator } from '@nahisaho/katashiro-generator';
 
 // Generator - Platform-specific (v0.2.0)
 export { QiitaGenerator, ZennGenerator, NoteGenerator, ArticleGenerator } from '@nahisaho/katashiro-generator';
@@ -37,3 +55,10 @@ export { FeedbackCollector, FeedbackStorage, LearningEngine, PatternDetector, Ad
 
 // Wake-Sleep Learning (v0.2.12)
 export { WakeSleepCycle, PatternQualityEvaluator, PatternCompressor } from '@nahisaho/katashiro-feedback';
+
+// Orchestrator - Multi-agent orchestration
+export * as orchestrator from '@nahisaho/katashiro-orchestrator';
+export { TaskDecomposer, ToolRegistry, MultiAgentOrchestrator, DialogueCollector, QuestionGenerator, IntentAnalyzer, runSimpleDialogue } from '@nahisaho/katashiro-orchestrator';
+
+// TrendAnalyzer submodules
+export { ForecastEngine } from '@nahisaho/katashiro-analyzer';

@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-collector",
-  "version": "0.7.0",
+  "version": "1.0.0",
   "description": "KATASHIRO Collector - 情報収集パッケージ",
   "type": "module",
   "main": "./dist/index.js",
@@ -8,7 +8,8 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
   "files": [
@@ -21,7 +22,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "0.7.0"
+    "@nahisaho/katashiro-core": "1.0.0"
   },
   "keywords": [
     "katashiro",

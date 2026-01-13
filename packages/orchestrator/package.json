@@ -1,13 +1,14 @@
 {
   "name": "@nahisaho/katashiro-orchestrator",
-  "version": "0.7.0",
+  "version": "1.0.0",
   "description": "Task decomposition, planning, and multi-agent orchestration for KATASHIRO",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "default": "./dist/index.js"
     }
   },
   "scripts": {
@@ -34,7 +35,7 @@
     "directory": "packages/orchestrator"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "0.7.0"
+    "@nahisaho/katashiro-core": "1.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

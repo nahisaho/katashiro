@@ -5,6 +5,8 @@
  * 
  * @requirement REQ-EXT-CMP-001 競合比較表生成
  * @requirement REQ-EXT-CMP-002 競合情報自動収集
+ * @requirement REQ-EXT-CMP-003 差別化ポイント抽出
+ * @requirement REQ-EXT-CMP-004 継続モニタリング
  * @since 0.5.0
  * 
  * @example
@@ -228,6 +230,132 @@ export interface CompetitorSwot {
 }
 
 /**
+ * 差別化ポイント
+ * @requirement REQ-EXT-CMP-003
+ * @since 1.0.0
+ */
+export interface DifferentiationPoint {
+  /** ポイントID */
+  readonly id: string;
+  /** カテゴリ */
+  readonly category: DifferentiationCategory;
+  /** 自社の特徴 */
+  readonly ownFeature: string;
+  /** 競合との違い */
+  readonly competitorDifference: string;
+  /** 影響度 (1-5) */
+  readonly impact: number;
+  /** 持続可能性 (1-5) */
+  readonly sustainability: number;
+  /** 推奨アクション */
+  readonly recommendedAction?: string;
+}
+
+/**
+ * 差別化カテゴリ
+ */
+export type DifferentiationCategory =
+  | 'product'        // 製品・サービス
+  | 'technology'     // 技術
+  | 'price'          // 価格
+  | 'brand'          // ブランド
+  | 'channel'        // 販売チャネル
+  | 'customer'       // 顧客層
+  | 'operations'     // オペレーション
+  | 'talent'         // 人材
+  | 'other';         // その他
+
+/**
+ * 差別化分析結果
+ * @requirement REQ-EXT-CMP-003
+ * @since 1.0.0
+ */
+export interface DifferentiationAnalysisResult {
+  /** 対象企業 */
+  readonly targetCompany: string;
+  /** 比較対象の競合企業 */
+  readonly competitors: string[];
+  /** 差別化ポイント */
+  readonly differentiators: DifferentiationPoint[];
+  /** 強みのハイライト */
+  readonly strengthHighlights: string[];
+  /** 弱みのハイライト */
+  readonly weaknessHighlights: string[];
+  /** 総合的な競争優位性スコア (0-100) */
+  readonly competitiveAdvantageScore: number;
+  /** レポート生成日時 */
+  readonly analyzedAt: string;
+}
+
+/**
+ * モニタリング設定
+ * @requirement REQ-EXT-CMP-004
+ * @since 1.0.0
+ */
+export interface MonitoringConfig {
+  /** モニタリング対象の競合企業 */
+  readonly competitors: string[];
+  /** モニタリング間隔（分） */
+  readonly intervalMinutes: number;
+  /** アラート設定 */
+  readonly alerts?: MonitoringAlertConfig;
+  /** 収集オプション */
+  readonly collectionOptions?: CompetitorIntelligenceOptions;
+  /** 有効かどうか */
+  readonly enabled: boolean;
+}
+
+/**
+ * モニタリングアラート設定
+ */
+export interface MonitoringAlertConfig {
+  /** プレスリリース検出時にアラート */
+  readonly onPressRelease?: boolean;
+  /** ネガティブニュース検出時にアラート */
+  readonly onNegativeNews?: boolean;
+  /** 特定キーワード検出時にアラート */
+  readonly keywords?: string[];
+}
+
+/**
+ * モニタリングセッション
+ * @requirement REQ-EXT-CMP-004
+ * @since 1.0.0
+ */
+export interface MonitoringSession {
+  /** セッションID */
+  readonly id: string;
+  /** 設定 */
+  readonly config: MonitoringConfig;
+  /** 開始日時 */
+  readonly startedAt: Date;
+  /** 最終更新日時 */
+  readonly lastUpdatedAt?: Date;
+  /** 収集履歴 */
+  readonly history: MonitoringUpdate[];
+  /** ステータス */
+  readonly status: 'active' | 'paused' | 'stopped';
+}
+
+/**
+ * モニタリング更新
+ */
+export interface MonitoringUpdate {
+  /** 更新日時 */
+  readonly timestamp: Date;
+  /** 更新された企業 */
+  readonly company: string;
+  /** 検出されたプレスリリース */
+  readonly newPressReleases: PressReleaseInfo[];
+  /** 検出されたニュース */
+  readonly newNews: NewsArticleInfo[];
+  /** アラートがトリガーされたか */
+  readonly alertTriggered: boolean;
+  /** アラート理由 */
+  readonly alertReason?: string;
+}
+
+/**
  * Competitor Analyzer
  */
 export class CompetitorAnalyzer {
@@ -255,7 +383,7 @@ export class CompetitorAnalyzer {
       additionalKeywords = [],
       maxPressReleases = 5,
       maxNewsArticles = 10,
-      daysBack = 30,
+      daysBack: _daysBack = 30,
       includeFinancials = true,
       language = 'ja',
     } = options;
@@ -287,7 +415,7 @@ export class CompetitorAnalyzer {
       for (const result of prResults.slice(0, maxPressReleases)) {
         pressReleases.push({
           title: result.title,
-          date: this.extractDateFromText(result.snippet ?? result.title) ?? new Date().toISOString().split('T')[0],
+          date: this.extractDateFromText(result.snippet ?? result.title) ?? new Date().toISOString().split('T')[0] ?? '2024-01-01',
           url: result.url,
           summary: result.snippet,
           category: 'general',
@@ -308,7 +436,7 @@ export class CompetitorAnalyzer {
         newsArticles.push({
           title: result.title,
           source: this.extractSource(result.url),
-          date: this.extractDateFromText(result.snippet ?? result.title) ?? new Date().toISOString().split('T')[0],
+          date: this.extractDateFromText(result.snippet ?? result.title) ?? new Date().toISOString().split('T')[0] ?? '2024-01-01',
           url: result.url,
           summary: result.snippet,
           sentiment: this.analyzeSentiment(result.title + ' ' + (result.snippet ?? '')),
@@ -436,14 +564,14 @@ export class CompetitorAnalyzer {
     const slashMatch = text.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
     if (slashMatch) {
       const [, y, m, d] = slashMatch;
-      return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      return `${y}-${(m ?? '01').padStart(2, '0')}-${(d ?? '01').padStart(2, '0')}`;
     }
 
     // 日本語形式（2024年1月15日）
     const jpMatch = text.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
     if (jpMatch) {
       const [, y, m, d] = jpMatch;
-      return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      return `${y}-${(m ?? '01').padStart(2, '0')}-${(d ?? '01').padStart(2, '0')}`;
     }
 
     return undefined;
@@ -489,7 +617,7 @@ export class CompetitorAnalyzer {
    */
   private extractFinancialData(
     results: Array<{ title: string; url: string; snippet?: string }>,
-    companyName: string
+    _companyName: string
   ): FinancialDataInfo | undefined {
     const allText = results.map(r => r.title + ' ' + (r.snippet ?? '')).join(' ');
 
@@ -510,9 +638,9 @@ export class CompetitorAnalyzer {
       revenue = `$${revenueMatchEn[1]}${revenueMatchEn[2] ? ' ' + revenueMatchEn[2] : ''}`;
     }
 
-    if (employeesMatch) {
+    if (employeesMatch && employeesMatch[1]) {
       employees = parseInt(employeesMatch[1].replace(/,/g, ''), 10);
-    } else if (employeesMatchEn) {
+    } else if (employeesMatchEn && employeesMatchEn[1]) {
       employees = parseInt(employeesMatchEn[1].replace(/,/g, ''), 10);
     }
 
@@ -912,5 +1040,462 @@ export class CompetitorAnalyzer {
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
+  }
+
+  /**
+   * 差別化ポイントを抽出
+   * @requirement REQ-EXT-CMP-003
+   * @description 対象企業と競合との主要な差別化要素を特定しハイライト
+   * @since 1.0.0
+   */
+  extractDifferentiators(
+    target: CompetitorData,
+    competitors: CompetitorData[],
+    options?: {
+      dimensions?: (string | ComparisonDimension)[];
+      minImpact?: number;
+    }
+  ): DifferentiationAnalysisResult {
+    const differentiators: DifferentiationPoint[] = [];
+    const strengthHighlights: string[] = [];
+    const weaknessHighlights: string[] = [];
+    let advantagePoints = 0;
+    let disadvantagePoints = 0;
+
+    // 使用するディメンションを正規化
+    const dims = (options?.dimensions ?? Object.keys(target).filter(k => k !== 'name'))
+      .map(d => this.normalizeDimensions([d])[0])
+      .filter((d): d is NonNullable<typeof d> => d !== undefined);
+
+    let pointId = 1;
+
+    for (const dim of dims) {
+      const targetValue = target[dim.key];
+      
+      // 数値比較可能な場合
+      if (typeof targetValue === 'number') {
+        const competitorValues = competitors.map(c => ({
+          name: c.name,
+          value: c[dim.key] as number,
+        })).filter(c => typeof c.value === 'number');
+
+        if (competitorValues.length === 0) continue;
+
+        const avgCompetitor = competitorValues.reduce((sum, c) => sum + c.value, 0) / competitorValues.length;
+        const diff = ((targetValue - avgCompetitor) / avgCompetitor * 100);
+        
+        // 差異が10%以上の場合は差別化ポイント
+        if (Math.abs(diff) >= 10) {
+          const isAdvantage = dim.higherIsBetter !== false ? diff > 0 : diff < 0;
+          const impact = Math.min(5, Math.ceil(Math.abs(diff) / 20));
+          
+          differentiators.push({
+            id: `diff-${pointId++}`,
+            category: this.inferCategory(dim.key),
+            ownFeature: `${dim.label}: ${this.formatValue(targetValue, dim)}`,
+            competitorDifference: `競合平均より${Math.abs(diff).toFixed(1)}%${diff > 0 ? '高い' : '低い'}`,
+            impact,
+            sustainability: this.estimateSustainability(dim.key, impact),
+            recommendedAction: this.generateRecommendation(dim.key, isAdvantage, diff),
+          });
+
+          if (isAdvantage) {
+            advantagePoints += impact;
+            strengthHighlights.push(`${dim.label}で競合をリード（${Math.abs(diff).toFixed(1)}%差）`);
+          } else {
+            disadvantagePoints += impact;
+            weaknessHighlights.push(`${dim.label}で競合に後れ（${Math.abs(diff).toFixed(1)}%差）`);
+          }
+        }
+      } else if (typeof targetValue === 'string' && targetValue) {
+        // 文字列の比較（存在有無）
+        const competitorsWithFeature = competitors.filter(c => c[dim.key] && c[dim.key] !== '');
+        const hasUniqueFeature = competitorsWithFeature.length === 0;
+
+        if (hasUniqueFeature) {
+          differentiators.push({
+            id: `diff-${pointId++}`,
+            category: this.inferCategory(dim.key),
+            ownFeature: `${dim.label}: ${targetValue}`,
+            competitorDifference: '競合には見られない独自の特徴',
+            impact: 4,
+            sustainability: 3,
+            recommendedAction: 'この独自性を強調してマーケティングに活用',
+          });
+          advantagePoints += 4;
+          strengthHighlights.push(`${dim.label}に独自の強み`);
+        }
+      }
+    }
+
+    // 競争優位性スコアを計算
+    const totalPoints = advantagePoints + disadvantagePoints;
+    const competitiveAdvantageScore = totalPoints > 0
+      ? Math.round((advantagePoints / totalPoints) * 100)
+      : 50;
+
+    // 影響度でソート
+    differentiators.sort((a, b) => b.impact - a.impact);
+
+    return {
+      targetCompany: target.name,
+      competitors: competitors.map(c => c.name),
+      differentiators,
+      strengthHighlights: strengthHighlights.slice(0, 5),
+      weaknessHighlights: weaknessHighlights.slice(0, 5),
+      competitiveAdvantageScore,
+      analyzedAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * 差別化分析をMarkdownレポートに変換
+   * @requirement REQ-EXT-CMP-003
+   * @since 1.0.0
+   */
+  formatDifferentiationReport(result: DifferentiationAnalysisResult): string {
+    let report = `# ${result.targetCompany} 差別化分析レポート\n\n`;
+    report += `**分析日時**: ${result.analyzedAt}\n`;
+    report += `**比較対象**: ${result.competitors.join(', ')}\n`;
+    report += `**競争優位性スコア**: ${result.competitiveAdvantageScore}/100\n\n`;
+
+    // 強みのハイライト
+    if (result.strengthHighlights.length > 0) {
+      report += `## 💪 強みのハイライト\n\n`;
+      for (const strength of result.strengthHighlights) {
+        report += `- ${strength}\n`;
+      }
+      report += '\n';
+    }
+
+    // 弱みのハイライト
+    if (result.weaknessHighlights.length > 0) {
+      report += `## ⚠️ 改善が必要な領域\n\n`;
+      for (const weakness of result.weaknessHighlights) {
+        report += `- ${weakness}\n`;
+      }
+      report += '\n';
+    }
+
+    // 差別化ポイント詳細
+    if (result.differentiators.length > 0) {
+      report += `## 📊 差別化ポイント詳細\n\n`;
+      
+      for (const diff of result.differentiators) {
+        const impactStars = '★'.repeat(diff.impact) + '☆'.repeat(5 - diff.impact);
+        report += `### ${diff.category.toUpperCase()}: ${diff.ownFeature}\n`;
+        report += `- **競合との違い**: ${diff.competitorDifference}\n`;
+        report += `- **影響度**: ${impactStars}\n`;
+        report += `- **持続可能性**: ${'●'.repeat(diff.sustainability)}${'○'.repeat(5 - diff.sustainability)}\n`;
+        if (diff.recommendedAction) {
+          report += `- **推奨アクション**: ${diff.recommendedAction}\n`;
+        }
+        report += '\n';
+      }
+    }
+
+    return report;
+  }
+
+  /**
+   * カテゴリを推測
+   */
+  private inferCategory(key: string): DifferentiationCategory {
+    const lowerKey = key.toLowerCase();
+    if (/product|製品|service|サービス/.test(lowerKey)) return 'product';
+    if (/tech|技術|patent|特許/.test(lowerKey)) return 'technology';
+    if (/price|価格|cost|コスト/.test(lowerKey)) return 'price';
+    if (/brand|ブランド|認知/.test(lowerKey)) return 'brand';
+    if (/channel|販売|流通|店舗/.test(lowerKey)) return 'channel';
+    if (/customer|顧客|ユーザー/.test(lowerKey)) return 'customer';
+    if (/operation|オペ|効率/.test(lowerKey)) return 'operations';
+    if (/talent|人材|employee|従業員/.test(lowerKey)) return 'talent';
+    return 'other';
+  }
+
+  /**
+   * 持続可能性を推定
+   */
+  private estimateSustainability(key: string, impact: number): number {
+    // 技術やブランド関連は持続性が高い
+    const category = this.inferCategory(key);
+    if (category === 'technology' || category === 'brand') return Math.min(5, impact + 1);
+    if (category === 'price') return Math.max(1, impact - 1); // 価格は持続性が低い
+    return Math.min(5, Math.max(1, Math.round(impact * 0.8)));
+  }
+
+  /**
+   * 推奨アクションを生成
+   */
+  private generateRecommendation(key: string, isAdvantage: boolean, diffPercent: number): string {
+    const category = this.inferCategory(key);
+    
+    if (isAdvantage) {
+      switch (category) {
+        case 'technology': return 'この技術的優位性を特許やノウハウで保護することを検討';
+        case 'brand': return 'ブランド価値を活かしたマーケティング強化を検討';
+        case 'price': return '価格競争力を維持しつつ、付加価値向上も検討';
+        default: return 'この強みを積極的にアピールし、市場でのポジションを強化';
+      }
+    } else {
+      switch (category) {
+        case 'technology': return '技術投資またはパートナーシップによる強化を検討';
+        case 'brand': return 'ブランディング戦略の見直しを検討';
+        case 'price': return 'コスト構造の見直しまたは差別化による価値訴求を検討';
+        default: return `この領域の${Math.abs(diffPercent).toFixed(0)}%ギャップを埋める施策を検討`;
+      }
+    }
+  }
+
+  // ===================
+  // モニタリング機能 (REQ-EXT-CMP-004)
+  // ===================
+  
+  private monitoringSessions: Map<string, MonitoringSession> = new Map();
+  private monitoringIntervals: Map<string, ReturnType<typeof setInterval>> = new Map();
+
+  /**
+   * 継続モニタリングを開始
+   * @requirement REQ-EXT-CMP-004
+   * @description 競合企業のアナウンスメントを追跡し、分析を定期的に更新
+   * @since 1.0.0
+   */
+  startMonitoring(config: MonitoringConfig): MonitoringSession {
+    const sessionId = `mon-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    
+    const session: MonitoringSession = {
+      id: sessionId,
+      config,
+      startedAt: new Date(),
+      history: [],
+      status: 'active',
+    };
+
+    this.monitoringSessions.set(sessionId, session);
+
+    if (config.enabled) {
+      // 定期実行を設定
+      const intervalId = setInterval(
+        () => this.runMonitoringUpdate(sessionId),
+        config.intervalMinutes * 60 * 1000
+      );
+      this.monitoringIntervals.set(sessionId, intervalId);
+
+      // 初回実行
+      this.runMonitoringUpdate(sessionId).catch(console.error);
+    }
+
+    return session;
+  }
+
+  /**
+   * モニタリングを停止
+   * @requirement REQ-EXT-CMP-004
+   * @since 1.0.0
+   */
+  stopMonitoring(sessionId: string): boolean {
+    const session = this.monitoringSessions.get(sessionId);
+    if (!session) return false;
+
+    // インターバルをクリア
+    const intervalId = this.monitoringIntervals.get(sessionId);
+    if (intervalId) {
+      clearInterval(intervalId);
+      this.monitoringIntervals.delete(sessionId);
+    }
+
+    // セッションステータスを更新
+    const updatedSession: MonitoringSession = {
+      ...session,
+      status: 'stopped',
+    };
+    this.monitoringSessions.set(sessionId, updatedSession);
+
+    return true;
+  }
+
+  /**
+   * モニタリングを一時停止
+   * @requirement REQ-EXT-CMP-004
+   * @since 1.0.0
+   */
+  pauseMonitoring(sessionId: string): boolean {
+    const session = this.monitoringSessions.get(sessionId);
+    if (!session || session.status !== 'active') return false;
+
+    // インターバルをクリア
+    const intervalId = this.monitoringIntervals.get(sessionId);
+    if (intervalId) {
+      clearInterval(intervalId);
+      this.monitoringIntervals.delete(sessionId);
+    }
+
+    // セッションステータスを更新
+    const updatedSession: MonitoringSession = {
+      ...session,
+      status: 'paused',
+    };
+    this.monitoringSessions.set(sessionId, updatedSession);
+
+    return true;
+  }
+
+  /**
+   * モニタリングを再開
+   * @requirement REQ-EXT-CMP-004
+   * @since 1.0.0
+   */
+  resumeMonitoring(sessionId: string): boolean {
+    const session = this.monitoringSessions.get(sessionId);
+    if (!session || session.status !== 'paused') return false;
+
+    // インターバルを再設定
+    const intervalId = setInterval(
+      () => this.runMonitoringUpdate(sessionId),
+      session.config.intervalMinutes * 60 * 1000
+    );
+    this.monitoringIntervals.set(sessionId, intervalId);
+
+    // セッションステータスを更新
+    const updatedSession: MonitoringSession = {
+      ...session,
+      status: 'active',
+    };
+    this.monitoringSessions.set(sessionId, updatedSession);
+
+    // 即時実行
+    this.runMonitoringUpdate(sessionId).catch(console.error);
+
+    return true;
+  }
+
+  /**
+   * モニタリングセッションを取得
+   * @requirement REQ-EXT-CMP-004
+   * @since 1.0.0
+   */
+  getMonitoringSession(sessionId: string): MonitoringSession | undefined {
+    return this.monitoringSessions.get(sessionId);
+  }
+
+  /**
+   * 全モニタリングセッションを取得
+   * @requirement REQ-EXT-CMP-004
+   * @since 1.0.0
+   */
+  getAllMonitoringSessions(): MonitoringSession[] {
+    return Array.from(this.monitoringSessions.values());
+  }
+
+  /**
+   * モニタリング更新を実行（内部）
+   */
+  private async runMonitoringUpdate(sessionId: string): Promise<void> {
+    const session = this.monitoringSessions.get(sessionId);
+    if (!session || session.status !== 'active') return;
+
+    const previousHistory = session.history;
+    const newHistory: MonitoringUpdate[] = [...previousHistory];
+
+    for (const company of session.config.competitors) {
+      try {
+        const intel = await this.collectCompetitorIntelligence(
+          company,
+          session.config.collectionOptions
+        );
+
+        // 前回との差分を検出
+        const previousUpdate = previousHistory
+          .filter(h => h.company === company)
+          .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
+
+        const newPressReleases = this.findNewPressReleases(
+          intel.pressReleases,
+          previousUpdate?.newPressReleases ?? []
+        );
+        const newNews = this.findNewNewsArticles(
+          intel.newsArticles,
+          previousUpdate?.newNews ?? []
+        );
+
+        // アラートチェック
+        let alertTriggered = false;
+        let alertReason: string | undefined;
+
+        if (session.config.alerts) {
+          if (session.config.alerts.onPressRelease && newPressReleases.length > 0) {
+            alertTriggered = true;
+            alertReason = `新規プレスリリース: ${newPressReleases[0]?.title ?? 'Unknown'}`;
+          }
+
+          if (session.config.alerts.onNegativeNews) {
+            const negativeNews = newNews.filter(n => n.sentiment === 'negative');
+            if (negativeNews.length > 0) {
+              alertTriggered = true;
+              alertReason = `ネガティブニュース検出: ${negativeNews[0]?.title ?? 'Unknown'}`;
+            }
+          }
+
+          if (session.config.alerts.keywords && session.config.alerts.keywords.length > 0) {
+            const allText = [
+              ...newPressReleases.map(pr => pr.title),
+              ...newNews.map(n => n.title),
+            ].join(' ').toLowerCase();
+
+            for (const keyword of session.config.alerts.keywords) {
+              if (allText.includes(keyword.toLowerCase())) {
+                alertTriggered = true;
+                alertReason = `キーワード「${keyword}」を検出`;
+                break;
+              }
+            }
+          }
+        }
+
+        // 更新を追加
+        if (newPressReleases.length > 0 || newNews.length > 0) {
+          newHistory.push({
+            timestamp: new Date(),
+            company,
+            newPressReleases,
+            newNews,
+            alertTriggered,
+            alertReason,
+          });
+        }
+      } catch (error) {
+        console.error(`Monitoring update failed for ${company}:`, error);
+      }
+    }
+
+    // セッションを更新
+    const updatedSession: MonitoringSession = {
+      ...session,
+      lastUpdatedAt: new Date(),
+      history: newHistory.slice(-100), // 最新100件を保持
+    };
+    this.monitoringSessions.set(sessionId, updatedSession);
+  }
+
+  /**
+   * 新しいプレスリリースを検出
+   */
+  private findNewPressReleases(
+    current: PressReleaseInfo[],
+    previous: PressReleaseInfo[]
+  ): PressReleaseInfo[] {
+    const previousTitles = new Set(previous.map(p => p.title));
+    return current.filter(c => !previousTitles.has(c.title));
+  }
+
+  /**
+   * 新しいニュース記事を検出
+   */
+  private findNewNewsArticles(
+    current: NewsArticleInfo[],
+    previous: NewsArticleInfo[]
+  ): NewsArticleInfo[] {
+    const previousTitles = new Set(previous.map(p => p.title));
+    return current.filter(c => !previousTitles.has(c.title));
   }
 }

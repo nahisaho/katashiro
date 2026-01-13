@@ -678,6 +678,7 @@ export class MermaidBuilder {
     
     for (let i = 0; i < stepsWithIds.length; i++) {
       const step = stepsWithIds[i];
+      if (!step) continue;
       
       // ノード形状を決定
       let shape: FlowchartNode['shape'] = 'rectangle';
@@ -730,10 +731,12 @@ export class MermaidBuilder {
       } else if (i < stepsWithIds.length - 1 && step.type !== 'end') {
         // 次のステップが指定されていない場合、順番に接続
         const nextStep = stepsWithIds[i + 1];
-        edges.push({
-          from: step.id,
-          to: nextStep.id,
-        });
+        if (nextStep) {
+          edges.push({
+            from: step.id,
+            to: nextStep.id,
+          });
+        }
       }
     }
     
@@ -759,7 +762,7 @@ export class MermaidBuilder {
     
     // Mermaid構文を生成
     const flowchartData: FlowchartData = { nodes, edges };
-    const mermaid = this.buildFlowchart(flowchartData, { direction });
+    const mermaid = this.buildFlowchart(flowchartData, { type: 'flowchart', direction });
     
     return {
       mermaid,
@@ -803,7 +806,7 @@ export class MermaidBuilder {
       const match = line.match(/^[\s]*(?:(\d+)[.）)]\s*|[-*•]\s*|>\s*)?(.+)/);
       if (!match) continue;
       
-      const label = match[2].trim();
+      const label = match[2]?.trim();
       if (!label) continue;
       
       const lowerLabel = label.toLowerCase();

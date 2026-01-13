@@ -21,8 +21,16 @@ import type {
   MultiSourceVerificationResult,
   SourceVerificationResult,
   ConfidenceScoreResult,
-  ConfidenceBreakdown,
   ConfidenceLevel,
+  ConflictDetectionResult,
+  ConflictDetail,
+  ConflictType,
+  Viewpoint,
+  ConflictResolution,
+  UnverifiedStatement,
+  UnverificationReason,
+  VerificationStatus,
+  LabeledStatement,
 } from './types.js';
 import { DEFAULT_FACTCHECKER_CONFIG } from './types.js';
 import { ClaimParser } from './ClaimParser.js';
@@ -786,5 +794,516 @@ export class FactChecker {
     const verdictText = label.replace(/_/g, ' ');
     return `Based on ${total} quick checks: ${supporting} supporting, ` +
            `${contradicting} contradicting. Verdict: ${verdictText}.`;
+  }
+
+  /**
+   * ソース間の矛盾情報を検出
+   * @requirement REQ-EXT-FCK-003
+   * @description 複数ソースが矛盾する情報を提供している場合に検出し、複数の観点を提示
+   * @since 1.0.0
+   */
+  async detectConflicts(
+    claim: string,
+    options?: {
+      sourceTypes?: VerificationSourceType[];
+      minSources?: number;
+    }
+  ): Promise<Result<ConflictDetectionResult, FactCheckError>> {
+    if (!claim || claim.trim().length === 0) {
+      return err({
+        code: 'INVALID_CLAIM',
+        message: 'Claim cannot be empty',
+      });
+    }
+
+    try {
+      // 1. 主張を解析
+      const extractedClaim = this.claimParser.parseSingle(claim);
+
+      // 2. エビデンスを収集
+      const sourceTypes = options?.sourceTypes ?? [
+        'trusted_news',
+        'factcheck_org',
+        'academic',
+        'government',
+      ];
+      const evidence = await this.evidenceCollector.collect(
+        extractedClaim,
+        sourceTypes
+      );
+
+      // 3. 矛盾を検出
+      const conflicts: ConflictDetail[] = [];
+      const supporting = evidence.filter(
+        e => e.relation === 'supports' || e.relation === 'partially_supports'
+      );
+      const contradicting = evidence.filter(e => e.relation === 'contradicts');
+
+      // 支持と矛盾の両方がある場合、ペアを作成
+      let conflictId = 1;
+      for (const sup of supporting) {
+        for (const contra of contradicting) {
+          const conflictType = this.determineConflictType(sup, contra);
+          const severity = this.calculateConflictSeverity(sup, contra);
+          
+          conflicts.push({
+            id: `conflict-${conflictId++}`,
+            conflictingSources: [sup, contra],
+            conflictType,
+            severity,
+            description: this.generateConflictDescription(sup, contra, conflictType),
+            suggestion: this.generateConflictSuggestion(conflictType, sup, contra),
+          });
+        }
+      }
+
+      // 4. 観点を整理
+      const viewpoints = this.buildViewpoints(evidence);
+
+      // 5. 解決提案を生成
+      const resolution = this.buildConflictResolution(conflicts, viewpoints);
+
+      // 6. サマリーを生成
+      const summary = this.generateConflictSummary(claim, conflicts, viewpoints);
+
+      return ok({
+        hasConflicts: conflicts.length > 0,
+        conflictCount: conflicts.length,
+        conflicts,
+        viewpoints,
+        resolution,
+        summary,
+      });
+    } catch (error) {
+      return err({
+        code: 'VERIFICATION_FAILED',
+        message: `Conflict detection failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        details: error,
+      });
+    }
+  }
+
+  /**
+   * 矛盾のタイプを判定
+   */
+  private determineConflictType(sup: Evidence, contra: Evidence): ConflictType {
+    // 数値が含まれている場合は数値的矛盾
+    const hasNumbers = (text: string) => /\d+(\.\d+)?/.test(text);
+    if (hasNumbers(sup.excerpt) && hasNumbers(contra.excerpt)) {
+      return 'numerical';
+    }
+
+    // 日付や時間が含まれている場合は時間的矛盾
+    const hasDate = (text: string) => /\d{4}[-/]\d{1,2}[-/]\d{1,2}|年|月|日/.test(text);
+    if (hasDate(sup.excerpt) && hasDate(contra.excerpt)) {
+      return 'temporal';
+    }
+
+    // ソースタイプが異なり、専門性の違いがある場合はコンテキストの違い
+    if (sup.sourceType !== contra.sourceType) {
+      return 'contextual';
+    }
+
+    // 意見や分析に関する場合は解釈の違い
+    const isOpinion = (text: string) => 
+      /思われる|考えられる|可能性|might|may|could|possibly/.test(text);
+    if (isOpinion(sup.excerpt) || isOpinion(contra.excerpt)) {
+      return 'interpretive';
+    }
+
+    return 'factual';
+  }
+
+  /**
+   * 矛盾の深刻度を計算 (1-5)
+   */
+  private calculateConflictSeverity(sup: Evidence, contra: Evidence): number {
+    let severity = 3; // デフォルト
+
+    // 両方が高信頼性ソースの場合は深刻度が高い
+    if (sup.credibilityScore > 0.8 && contra.credibilityScore > 0.8) {
+      severity = 5;
+    } else if (sup.credibilityScore > 0.6 && contra.credibilityScore > 0.6) {
+      severity = 4;
+    }
+
+    // 信頼度の差が大きい場合は低い
+    const credibilityDiff = Math.abs(sup.credibilityScore - contra.credibilityScore);
+    if (credibilityDiff > 0.4) {
+      severity = Math.max(1, severity - 2);
+    }
+
+    return severity;
+  }
+
+  /**
+   * 矛盾の説明を生成
+   */
+  private generateConflictDescription(
+    sup: Evidence,
+    contra: Evidence,
+    type: ConflictType
+  ): string {
+    const typeLabels: Record<ConflictType, string> = {
+      factual: 'factual discrepancy',
+      numerical: 'numerical discrepancy',
+      temporal: 'temporal discrepancy',
+      contextual: 'contextual difference',
+      interpretive: 'interpretive difference',
+    };
+
+    return `${typeLabels[type]}: "${sup.sourceName}" supports the claim while ` +
+           `"${contra.sourceName}" contradicts it.`;
+  }
+
+  /**
+   * 矛盾解消の提案を生成
+   */
+  private generateConflictSuggestion(
+    type: ConflictType,
+    sup: Evidence,
+    contra: Evidence
+  ): string {
+    switch (type) {
+      case 'numerical':
+        return 'Verify the exact figures from primary sources or official statistics.';
+      case 'temporal':
+        return 'Check the publication dates and ensure you are comparing data from the same time period.';
+      case 'contextual':
+        return 'Consider the different contexts in which each source is reporting.';
+      case 'interpretive':
+        return 'Review multiple expert opinions and consider the underlying methodologies.';
+      default:
+        return sup.credibilityScore > contra.credibilityScore
+          ? `The more credible source (${sup.sourceName}) may be more reliable.`
+          : `Consider investigating further with primary sources.`;
+    }
+  }
+
+  /**
+   * 観点を構築
+   */
+  private buildViewpoints(evidence: Evidence[]): Viewpoint[] {
+    const viewpoints: Viewpoint[] = [];
+
+    // 支持する観点
+    const supporting = evidence.filter(
+      e => e.relation === 'supports' || e.relation === 'partially_supports'
+    );
+    if (supporting.length > 0) {
+      const avgCredibility = supporting.reduce((sum, e) => sum + e.credibilityScore, 0) / supporting.length;
+      viewpoints.push({
+        label: 'Supporting View',
+        supportingSources: supporting,
+        summary: `${supporting.length} source(s) support this claim.`,
+        credibility: avgCredibility,
+      });
+    }
+
+    // 反対する観点
+    const contradicting = evidence.filter(e => e.relation === 'contradicts');
+    if (contradicting.length > 0) {
+      const avgCredibility = contradicting.reduce((sum, e) => sum + e.credibilityScore, 0) / contradicting.length;
+      viewpoints.push({
+        label: 'Opposing View',
+        supportingSources: contradicting,
+        summary: `${contradicting.length} source(s) contradict this claim.`,
+        credibility: avgCredibility,
+      });
+    }
+
+    // 中立の観点
+    const neutral = evidence.filter(e => e.relation === 'neutral' || e.relation === 'context');
+    if (neutral.length > 0) {
+      const avgCredibility = neutral.reduce((sum, e) => sum + e.credibilityScore, 0) / neutral.length;
+      viewpoints.push({
+        label: 'Neutral/Contextual',
+        supportingSources: neutral,
+        summary: `${neutral.length} source(s) provide neutral or contextual information.`,
+        credibility: avgCredibility,
+      });
+    }
+
+    return viewpoints;
+  }
+
+  /**
+   * 矛盾の解決提案を構築
+   */
+  private buildConflictResolution(
+    conflicts: ConflictDetail[],
+    viewpoints: Viewpoint[]
+  ): ConflictResolution | undefined {
+    if (conflicts.length === 0) {
+      return undefined;
+    }
+
+    // 信頼度が最も高い観点を推奨
+    const sortedViewpoints = [...viewpoints].sort((a, b) => b.credibility - a.credibility);
+    const mostCredible = sortedViewpoints[0];
+
+    const avgSeverity = conflicts.reduce((sum, c) => sum + c.severity, 0) / conflicts.length;
+    const needsMoreResearch = avgSeverity >= 4 || conflicts.length >= 3;
+
+    return {
+      recommendedInterpretation: mostCredible
+        ? `Based on source credibility, the "${mostCredible.label}" appears more reliable.`
+        : 'No clear recommendation due to conflicting information.',
+      needsMoreResearch,
+      suggestedSources: needsMoreResearch
+        ? ['Primary sources', 'Official government data', 'Peer-reviewed research']
+        : undefined,
+      rationale: this.generateResolutionRationale(conflicts, viewpoints),
+    };
+  }
+
+  /**
+   * 解決提案の理由を生成
+   */
+  private generateResolutionRationale(
+    conflicts: ConflictDetail[],
+    viewpoints: Viewpoint[]
+  ): string {
+    const lines: string[] = [];
+
+    lines.push(`Analyzed ${conflicts.length} conflicting point(s) across ${viewpoints.length} viewpoint(s).`);
+
+    // 最も信頼性の高い観点
+    const sortedViewpoints = [...viewpoints].sort((a, b) => b.credibility - a.credibility);
+    if (sortedViewpoints[0]) {
+      const best = sortedViewpoints[0];
+      lines.push(`"${best.label}" has the highest average credibility (${(best.credibility * 100).toFixed(0)}%).`);
+    }
+
+    // 矛盾のタイプ別分析
+    const typeCount = new Map<ConflictType, number>();
+    for (const c of conflicts) {
+      typeCount.set(c.conflictType, (typeCount.get(c.conflictType) ?? 0) + 1);
+    }
+    const dominantType = [...typeCount.entries()].sort((a, b) => b[1] - a[1])[0];
+    if (dominantType) {
+      lines.push(`Most conflicts are ${dominantType[0]} in nature.`);
+    }
+
+    return lines.join(' ');
+  }
+
+  /**
+   * 矛盾検出サマリーを生成
+   */
+  private generateConflictSummary(
+    claim: string,
+    conflicts: ConflictDetail[],
+    viewpoints: Viewpoint[]
+  ): string {
+    const truncatedClaim = claim.length > 60 ? claim.slice(0, 60) + '...' : claim;
+
+    if (conflicts.length === 0) {
+      return `No conflicts detected for "${truncatedClaim}". ` +
+             `${viewpoints.length} viewpoint(s) identified.`;
+    }
+
+    const avgSeverity = conflicts.reduce((sum, c) => sum + c.severity, 0) / conflicts.length;
+    const severityLabel = avgSeverity >= 4 ? 'significant' : avgSeverity >= 2.5 ? 'moderate' : 'minor';
+
+    return `Detected ${conflicts.length} ${severityLabel} conflict(s) for "${truncatedClaim}". ` +
+           `${viewpoints.length} distinct viewpoint(s) identified. ` +
+           `Review multiple perspectives before drawing conclusions.`;
+  }
+
+  /**
+   * 未検証ステートメントにラベルを付与
+   * @requirement REQ-EXT-FCK-004
+   * @description 未検証の主張に "[要検証]" インジケータを表示
+   * @since 1.0.0
+   */
+  labelUnverifiedStatements(
+    statements: string[],
+    verificationResults: Map<string, VerificationStatus>,
+    options?: { label?: string }
+  ): LabeledStatement[] {
+    const defaultLabel = options?.label ?? '[要検証]';
+    
+    return statements.map(statement => {
+      const status = verificationResults.get(statement) ?? 'unverified';
+      
+      if (status === 'verified') {
+        return {
+          original: statement,
+          labeled: statement,
+          status,
+        };
+      }
+
+      return {
+        original: statement,
+        labeled: `${defaultLabel} ${statement}`,
+        status,
+        appliedLabel: defaultLabel,
+      };
+    });
+  }
+
+  /**
+   * テキスト内の主張を検証し、未検証部分にラベルを付与
+   * @requirement REQ-EXT-FCK-004
+   * @since 1.0.0
+   */
+  async verifyAndLabelText(
+    text: string,
+    options?: {
+      label?: string;
+      timeout?: number;
+      minConfidence?: number;
+    }
+  ): Promise<Result<{
+    labeledText: string;
+    statements: LabeledStatement[];
+    unverifiedCount: number;
+    verifiedCount: number;
+  }, FactCheckError>> {
+    const defaultLabel = options?.label ?? '[要検証]';
+    const minConfidence = options?.minConfidence ?? 0.5;
+
+    try {
+      // 1. 主張を抽出
+      const claims = this.claimParser.parse(text);
+      
+      if (claims.length === 0) {
+        return ok({
+          labeledText: text,
+          statements: [],
+          unverifiedCount: 0,
+          verifiedCount: 0,
+        });
+      }
+
+      // 2. 各主張を検証
+      const verificationResults = new Map<string, VerificationStatus>();
+      const labeledStatements: LabeledStatement[] = [];
+
+      for (const claim of claims) {
+        const result = await this.quickCheck(claim.original);
+        
+        let status: VerificationStatus;
+        if (result.isOk() && result._tag === 'Ok') {
+          // 信頼度が閾値以上なら検証済み
+          status = result.value.confidence >= minConfidence ? 'verified' : 'unverified';
+        } else {
+          status = 'failed';
+        }
+        
+        verificationResults.set(claim.original, status);
+        
+        const labeled = status === 'verified' 
+          ? claim.original 
+          : `${defaultLabel} ${claim.original}`;
+          
+        labeledStatements.push({
+          original: claim.original,
+          labeled,
+          status,
+          appliedLabel: status !== 'verified' ? defaultLabel : undefined,
+        });
+      }
+
+      // 3. テキストにラベルを適用
+      let labeledText = text;
+      for (const statement of labeledStatements) {
+        if (statement.status !== 'verified') {
+          labeledText = labeledText.replace(
+            statement.original,
+            statement.labeled
+          );
+        }
+      }
+
+      // 4. カウントを計算
+      const verifiedCount = labeledStatements.filter(s => s.status === 'verified').length;
+      const unverifiedCount = labeledStatements.length - verifiedCount;
+
+      return ok({
+        labeledText,
+        statements: labeledStatements,
+        unverifiedCount,
+        verifiedCount,
+      });
+    } catch (error) {
+      return err({
+        code: 'VERIFICATION_FAILED',
+        message: `Text verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        details: error,
+      });
+    }
+  }
+
+  /**
+   * 未検証ステートメントオブジェクトを作成
+   * @requirement REQ-EXT-FCK-004
+   * @since 1.0.0
+   */
+  createUnverifiedStatement(
+    text: string,
+    reason: UnverificationReason,
+    options?: { label?: string }
+  ): UnverifiedStatement {
+    const label = options?.label ?? '[要検証]';
+
+    const suggestedActions = this.getSuggestedActionsForReason(reason);
+
+    return {
+      id: `unverified-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      text,
+      label,
+      reason,
+      suggestedActions,
+      status: 'unverified',
+    };
+  }
+
+  /**
+   * 未検証理由に基づく推奨アクションを取得
+   */
+  private getSuggestedActionsForReason(reason: UnverificationReason): string[] {
+    switch (reason) {
+      case 'no_sources_found':
+        return [
+          'Try searching with different keywords',
+          'Check specialized databases',
+          'Consult domain experts',
+        ];
+      case 'conflicting_info':
+        return [
+          'Review primary sources',
+          'Check publication dates for latest information',
+          'Consider the credibility of each source',
+        ];
+      case 'insufficient_evidence':
+        return [
+          'Gather more sources',
+          'Look for academic or official references',
+          'Verify with multiple independent sources',
+        ];
+      case 'timeout':
+        return [
+          'Retry the verification',
+          'Check network connectivity',
+          'Try with fewer claims at once',
+        ];
+      case 'source_unavailable':
+        return [
+          'Check if the source URL is still active',
+          'Try accessing via web archive',
+          'Find alternative sources',
+        ];
+      case 'unverifiable_claim':
+        return [
+          'Clarify the claim with more specific details',
+          'Consider if the claim is inherently opinion-based',
+          'Look for related verifiable claims',
+        ];
+      default:
+        return ['Investigate further'];
+    }
   }
 }

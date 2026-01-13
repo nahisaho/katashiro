@@ -173,4 +173,138 @@ export interface RealTimeDataFetcherOptions {
   readonly apiKeys?: Partial<Record<RealTimeDataSource, string>>;
   /** ユーザーエージェント */
   readonly userAgent?: string;
+  /** レート制限設定（REQ-EXT-RTD-005） @since 1.0.0 */
+  readonly rateLimit?: RateLimitConfig;
 }
+
+/**
+ * レート制限設定
+ * @requirement REQ-EXT-RTD-005
+ * @since 1.0.0
+ */
+export interface RateLimitConfig {
+  /** 最大リクエスト数/分 */
+  readonly maxRequestsPerMinute: number;
+  /** 最大リクエスト数/時 */
+  readonly maxRequestsPerHour?: number;
+  /** リトライ回数 */
+  readonly maxRetries: number;
+  /** リトライ間隔（ミリ秒） */
+  readonly retryDelayMs: number;
+  /** 指数バックオフを使用するか */
+  readonly useExponentialBackoff: boolean;
+}
+
+/**
+ * デフォルトレート制限設定
+ */
+export const DEFAULT_RATE_LIMIT_CONFIG: RateLimitConfig = {
+  maxRequestsPerMinute: 60,
+  maxRequestsPerHour: 500,
+  maxRetries: 3,
+  retryDelayMs: 1000,
+  useExponentialBackoff: true,
+};
+
+/**
+ * データ鮮度情報
+ * @requirement REQ-EXT-RTD-003
+ * @since 1.0.0
+ */
+export interface DataFreshnessInfo {
+  /** データ取得タイムスタンプ */
+  readonly fetchedAt: Date;
+  /** データの公開日時（ソースからの情報） */
+  readonly publishedAt?: Date;
+  /** データの更新日時（最終更新） */
+  readonly updatedAt?: Date;
+  /** データの鮮度ステータス */
+  readonly freshnessStatus: FreshnessStatus;
+  /** データの経過時間（秒） */
+  readonly ageInSeconds: number;
+  /** 次回更新予定 */
+  readonly nextUpdateExpected?: Date;
+  /** 人間可読な経過時間 */
+  readonly ageDisplay: string;
+}
+
+/**
+ * 鮮度ステータス
+ */
+export type FreshnessStatus =
+  | 'realtime'     // リアルタイム（5分以内）
+  | 'recent'       // 最新（1時間以内）
+  | 'today'        // 本日（24時間以内）
+  | 'stale'        // やや古い（1週間以内）
+  | 'outdated';    // 古い（1週間以上）
+
+/**
+ * データ取得失敗結果
+ * @requirement REQ-EXT-RTD-004
+ * @since 1.0.0
+ */
+export interface DataFetchFailureResult {
+  /** 失敗したクエリ */
+  readonly query: RealTimeDataQuery;
+  /** エラータイプ */
+  readonly errorType: DataFetchErrorType;
+  /** エラーメッセージ */
+  readonly errorMessage: string;
+  /** 使用されたキャッシュデータ */
+  readonly cachedData?: CachedDataInfo;
+  /** 失敗した日時 */
+  readonly failedAt: Date;
+  /** リトライ回数 */
+  readonly retryCount: number;
+  /** 次回リトライ予定 */
+  readonly nextRetryAt?: Date;
+  /** 表示メッセージ */
+  readonly displayMessage: string;
+}
+
+/**
+ * キャッシュデータ情報
+ */
+export interface CachedDataInfo {
+  /** キャッシュされたデータ */
+  readonly data: RealTimeDataResult;
+  /** キャッシュ日時 */
+  readonly cachedAt: Date;
+  /** キャッシュの経過時間（秒） */
+  readonly ageInSeconds: number;
+  /** キャッシュの鮮度ステータス */
+  readonly freshnessStatus: FreshnessStatus;
+  /** 経過時間インジケータ（例: "5分前", "1時間前"） */
+  readonly ageIndicator: string;
+}
+
+/**
+ * データ取得エラータイプ
+ */
+export type DataFetchErrorType =
+  | 'network_error'     // ネットワークエラー
+  | 'timeout'           // タイムアウト
+  | 'rate_limited'      // レート制限
+  | 'auth_error'        // 認証エラー
+  | 'source_unavailable' // ソース利用不可
+  | 'parse_error'       // パースエラー
+  | 'unknown';          // 不明なエラー
+
+/**
+ * レート制限状態
+ * @requirement REQ-EXT-RTD-005
+ * @since 1.0.0
+ */
+export interface RateLimitState {
+  /** 現在のリクエスト数/分 */
+  readonly requestsThisMinute: number;
+  /** 現在のリクエスト数/時 */
+  readonly requestsThisHour: number;
+  /** レート制限中か */
+  readonly isLimited: boolean;
+  /** 制限がリセットされる時刻 */
+  readonly resetAt?: Date;
+  /** キュー内の待機リクエスト数 */
+  readonly queuedRequests: number;
+}
+

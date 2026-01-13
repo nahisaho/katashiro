@@ -32,7 +32,15 @@ import type {
   StatisticsData,
   TimeSeriesData,
   RealTimeDataFetcherOptions,
+  RateLimitConfig,
+  DataFreshnessInfo,
+  FreshnessStatus,
+  DataFetchFailureResult,
+  CachedDataInfo,
+  DataFetchErrorType,
+  RateLimitState,
 } from './types.js';
+import { DEFAULT_RATE_LIMIT_CONFIG } from './types.js';
 
 /**
  * コモディティキーワードとデータソースのマッピング
@@ -95,23 +103,33 @@ const SOURCE_BASE_URLS: Record<RealTimeDataSource, string> = {
 /**
  * デフォルトオプション
  */
-const DEFAULT_OPTIONS: Required<RealTimeDataFetcherOptions> = {
+const DEFAULT_OPTIONS: Required<Omit<RealTimeDataFetcherOptions, 'rateLimit'>> & { rateLimit: RateLimitConfig } = {
   timeout: 30000,
   defaultCurrency: 'USD',
   cacheTtl: 3600,
   apiKeys: {},
-  userAgent: 'KATASHIRO-RealTimeDataFetcher/0.5.0',
+  userAgent: 'KATASHIRO-RealTimeDataFetcher/1.0.0',
+  rateLimit: DEFAULT_RATE_LIMIT_CONFIG,
 };
 
 /**
  * Real-Time Data Fetcher
  */
 export class RealTimeDataFetcher {
-  private readonly options: Required<RealTimeDataFetcherOptions>;
-  private readonly cache: Map<string, { data: RealTimeDataResult; expiry: number }>;
+  private readonly options: typeof DEFAULT_OPTIONS;
+  private readonly cache: Map<string, { data: RealTimeDataResult; expiry: number; cachedAt: Date }>;
+  
+  // レート制限管理（REQ-EXT-RTD-005）
+  private requestTimestamps: number[] = [];
+  private requestQueue: Array<{ resolve: () => void; reject: (e: Error) => void }> = [];
+  private isProcessingQueue = false;
 
   constructor(options?: RealTimeDataFetcherOptions) {
-    this.options = { ...DEFAULT_OPTIONS, ...options };
+    this.options = { 
+      ...DEFAULT_OPTIONS, 
+      ...options,
+      rateLimit: { ...DEFAULT_RATE_LIMIT_CONFIG, ...options?.rateLimit },
+    };
     this.cache = new Map();
   }
 
@@ -294,6 +312,301 @@ export class RealTimeDataFetcher {
     this.cache.clear();
   }
 
+  /**
+   * データの鮮度情報を取得
+   * @requirement REQ-EXT-RTD-003
+   * @description データ取得タイムスタンプを表示
+   * @since 1.0.0
+   */
+  getDataFreshness(result: RealTimeDataResult): DataFreshnessInfo {
+    const fetchedAt = new Date(result.fetchedAt);
+    const now = new Date();
+    const ageInSeconds = Math.floor((now.getTime() - fetchedAt.getTime()) / 1000);
+
+    // 鮮度ステータスを判定
+    const freshnessStatus = this.determineFreshnessStatus(ageInSeconds);
+
+    // 人間可読な経過時間
+    const ageDisplay = this.formatAge(ageInSeconds);
+
+    return {
+      fetchedAt,
+      freshnessStatus,
+      ageInSeconds,
+      ageDisplay,
+    };
+  }
+
+  /**
+   * コモディティ価格の鮮度情報を取得
+   * @requirement REQ-EXT-RTD-003
+   * @since 1.0.0
+   */
+  getCommodityPriceFreshness(price: CommodityPrice): DataFreshnessInfo {
+    const fetchedAt = new Date(price.timestamp);
+    const now = new Date();
+    const ageInSeconds = Math.floor((now.getTime() - fetchedAt.getTime()) / 1000);
+    const freshnessStatus = this.determineFreshnessStatus(ageInSeconds);
+    const ageDisplay = this.formatAge(ageInSeconds);
+
+    return {
+      fetchedAt,
+      freshnessStatus,
+      ageInSeconds,
+      ageDisplay,
+    };
+  }
+
+  /**
+   * 鮮度ステータスを判定
+   */
+  private determineFreshnessStatus(ageInSeconds: number): FreshnessStatus {
+    if (ageInSeconds < 300) return 'realtime';      // 5分以内
+    if (ageInSeconds < 3600) return 'recent';       // 1時間以内
+    if (ageInSeconds < 86400) return 'today';       // 24時間以内
+    if (ageInSeconds < 604800) return 'stale';      // 1週間以内
+    return 'outdated';                              // 1週間以上
+  }
+
+  /**
+   * 経過時間を人間可読な形式にフォーマット
+   */
+  private formatAge(ageInSeconds: number): string {
+    if (ageInSeconds < 60) return `${ageInSeconds}秒前`;
+    if (ageInSeconds < 3600) return `${Math.floor(ageInSeconds / 60)}分前`;
+    if (ageInSeconds < 86400) return `${Math.floor(ageInSeconds / 3600)}時間前`;
+    if (ageInSeconds < 604800) return `${Math.floor(ageInSeconds / 86400)}日前`;
+    return `${Math.floor(ageInSeconds / 604800)}週間以上前`;
+  }
+
+  /**
+   * データ取得失敗時の処理
+   * @requirement REQ-EXT-RTD-004
+   * @description 失敗時はキャッシュデータ（経過時間インジケータ付き）または "データ取得不可" を表示
+   * @since 1.0.0
+   */
+  handleFetchFailure(
+    query: RealTimeDataQuery,
+    error: Error,
+    retryCount: number = 0
+  ): DataFetchFailureResult {
+    const errorType = this.categorizeError(error);
+    const cacheKey = this.buildCacheKey(query);
+    const cachedEntry = this.cache.get(cacheKey);
+
+    let cachedData: CachedDataInfo | undefined;
+    let displayMessage: string;
+
+    if (cachedEntry) {
+      // キャッシュデータが存在する場合
+      const ageInSeconds = Math.floor((Date.now() - cachedEntry.cachedAt.getTime()) / 1000);
+      const freshnessStatus = this.determineFreshnessStatus(ageInSeconds);
+      const ageIndicator = this.formatAge(ageInSeconds);
+
+      cachedData = {
+        data: cachedEntry.data,
+        cachedAt: cachedEntry.cachedAt,
+        ageInSeconds,
+        freshnessStatus,
+        ageIndicator,
+      };
+
+      displayMessage = `データ取得に失敗しました。キャッシュデータを使用しています（${ageIndicator}）`;
+    } else {
+      // キャッシュデータがない場合
+      displayMessage = 'データ取得不可';
+    }
+
+    // 次回リトライ予定を計算
+    let nextRetryAt: Date | undefined;
+    if (retryCount < this.options.rateLimit.maxRetries) {
+      const delay = this.options.rateLimit.useExponentialBackoff
+        ? this.options.rateLimit.retryDelayMs * Math.pow(2, retryCount)
+        : this.options.rateLimit.retryDelayMs;
+      nextRetryAt = new Date(Date.now() + delay);
+    }
+
+    return {
+      query,
+      errorType,
+      errorMessage: error.message,
+      cachedData,
+      failedAt: new Date(),
+      retryCount,
+      nextRetryAt,
+      displayMessage,
+    };
+  }
+
+  /**
+   * エラーを分類
+   */
+  private categorizeError(error: Error): DataFetchErrorType {
+    const message = error.message.toLowerCase();
+    
+    if (message.includes('timeout') || message.includes('timed out')) {
+      return 'timeout';
+    }
+    if (message.includes('rate limit') || message.includes('too many requests') || message.includes('429')) {
+      return 'rate_limited';
+    }
+    if (message.includes('network') || message.includes('fetch') || message.includes('econnrefused')) {
+      return 'network_error';
+    }
+    if (message.includes('auth') || message.includes('unauthorized') || message.includes('401') || message.includes('403')) {
+      return 'auth_error';
+    }
+    if (message.includes('unavailable') || message.includes('503') || message.includes('502')) {
+      return 'source_unavailable';
+    }
+    if (message.includes('parse') || message.includes('json') || message.includes('xml')) {
+      return 'parse_error';
+    }
+    return 'unknown';
+  }
+
+  /**
+   * クエリからキャッシュキーを構築
+   */
+  private buildCacheKey(query: RealTimeDataQuery): string {
+    return `${query.type}:${query.keyword}:${query.source ?? 'auto'}:${query.currency ?? this.options.defaultCurrency}`;
+  }
+
+  /**
+   * レート制限状態を取得
+   * @requirement REQ-EXT-RTD-005
+   * @since 1.0.0
+   */
+  getRateLimitState(): RateLimitState {
+    const now = Date.now();
+    const oneMinuteAgo = now - 60000;
+    const oneHourAgo = now - 3600000;
+
+    // 古いタイムスタンプを削除
+    this.requestTimestamps = this.requestTimestamps.filter(ts => ts > oneHourAgo);
+
+    const requestsThisMinute = this.requestTimestamps.filter(ts => ts > oneMinuteAgo).length;
+    const requestsThisHour = this.requestTimestamps.length;
+
+    const isLimitedByMinute = requestsThisMinute >= this.options.rateLimit.maxRequestsPerMinute;
+    const isLimitedByHour = this.options.rateLimit.maxRequestsPerHour !== undefined &&
+                           requestsThisHour >= this.options.rateLimit.maxRequestsPerHour;
+
+    const isLimited = isLimitedByMinute || isLimitedByHour;
+
+    let resetAt: Date | undefined;
+    if (isLimitedByMinute && this.requestTimestamps.length > 0) {
+      // 最も古い1分以内のリクエストがリセットされる時刻
+      const oldestInMinute = this.requestTimestamps.filter(ts => ts > oneMinuteAgo)[0];
+      if (oldestInMinute) {
+        resetAt = new Date(oldestInMinute + 60000);
+      }
+    }
+
+    return {
+      requestsThisMinute,
+      requestsThisHour,
+      isLimited,
+      resetAt,
+      queuedRequests: this.requestQueue.length,
+    };
+  }
+
+  /**
+   * レート制限を考慮してリクエストを実行
+   * @requirement REQ-EXT-RTD-005
+   * @description レート制限を超えた場合、リクエストをキューに入れてリミットリセット後にリトライ
+   * @since 1.0.0
+   */
+  async fetchWithRateLimit<T>(
+    fetchFn: () => Promise<T>,
+    _options?: { priority?: 'high' | 'normal' | 'low' }
+  ): Promise<T> {
+    const state = this.getRateLimitState();
+
+    if (state.isLimited) {
+      // キューに追加して待機
+      await this.waitForRateLimit();
+    }
+
+    // リクエストを記録
+    this.requestTimestamps.push(Date.now());
+
+    return fetchFn();
+  }
+
+  /**
+   * レート制限が解除されるまで待機
+   */
+  private async waitForRateLimit(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.requestQueue.push({ resolve, reject });
+      this.processQueue();
+    });
+  }
+
+  /**
+   * キューを処理
+   */
+  private async processQueue(): Promise<void> {
+    if (this.isProcessingQueue || this.requestQueue.length === 0) {
+      return;
+    }
+
+    this.isProcessingQueue = true;
+
+    while (this.requestQueue.length > 0) {
+      const state = this.getRateLimitState();
+      
+      if (!state.isLimited) {
+        const request = this.requestQueue.shift();
+        if (request) {
+          request.resolve();
+        }
+      } else {
+        // 待機時間を計算
+        const waitTime = state.resetAt
+          ? Math.max(100, state.resetAt.getTime() - Date.now())
+          : this.options.rateLimit.retryDelayMs;
+        
+        await new Promise(r => setTimeout(r, waitTime));
+      }
+    }
+
+    this.isProcessingQueue = false;
+  }
+
+  /**
+   * 自動リトライ付きデータ取得
+   * @requirement REQ-EXT-RTD-005
+   * @since 1.0.0
+   */
+  async fetchWithRetry(
+    query: RealTimeDataQuery,
+    options?: { maxRetries?: number }
+  ): Promise<RealTimeDataResult | DataFetchFailureResult> {
+    const maxRetries = options?.maxRetries ?? this.options.rateLimit.maxRetries;
+    let lastError: Error | undefined;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await this.fetchWithRateLimit(() => this.fetch(query));
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        
+        if (attempt < maxRetries) {
+          const delay = this.options.rateLimit.useExponentialBackoff
+            ? this.options.rateLimit.retryDelayMs * Math.pow(2, attempt)
+            : this.options.rateLimit.retryDelayMs;
+          
+          await new Promise(r => setTimeout(r, delay));
+        }
+      }
+    }
+
+    return this.handleFetchFailure(query, lastError!, maxRetries);
+  }
+
   // =================
   // Private Methods
   // =================
@@ -303,7 +616,12 @@ export class RealTimeDataFetcher {
     if (!cached) return null;
     
     if (Date.now() > cached.expiry) {
-      this.cache.delete(key);
+      // キャッシュは期限切れだが、フォールバック用に残す
+      // 完全に古い場合のみ削除（7日以上）
+      const ageMs = Date.now() - cached.cachedAt.getTime();
+      if (ageMs > 7 * 24 * 60 * 60 * 1000) {
+        this.cache.delete(key);
+      }
       return null;
     }
     
@@ -314,6 +632,7 @@ export class RealTimeDataFetcher {
     this.cache.set(key, {
       data,
       expiry: Date.now() + this.options.cacheTtl * 1000,
+      cachedAt: new Date(),
     });
   }
 

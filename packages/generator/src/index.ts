@@ -29,6 +29,9 @@ export {
   ReportGenerator,
   type ReportConfig,
   type ReportSection,
+  type ChunkResult,
+  type ChunkCallback,
+  type ChunkGeneratorOptions,
 } from './report/index.js';
 
 export {

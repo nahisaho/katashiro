@@ -574,4 +574,328 @@ export class DiagramGenerator {
       'PNG export is not yet implemented'
     );
   }
+
+  // ====================
+  // ASCII高度化機能 (REQ-EXT-VIS-003)
+  // ====================
+
+  /**
+   * Unicode罫線文字を使用した改善されたASCII図を生成
+   * @requirement REQ-EXT-VIS-003
+   * @description Unicode box-drawing文字と適切な配置でASCIIダイアグラムを生成
+   * @since 1.0.0
+   */
+  generateAsciiFlowchart(
+    data: FlowchartData,
+    options?: {
+      style?: 'simple' | 'rounded' | 'double' | 'heavy';
+      width?: number;
+    }
+  ): string {
+    const style = options?.style ?? 'simple';
+    const boxChars = this.getBoxCharacters(style);
+    const maxWidth = options?.width ?? 80;
+
+    const lines: string[] = [];
+    const nodePositions = new Map<string, { row: number; col: number }>();
+
+    // ノードを行に配置（シンプルな縦並び）
+    let currentRow = 0;
+    for (const node of data.nodes) {
+      nodePositions.set(node.id, { row: currentRow, col: 0 });
+      currentRow += 4; // ノード間隔
+    }
+
+    // 各ノードを描画
+    for (const node of data.nodes) {
+      // nodePositionsは直前のループで設定済み
+      const nodeLines = this.drawAsciiNode(node, boxChars, maxWidth);
+      lines.push(...nodeLines);
+
+      // エッジを検索して矢印を追加
+      const outgoingEdges = data.edges.filter(e => e.from === node.id);
+      if (outgoingEdges.length > 0) {
+        const centerPadding = Math.floor((maxWidth - 3) / 2);
+        lines.push(' '.repeat(centerPadding) + boxChars.vertical);
+        lines.push(' '.repeat(centerPadding) + '▼');
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Unicode罫線文字を使用した改善されたASCII表を生成
+   * @requirement REQ-EXT-VIS-003
+   * @since 1.0.0
+   */
+  generateAsciiTable(
+    headers: string[],
+    rows: string[][],
+    options?: {
+      style?: 'simple' | 'rounded' | 'double' | 'heavy';
+      alignment?: ('left' | 'center' | 'right')[];
+    }
+  ): string {
+    const style = options?.style ?? 'simple';
+    const chars = this.getBoxCharacters(style);
+
+    // 各列の最大幅を計算
+    const colWidths = headers.map((h, i) => {
+      const maxInColumn = Math.max(
+        h.length,
+        ...rows.map(r => (r[i] ?? '').length)
+      );
+      return maxInColumn + 2; // パディング
+    });
+
+    const lines: string[] = [];
+
+    // 上罫線
+    lines.push(this.drawHorizontalLine(colWidths, chars, 'top'));
+
+    // ヘッダー行
+    lines.push(this.drawTableRow(headers, colWidths, chars, options?.alignment));
+
+    // ヘッダーと本体の区切り
+    lines.push(this.drawHorizontalLine(colWidths, chars, 'middle'));
+
+    // データ行
+    for (const row of rows) {
+      lines.push(this.drawTableRow(row, colWidths, chars, options?.alignment));
+    }
+
+    // 下罫線
+    lines.push(this.drawHorizontalLine(colWidths, chars, 'bottom'));
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Unicode罫線文字を使用したツリー図を生成
+   * @requirement REQ-EXT-VIS-003
+   * @since 1.0.0
+   */
+  generateAsciiTree(
+    root: { label: string; children?: unknown[] },
+    options?: { style?: 'simple' | 'double' }
+  ): string {
+    const lines: string[] = [];
+    const style = options?.style ?? 'simple';
+    
+    const branch = style === 'double' ? '╠══' : '├──';
+    const lastBranch = style === 'double' ? '╚══' : '└──';
+    const vertical = style === 'double' ? '║  ' : '│  ';
+
+    const renderNode = (
+      node: { label: string; children?: unknown[] },
+      prefix: string,
+      isLast: boolean
+    ) => {
+      const connector = isLast ? lastBranch : branch;
+      lines.push(prefix + connector + ' ' + node.label);
+
+      if (node.children && Array.isArray(node.children)) {
+        const childPrefix = prefix + (isLast ? '   ' : vertical);
+        for (let i = 0; i < node.children.length; i++) {
+          const child = node.children[i] as { label: string; children?: unknown[] };
+          const isLastChild = i === node.children.length - 1;
+          renderNode(child, childPrefix, isLastChild);
+        }
+      }
+    };
+
+    lines.push(root.label);
+    if (root.children && Array.isArray(root.children)) {
+      for (let i = 0; i < root.children.length; i++) {
+        const child = root.children[i] as { label: string; children?: unknown[] };
+        const isLast = i === root.children.length - 1;
+        renderNode(child, '', isLast);
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * 罫線文字セットを取得
+   */
+  private getBoxCharacters(style: 'simple' | 'rounded' | 'double' | 'heavy'): {
+    topLeft: string;
+    topRight: string;
+    bottomLeft: string;
+    bottomRight: string;
+    horizontal: string;
+    vertical: string;
+    teeDown: string;
+    teeUp: string;
+    teeLeft: string;
+    teeRight: string;
+    cross: string;
+  } {
+    switch (style) {
+      case 'rounded':
+        return {
+          topLeft: '╭',
+          topRight: '╮',
+          bottomLeft: '╰',
+          bottomRight: '╯',
+          horizontal: '─',
+          vertical: '│',
+          teeDown: '┬',
+          teeUp: '┴',
+          teeLeft: '┤',
+          teeRight: '├',
+          cross: '┼',
+        };
+      case 'double':
+        return {
+          topLeft: '╔',
+          topRight: '╗',
+          bottomLeft: '╚',
+          bottomRight: '╝',
+          horizontal: '═',
+          vertical: '║',
+          teeDown: '╦',
+          teeUp: '╩',
+          teeLeft: '╣',
+          teeRight: '╠',
+          cross: '╬',
+        };
+      case 'heavy':
+        return {
+          topLeft: '┏',
+          topRight: '┓',
+          bottomLeft: '┗',
+          bottomRight: '┛',
+          horizontal: '━',
+          vertical: '┃',
+          teeDown: '┳',
+          teeUp: '┻',
+          teeLeft: '┫',
+          teeRight: '┣',
+          cross: '╋',
+        };
+      default: // simple
+        return {
+          topLeft: '┌',
+          topRight: '┐',
+          bottomLeft: '└',
+          bottomRight: '┘',
+          horizontal: '─',
+          vertical: '│',
+          teeDown: '┬',
+          teeUp: '┴',
+          teeLeft: '┤',
+          teeRight: '├',
+          cross: '┼',
+        };
+    }
+  }
+
+  /**
+   * ASCIIノードを描画
+   */
+  private drawAsciiNode(
+    node: { id: string; label: string; shape?: string },
+    chars: ReturnType<typeof this.getBoxCharacters>,
+    maxWidth: number
+  ): string[] {
+    const label = node.label || node.id;
+    const boxWidth = Math.min(label.length + 4, maxWidth - 4);
+    const padding = Math.floor((maxWidth - boxWidth) / 2);
+    const innerPadding = Math.floor((boxWidth - 2 - label.length) / 2);
+    const extraPadding = (boxWidth - 2 - label.length) % 2;
+
+    const isRhombus = node.shape === 'diamond' || node.shape === 'rhombus';
+    
+    if (isRhombus) {
+      // 菱形（条件分岐用）
+      const halfWidth = Math.floor(boxWidth / 2);
+      return [
+        ' '.repeat(padding + halfWidth) + '◇',
+        ' '.repeat(padding) + '/' + ' '.repeat(halfWidth - 1) + label + ' '.repeat(halfWidth - 1) + '\\',
+        ' '.repeat(padding + halfWidth) + '◇',
+      ];
+    }
+
+    return [
+      ' '.repeat(padding) + chars.topLeft + chars.horizontal.repeat(boxWidth - 2) + chars.topRight,
+      ' '.repeat(padding) + chars.vertical + ' '.repeat(innerPadding) + label + ' '.repeat(innerPadding + extraPadding) + chars.vertical,
+      ' '.repeat(padding) + chars.bottomLeft + chars.horizontal.repeat(boxWidth - 2) + chars.bottomRight,
+    ];
+  }
+
+  /**
+   * 表の水平線を描画
+   */
+  private drawHorizontalLine(
+    colWidths: number[],
+    chars: ReturnType<typeof this.getBoxCharacters>,
+    position: 'top' | 'middle' | 'bottom'
+  ): string {
+    let left: string, mid: string, right: string;
+
+    switch (position) {
+      case 'top':
+        left = chars.topLeft;
+        mid = chars.teeDown;
+        right = chars.topRight;
+        break;
+      case 'middle':
+        left = chars.teeRight;
+        mid = chars.cross;
+        right = chars.teeLeft;
+        break;
+      case 'bottom':
+        left = chars.bottomLeft;
+        mid = chars.teeUp;
+        right = chars.bottomRight;
+        break;
+    }
+
+    const segments = colWidths.map(w => chars.horizontal.repeat(w));
+    return left + segments.join(mid) + right;
+  }
+
+  /**
+   * 表の行を描画
+   */
+  private drawTableRow(
+    cells: string[],
+    colWidths: number[],
+    chars: ReturnType<typeof this.getBoxCharacters>,
+    alignment?: ('left' | 'center' | 'right')[]
+  ): string {
+    const formattedCells = cells.map((cell, i) => {
+      const width = colWidths[i] ?? 10;
+      const align = alignment?.[i] ?? 'left';
+      return this.alignText(cell, width, align);
+    });
+
+    return chars.vertical + formattedCells.join(chars.vertical) + chars.vertical;
+  }
+
+  /**
+   * テキストを揃える
+   */
+  private alignText(
+    text: string,
+    width: number,
+    alignment: 'left' | 'center' | 'right'
+  ): string {
+    const padding = width - text.length;
+    if (padding <= 0) return text.slice(0, width);
+
+    switch (alignment) {
+      case 'right':
+        return ' '.repeat(padding) + text;
+      case 'center':
+        const left = Math.floor(padding / 2);
+        const right = padding - left;
+        return ' '.repeat(left) + text + ' '.repeat(right);
+      default:
+        return text + ' '.repeat(padding);
+    }
+  }
 }

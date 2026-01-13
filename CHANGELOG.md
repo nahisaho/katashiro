@@ -7,6 +7,107 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-01-13 🎉 GA Release
+
+### 🎯 General Availability Release
+
+KATASHIRO v1.0.0 marks the General Availability release, completing all planned features across 4 phases of development.
+
+### Added
+
+#### @nahisaho/katashiro-analyzer
+
+- **FactChecker.detectConflicts()** (REQ-EXT-FCK-003): 矛盾情報検出
+  - 複数ソースからの矛盾する情報を自動検出
+  - 矛盾タイプ分類（contradiction, inconsistency, partial_conflict, ambiguity）
+  - 各視点（Viewpoint）の提示と信頼度評価
+  - 解決策の推奨（ConflictResolution）
+  - 新しい型: `ConflictDetectionResult`, `ConflictDetail`, `ConflictType`, `Viewpoint`, `ConflictResolution`
+
+- **FactChecker.labelUnverifiedStatements()** (REQ-EXT-FCK-004): 未検証情報ラベリング
+  - 検証できない主張に「[要検証]」ラベルを自動付与
+  - 未検証理由の分類（no_source, conflicting, unverifiable, outdated, insufficient_evidence）
+  - **verifyAndLabelText()**: テキスト全体の検証とラベリング
+  - 新しい型: `UnverifiedStatement`, `UnverificationReason`, `VerificationStatus`, `LabeledStatement`
+
+- **CompetitorAnalyzer.extractDifferentiators()** (REQ-EXT-CMP-003): 差別化ポイント抽出
+  - 競合との差別化ポイントを自動抽出
+  - カテゴリ分類（technology, service, price, quality, brand, network, other）
+  - インパクト・持続可能性スコア（1-5）
+  - 推奨アクションの自動生成
+  - 新しい型: `DifferentiationPoint`, `DifferentiationCategory`, `DifferentiationAnalysisResult`
+
+- **CompetitorAnalyzer.startMonitoring()** (REQ-EXT-CMP-004): 継続モニタリング
+  - 競合の継続的なモニタリングセッション管理
+  - 新規プレスリリース・ニュース検出
+  - キーワードアラート
+  - ネガティブニュースアラート
+  - **stopMonitoring()**, **pauseMonitoring()**, **resumeMonitoring()**: セッション制御
+  - 新しい型: `MonitoringConfig`, `MonitoringSession`, `MonitoringUpdate`
+
+#### @nahisaho/katashiro-collector
+
+- **RealTimeDataFetcher.getDataFreshness()** (REQ-EXT-RTD-003): データ鮮度表示
+  - データ取得時刻と鮮度ステータスを提供
+  - 鮮度レベル（fresh, recent, stale, outdated, unknown）
+  - 経過時間の人間可読形式
+  - 新しい型: `DataFreshnessInfo`, `FreshnessStatus`
+
+- **RealTimeDataFetcher.handleFetchFailure()** (REQ-EXT-RTD-004): 取得失敗処理
+  - 取得失敗時にキャッシュデータを返却（経過時間付き）
+  - キャッシュもない場合は「データ取得不可」を明示
+  - エラータイプ分類（network, timeout, rate_limit, not_found, server_error, parse_error, unknown）
+  - 新しい型: `DataFetchFailureResult`, `CachedDataInfo`, `DataFetchErrorType`
+
+- **RealTimeDataFetcher.fetchWithRateLimit()** (REQ-EXT-RTD-005): APIレート制限対応
+  - レート制限を考慮したリクエスト実行
+  - リクエストキューイング
+  - 指数バックオフリトライ（**fetchWithRetry()**）
+  - 新しい型: `RateLimitConfig`, `RateLimitState`
+
+#### @nahisaho/katashiro-generator
+
+- **CitationGenerator.generateWithErrorHandling()** (REQ-EXT-CIT-004): 引用エラー処理
+  - 引用生成時のエラーを自動検出・ラベリング
+  - 「[未検証]」「[URL不可]」「[情報不足]」ラベル自動付与
+  - エラー詳細（タイプ、メッセージ、関連フィールド）
+  - 新しい型: `CitationWithErrors`, `CitationErrorResult`, `CitationErrorDetail`
+
+- **CitationGenerator.generateWithUrlVerification()** (REQ-EXT-CIT-004): URL検証付き引用生成
+  - URLアクセシビリティ検証（タイムアウト・リトライ対応）
+  - アクセス不可URLに「[URL不可]」ラベル自動付与
+  - **labelUnverifiedCitations()**: 一括ラベル付与
+  - 新しい型: `CitationWithVerificationResult`, `VerificationResultDetail`
+
+- **DiagramGenerator.generateAsciiFlowchart()** (REQ-EXT-VIS-003): ASCII図表高度化
+  - Unicode罫線文字による高品質ASCII図表
+  - スタイル選択（simple, rounded, double, heavy）
+  - **generateAsciiTable()**: Unicode罫線による表生成
+  - **generateAsciiTree()**: ツリー図生成
+
+- **ReportGenerator.generateInChunks()**: 大規模レポートのチャンク生成
+  - 応答長制限を回避するため、セクションごとに順次生成
+  - コールバック関数で各チャンクを処理可能
+  - **generateChunks()**: AsyncGeneratorによるストリーミング生成
+  - 進捗追跡（progress: 0.0-1.0）
+  - 新しい型: `ChunkResult`, `ChunkCallback`, `ChunkGeneratorOptions`
+
+### Changed
+
+- FactChecker: 矛盾検出・未検証ラベリング機能を追加
+- CompetitorAnalyzer: 差別化抽出・継続モニタリング機能を追加
+- RealTimeDataFetcher: 鮮度表示・失敗処理・レート制限機能を追加
+- CitationGenerator: エラー処理・URL検証機能を追加
+- DiagramGenerator: ASCII図表高度化機能を追加
+
+### Tests
+
+- 全テスト: 1728件（100%合格）
+- Phase 4の新機能カバレッジ確認済み
+- チャンク生成機能のテスト追加
+
+---
+
 ## [0.7.0] - 2026-01-13
 
 ### Added
