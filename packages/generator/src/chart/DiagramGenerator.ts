@@ -628,7 +628,7 @@ export class DiagramGenerator {
   ): string {
     // TD is an alias for TB in Mermaid
     const dir = options?.direction === 'TD' ? 'TB' : options?.direction;
-    return this.mermaidBuilder.buildFlowchart(data, { direction: dir });
+    return this.mermaidBuilder.buildFlowchart(data, { type: 'flowchart', direction: dir });
   }
 
   /**
@@ -666,6 +666,219 @@ export class DiagramGenerator {
     }
 
     return lines.join('\n');
+  }
+
+  // ====================
+  // v1.1.0 新規Mermaid生成メソッド
+  // ====================
+
+  /**
+   * Mermaidタイムライン文字列を生成
+   * @requirement REQ-1.1.0-VIS-001
+   * @param data タイムラインデータ
+   * @returns Mermaid timeline構文文字列
+   * @since 1.1.0
+   */
+  generateMermaidTimeline(data: import('./types.js').TimelineData): string {
+    // AC1: 空データチェック
+    if (!data.events || data.events.length === 0) {
+      console.warn('[DiagramGenerator] Timeline has no events');
+      return '';
+    }
+
+    const lines: string[] = ['timeline'];
+    
+    // AC3: タイトル行
+    if (data.title) {
+      lines.push(`    title ${this.escapeLabel(data.title)}`);
+    }
+
+    // AC2: イベント行
+    for (const event of data.events) {
+      lines.push(`    ${this.escapeLabel(event.period)} : ${this.escapeLabel(event.title)}`);
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Mermaidガントチャート文字列を生成
+   * @requirement REQ-1.1.0-VIS-002
+   * @param data ガントデータ
+   * @returns Mermaid gantt構文文字列
+   * @since 1.1.0
+   */
+  generateMermaidGantt(data: import('./types.js').ExtendedGanttData): string {
+    // AC1: 空データチェック
+    if (!data.tasks || data.tasks.length === 0) {
+      console.warn('[DiagramGenerator] Gantt has no tasks');
+      return '';
+    }
+
+    const lines: string[] = ['gantt'];
+    
+    if (data.title) {
+      lines.push(`    title ${this.escapeLabel(data.title)}`);
+    }
+    
+    lines.push(`    dateFormat ${data.dateFormat ?? 'YYYY-MM-DD'}`);
+
+    // AC3: セクションごとにグループ化
+    const sections = new Map<string, import('./types.js').ExtendedGanttTask[]>();
+    for (const task of data.tasks) {
+      const section = task.section ?? '_default';
+      if (!sections.has(section)) {
+        sections.set(section, []);
+      }
+      sections.get(section)!.push(task);
+    }
+
+    // セクションごとに出力
+    for (const [section, tasks] of sections) {
+      if (section !== '_default') {
+        lines.push(`    section ${section}`);
+      }
+      
+      for (const task of tasks) {
+        let line = `    ${this.escapeLabel(task.name)} :`;
+        
+        // AC4-AC6: ステータス
+        if (task.status) {
+          line += `${task.status}, `;
+        }
+        
+        line += `${task.id}, `;
+        line += task.start;
+        line += `, ${task.duration ?? task.end ?? '1d'}`;
+        
+        lines.push(line);
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Mermaid四象限図文字列を生成
+   * @requirement REQ-1.1.0-VIS-003
+   * @param data 四象限データ
+   * @returns Mermaid quadrantChart構文文字列
+   * @since 1.1.0
+   */
+  generateMermaidQuadrant(data: import('./types.js').QuadrantData): string {
+    // AC1: 空データチェック
+    if (!data.items || data.items.length === 0) {
+      console.warn('[DiagramGenerator] Quadrant has no items');
+      return '';
+    }
+
+    const lines: string[] = ['quadrantChart'];
+    
+    // タイトル
+    if (data.title) {
+      lines.push(`    title ${this.escapeLabel(data.title)}`);
+    }
+
+    // AC2: X軸ラベル
+    if (data.xAxisLabel) {
+      lines.push(`    x-axis ${this.escapeLabel(data.xAxisLabel.left)} --> ${this.escapeLabel(data.xAxisLabel.right)}`);
+    }
+
+    // AC3: Y軸ラベル
+    if (data.yAxisLabel) {
+      lines.push(`    y-axis ${this.escapeLabel(data.yAxisLabel.bottom)} --> ${this.escapeLabel(data.yAxisLabel.top)}`);
+    }
+
+    // AC4: 象限ラベル
+    if (data.quadrantLabels) {
+      if (data.quadrantLabels.q1) lines.push(`    quadrant-1 ${this.escapeLabel(data.quadrantLabels.q1)}`);
+      if (data.quadrantLabels.q2) lines.push(`    quadrant-2 ${this.escapeLabel(data.quadrantLabels.q2)}`);
+      if (data.quadrantLabels.q3) lines.push(`    quadrant-3 ${this.escapeLabel(data.quadrantLabels.q3)}`);
+      if (data.quadrantLabels.q4) lines.push(`    quadrant-4 ${this.escapeLabel(data.quadrantLabels.q4)}`);
+    }
+
+    // AC5: アイテム（座標クランプ）
+    for (const item of data.items) {
+      const x = Math.max(0, Math.min(1, item.x));
+      const y = Math.max(0, Math.min(1, item.y));
+      lines.push(`    ${this.escapeLabel(item.label)}: [${x.toFixed(2)}, ${y.toFixed(2)}]`);
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Mermaidマインドマップ文字列を生成
+   * @requirement REQ-1.1.0-VIS-004
+   * @param data マインドマップデータ
+   * @returns Mermaid mindmap構文文字列
+   * @since 1.1.0
+   */
+  generateMermaidMindmap(data: import('./types.js').MindmapData): string {
+    // AC1: 空データチェック
+    if (!data.root) {
+      console.warn('[DiagramGenerator] Mindmap has no root');
+      return '';
+    }
+
+    const lines: string[] = ['mindmap'];
+    
+    // AC2: ルートノード
+    const rootShape = this.getMindmapShape(data.root.shape, data.root.label, true);
+    lines.push(`  root${rootShape}`);
+
+    // AC3-AC4: 子ノード（再帰）
+    const renderChildren = (children: import('./types.js').MindmapNode[] | undefined, indent: number): void => {
+      if (!children) return;
+      for (const child of children) {
+        const shape = this.getMindmapShape(child.shape, child.label, false);
+        lines.push(`${'  '.repeat(indent)}${shape}`);
+        renderChildren(child.children, indent + 1);
+      }
+    };
+
+    renderChildren(data.root.children, 2);
+
+    return lines.join('\n');
+  }
+
+  /**
+   * マインドマップノード形状を取得
+   * @private
+   */
+  private getMindmapShape(
+    shape: import('./types.js').MindmapNode['shape'] | undefined,
+    label: string,
+    isRoot: boolean
+  ): string {
+    const escaped = this.escapeLabel(label);
+    
+    if (isRoot) {
+      return `((${escaped}))`;  // ルートは常に円
+    }
+
+    switch (shape) {
+      case 'square': return `[${escaped}]`;
+      case 'rounded': return `(${escaped})`;
+      case 'circle': return `((${escaped}))`;
+      case 'bang': return `)${escaped}(`;
+      case 'cloud': return `)${escaped}(`;
+      case 'hexagon': return `{{${escaped}}}`;
+      default: return escaped;
+    }
+  }
+
+  /**
+   * ラベルエスケープ
+   * @private
+   */
+  private escapeLabel(label: string): string {
+    if (!label) return '';
+    // Mermaid特殊文字をエスケープ
+    return label
+      .replace(/"/g, '\\"')
+      .replace(/\n/g, ' ')
+      .replace(/:/g, '：');
   }
 
   // ====================

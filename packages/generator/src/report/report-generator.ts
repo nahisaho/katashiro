@@ -7,6 +7,14 @@
  */
 
 import { ok, err, type Result, type Content, type Source } from '@nahisaho/katashiro-core';
+import {
+  DiagramGenerator,
+  type TimelineData,
+  type ExtendedGanttData,
+  type QuadrantData,
+  type MindmapData,
+  type FlowchartData,
+} from '../chart/index.js';
 
 /**
  * レポート設定
@@ -93,9 +101,52 @@ export interface ChunkGeneratorOptions extends ExtendedReportOptions {
 }
 
 /**
+ * テーブルデータ
+ * @since 1.1.0
+ */
+export interface TableData {
+  headers: string[];
+  rows: string[][];
+  alignment?: ('left' | 'center' | 'right')[];
+}
+
+/**
+ * レポートダイアグラムヒント
+ * @since 1.1.0
+ */
+export interface ReportDiagramHint {
+  /** ダイアグラムタイプ */
+  type: 'timeline' | 'gantt' | 'flowchart' | 'quadrant' | 'mindmap' | 'table';
+  /** ダイアグラムデータ */
+  data: TimelineData | ExtendedGanttData | FlowchartData | QuadrantData | MindmapData | TableData;
+}
+
+/**
+ * 拡張レポートセクション
+ * @since 1.1.0
+ */
+export interface ExtendedReportSection {
+  /** 見出し */
+  heading: string;
+  /** コンテンツ */
+  content: string;
+  /** ダイアグラム（オプション） */
+  diagram?: ReportDiagramHint;
+  /** サブセクション */
+  subsections?: ExtendedReportSection[];
+}
+
+/**
  * レポート生成実装
  */
 export class ReportGenerator {
+  /** DiagramGeneratorインスタンス（v1.1.0） */
+  private readonly diagramGenerator: DiagramGenerator;
+
+  constructor() {
+    this.diagramGenerator = new DiagramGenerator();
+  }
+
   /**
    * レポートを生成（簡易API）
    * @param options レポート設定
@@ -989,5 +1040,389 @@ h1, h2, h3 { margin-top: 2rem; }
 .references { margin-top: 3rem; border-top: 1px solid #ccc; padding-top: 1rem; }
 .references ol { padding-left: 1.5rem; }
     `.trim();
+  }
+
+  // ========================================
+  // v1.1.0 ダイアグラム統合機能
+  // ========================================
+
+  /**
+   * セクションを拡張レポートセクションとしてレンダリング
+   * @requirement REQ-1.1.0-RPT-001
+   * @param section 拡張セクション
+   * @param level 見出しレベル（1-6）
+   * @returns Markdown文字列
+   * @since 1.1.0
+   */
+  renderExtendedSection(section: ExtendedReportSection, level: number = 2): string {
+    const lines: string[] = [];
+
+    // 見出し
+    const headingPrefix = '#'.repeat(Math.min(level, 6));
+    lines.push(`${headingPrefix} ${section.heading}`);
+    lines.push('');
+
+    // コンテンツ（ダイアグラムヒント処理）
+    const processedContent = this.processDiagramHints(section.content);
+    lines.push(processedContent);
+    lines.push('');
+
+    // ダイアグラム埋め込み
+    if (section.diagram) {
+      const diagramMarkdown = this.renderDiagram(section.diagram);
+      if (diagramMarkdown) {
+        lines.push(diagramMarkdown);
+        lines.push('');
+      }
+    }
+
+    // サブセクション
+    if (section.subsections) {
+      for (const sub of section.subsections) {
+        lines.push(this.renderExtendedSection(sub, level + 1));
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * ダイアグラムヒントをMermaid/Markdownに変換
+   * @requirement REQ-1.1.0-RPT-001
+   * @param hint ダイアグラムヒント
+   * @returns Markdown文字列（失敗時は空文字）
+   * @since 1.1.0
+   */
+  private renderDiagram(hint: ReportDiagramHint): string {
+    try {
+      switch (hint.type) {
+        case 'timeline':
+          const timelineCode = this.diagramGenerator.generateMermaidTimeline(hint.data as TimelineData);
+          return timelineCode ? this.wrapMermaid(timelineCode) : '';
+
+        case 'gantt':
+          const ganttCode = this.diagramGenerator.generateMermaidGantt(hint.data as ExtendedGanttData);
+          return ganttCode ? this.wrapMermaid(ganttCode) : '';
+
+        case 'quadrant':
+          const quadrantCode = this.diagramGenerator.generateMermaidQuadrant(hint.data as QuadrantData);
+          return quadrantCode ? this.wrapMermaid(quadrantCode) : '';
+
+        case 'mindmap':
+          const mindmapCode = this.diagramGenerator.generateMermaidMindmap(hint.data as MindmapData);
+          return mindmapCode ? this.wrapMermaid(mindmapCode) : '';
+
+        case 'flowchart':
+          const flowchartCode = this.diagramGenerator.generateMermaidFlowchart(hint.data as FlowchartData);
+          return flowchartCode ? this.wrapMermaid(flowchartCode) : '';
+
+        case 'table':
+          const tableData = hint.data as TableData;
+          return this.diagramGenerator.generateMarkdownTable(
+            tableData.headers,
+            tableData.rows,
+            { alignment: tableData.alignment }
+          );
+
+        default:
+          console.warn(`[ReportGenerator] Unknown diagram type: ${(hint as ReportDiagramHint).type}`);
+          return '';
+      }
+    } catch (error) {
+      console.error(`[ReportGenerator] Diagram rendering failed:`, error);
+      return '';
+    }
+  }
+
+  /**
+   * Mermaidコードをコードブロックでラップ
+   * @param code Mermaidコード
+   * @returns Markdownコードブロック
+   * @since 1.1.0
+   */
+  private wrapMermaid(code: string): string {
+    return '```mermaid\n' + code + '\n```';
+  }
+
+  /**
+   * コンテンツ内のダイアグラムヒントコメントを処理
+   * @requirement REQ-1.1.0-RPT-002
+   * @param content セクションコンテンツ
+   * @returns 処理後のコンテンツ
+   * @since 1.1.0
+   */
+  private processDiagramHints(content: string): string {
+    const hintPattern = /<!--\s*diagram:(\w+)\s*-->/gi;
+
+    return content.replace(hintPattern, (match, type) => {
+      try {
+        const diagramData = this.extractDiagramData(content, type, match);
+        if (!diagramData) {
+          return match; // 抽出失敗時は元のコメントを残す
+        }
+
+        let result = '';
+
+        switch (type.toLowerCase()) {
+          case 'timeline':
+            result = this.diagramGenerator.generateMermaidTimeline(diagramData as TimelineData);
+            break;
+          case 'gantt':
+            result = this.diagramGenerator.generateMermaidGantt(diagramData as ExtendedGanttData);
+            break;
+          case 'quadrant':
+            result = this.diagramGenerator.generateMermaidQuadrant(diagramData as QuadrantData);
+            break;
+          case 'mindmap':
+            result = this.diagramGenerator.generateMermaidMindmap(diagramData as MindmapData);
+            break;
+          case 'flowchart':
+            result = this.diagramGenerator.generateMermaidFlowchart(diagramData as unknown as FlowchartData);
+            break;
+          default:
+            return match;
+        }
+
+        return result ? this.wrapMermaid(result) : match;
+      } catch (error) {
+        console.warn(`[ReportGenerator] Failed to process diagram hint: ${error}`);
+        return match;
+      }
+    });
+  }
+
+  /**
+   * コンテンツからダイアグラムデータを抽出
+   * @requirement REQ-1.1.0-RPT-002
+   * @param content セクションコンテンツ全体
+   * @param type ダイアグラムタイプ
+   * @param match マッチしたコメント文字列
+   * @returns 抽出されたデータまたはnull
+   * @since 1.1.0
+   */
+  private extractDiagramData(
+    content: string,
+    type: string,
+    match: string
+  ): TimelineData | ExtendedGanttData | QuadrantData | MindmapData | FlowchartData | null {
+    const matchIndex = content.indexOf(match);
+    // コメントの前後500文字を解析対象とする
+    const contextStart = Math.max(0, matchIndex - 500);
+    const contextEnd = Math.min(content.length, matchIndex + match.length + 500);
+    const context = content.slice(contextStart, contextEnd);
+
+    switch (type.toLowerCase()) {
+      case 'timeline':
+        return this.extractTimelineData(context);
+      case 'gantt':
+        return this.extractGanttData(context);
+      case 'quadrant':
+        return this.extractQuadrantData(context);
+      case 'mindmap':
+        return this.extractMindmapData(context);
+      case 'flowchart':
+        return this.extractFlowchartData(context);
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * タイムラインデータを抽出
+   * @param context コンテキストテキスト
+   * @returns TimelineData または null
+   * @since 1.1.0
+   */
+  private extractTimelineData(context: string): TimelineData | null {
+    // パターン: "YYYY年MM月DD日：イベント" or "YYYY-MM-DD: イベント"
+    const datePattern = /(\d{4}[年\-\/]\d{1,2}[月\-\/]?\d{0,2}日?)[：:\s]+([^\n]+)/g;
+    const events: Array<{ period: string; title: string }> = [];
+    let match: RegExpExecArray | null;
+
+    while ((match = datePattern.exec(context)) !== null) {
+      const period = match[1];
+      const title = match[2];
+      if (period && title) {
+        events.push({
+          period,
+          title: title.trim(),
+        });
+      }
+    }
+
+    if (events.length === 0) return null;
+    return { events };
+  }
+
+  /**
+   * ガントデータを抽出
+   * @param context コンテキストテキスト
+   * @returns ExtendedGanttData または null
+   * @since 1.1.0
+   */
+  private extractGanttData(context: string): ExtendedGanttData | null {
+    // パターン: "- タスク名（YYYY-MM-DD 〜 YYYY-MM-DD）" or "- タスク名: 7日間"
+    const taskPattern = /[-*]\s*([^（(\n]+)[（(]([^）)]+)[）)]/g;
+    const tasks: Array<{
+      id: string;
+      name: string;
+      start: string;
+      duration?: string;
+      end?: string;
+    }> = [];
+    let match: RegExpExecArray | null;
+    let id = 1;
+
+    while ((match = taskPattern.exec(context)) !== null) {
+      const nameMatch = match[1];
+      const dateInfo = match[2];
+      if (!nameMatch || !dateInfo) continue;
+
+      const name = nameMatch.trim();
+      const dateRange = dateInfo.match(/(\d{4}[年\-\/]\d{1,2}[月\-\/]\d{1,2}日?)\s*[〜~\-]\s*(\d{4}[年\-\/]\d{1,2}[月\-\/]\d{1,2}日?)/);
+      const durationMatch = dateInfo.match(/(\d+)\s*[日週月]/);
+
+      if (dateRange && dateRange[1] && dateRange[2]) {
+        tasks.push({
+          id: `task${id++}`,
+          name,
+          start: dateRange[1],
+          end: dateRange[2],
+        });
+      } else if (durationMatch && durationMatch[1]) {
+        tasks.push({
+          id: `task${id++}`,
+          name,
+          start: 'after prev',
+          duration: `${durationMatch[1]}d`,
+        });
+      }
+    }
+
+    if (tasks.length === 0) return null;
+    return { tasks };
+  }
+
+  /**
+   * 四象限データを抽出
+   * @param context コンテキストテキスト
+   * @returns QuadrantData または null
+   * @since 1.1.0
+   */
+  private extractQuadrantData(context: string): QuadrantData | null {
+    // パターン: "項目名（優先度/重要度）" または "項目名: 高/低"
+    const itemPattern = /[-*]\s*([^（(\n:]+)[：:（(]\s*(?:優先度|重要度|影響度|確率)?[：:]?\s*(高|中|低|high|medium|low)\s*[,、]\s*(?:緊急度|実現性)?[：:]?\s*(高|中|低|high|medium|low)/gi;
+    const items: Array<{ label: string; x: number; y: number }> = [];
+    let match: RegExpExecArray | null;
+
+    const valueMap: Record<string, number> = {
+      高: 0.8,
+      中: 0.5,
+      低: 0.2,
+      high: 0.8,
+      medium: 0.5,
+      low: 0.2,
+    };
+
+    while ((match = itemPattern.exec(context)) !== null) {
+      const label = match[1];
+      const xVal = match[2];
+      const yVal = match[3];
+      if (label && xVal && yVal) {
+        items.push({
+          label: label.trim(),
+          x: valueMap[xVal.toLowerCase()] ?? 0.5,
+          y: valueMap[yVal.toLowerCase()] ?? 0.5,
+        });
+      }
+    }
+
+    if (items.length === 0) return null;
+    return { items };
+  }
+
+  /**
+   * マインドマップデータを抽出
+   * @param context コンテキストテキスト
+   * @returns MindmapData または null
+   * @since 1.1.0
+   */
+  private extractMindmapData(context: string): MindmapData | null {
+    // インデントリストからツリー構造を構築
+    const lines = context.split('\n').filter((l) => /^\s*[-*]\s+/.test(l));
+    if (lines.length === 0) return null;
+
+    const buildTree = (items: string[], index: number, _baseIndent: number): { node: { label: string; children?: Array<{ label: string; children?: unknown[] }> }; nextIndex: number } => {
+      const currentLine = items[index] ?? '';
+      const indent = currentLine.match(/^\s*/)?.[0].length ?? 0;
+      const label = currentLine.replace(/^\s*[-*]\s+/, '').trim();
+      const node: { label: string; children?: Array<{ label: string; children?: unknown[] }> } = { label };
+      const children: Array<{ label: string; children?: unknown[] }> = [];
+      let nextIndex = index + 1;
+
+      while (nextIndex < items.length) {
+        const nextLine = items[nextIndex] ?? '';
+        const nextIndent = nextLine.match(/^\s*/)?.[0].length ?? 0;
+        if (nextIndent <= indent) break;
+        const result = buildTree(items, nextIndex, nextIndent);
+        children.push(result.node);
+        nextIndex = result.nextIndex;
+      }
+
+      if (children.length > 0) node.children = children;
+      return { node, nextIndex };
+    };
+
+    try {
+      const result = buildTree(lines, 0, 0);
+      return { root: result.node as MindmapData['root'] };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * フローチャートデータを抽出
+   * @param context コンテキストテキスト
+   * @returns FlowchartData または null
+   * @since 1.1.0
+   */
+  private extractFlowchartData(context: string): FlowchartData | null {
+    // パターン: "A → B" または "1. ステップ → 2. ステップ"
+    const arrowPattern = /([^→\n]+)\s*→\s*([^→\n]+)/g;
+    const nodes: Map<string, { id: string; label: string }> = new Map();
+    const edges: Array<{ from: string; to: string }> = [];
+    let match: RegExpExecArray | null;
+
+    const normalize = (text: string): string => {
+      return text.trim().replace(/^\d+\.\s*/, '');
+    };
+
+    const getOrCreateNode = (label: string): string => {
+      const normalized = normalize(label);
+      if (!nodes.has(normalized)) {
+        nodes.set(normalized, {
+          id: `node${nodes.size + 1}`,
+          label: normalized,
+        });
+      }
+      return nodes.get(normalized)!.id;
+    };
+
+    while ((match = arrowPattern.exec(context)) !== null) {
+      const from = match[1];
+      const to = match[2];
+      if (from && to) {
+        const fromId = getOrCreateNode(from);
+        const toId = getOrCreateNode(to);
+        edges.push({ from: fromId, to: toId });
+      }
+    }
+
+    if (nodes.size === 0) return null;
+    return {
+      nodes: Array.from(nodes.values()),
+      edges,
+    };
   }
 }

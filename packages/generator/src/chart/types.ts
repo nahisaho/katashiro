@@ -388,3 +388,130 @@ export interface MarkdownChartOutput extends Base64ChartOutput {
   /** 代替テキスト */
   altText: string;
 }
+
+// ======================
+// v1.1.0 新規型定義
+// ======================
+
+/**
+ * タイムラインイベント
+ * @since 1.1.0
+ * @requirement REQ-1.1.0-VIS-001
+ */
+export interface TimelineEvent {
+  /** 期間（"2026年1月" or "2026-01-06"） */
+  period: string;
+  /** イベントタイトル */
+  title: string;
+  /** 詳細説明（オプション） */
+  description?: string;
+}
+
+/**
+ * タイムラインデータ
+ * @since 1.1.0
+ * @requirement REQ-1.1.0-VIS-001
+ */
+export interface TimelineData {
+  /** タイムライン全体のタイトル */
+  title?: string;
+  /** イベント一覧 */
+  events: TimelineEvent[];
+}
+
+/**
+ * ガントタスク（拡張版）
+ * @since 1.1.0
+ * @requirement REQ-1.1.0-VIS-002
+ */
+export interface ExtendedGanttTask {
+  /** タスクID */
+  id: string;
+  /** タスク名 */
+  name: string;
+  /** 開始日（"2026-01-15" or "after task1"） */
+  start: string;
+  /** 期間（"7d", "2w" など） */
+  duration?: string;
+  /** 終了日（durationの代替） */
+  end?: string;
+  /** ステータス */
+  status?: 'done' | 'active' | 'crit' | 'milestone';
+  /** セクション */
+  section?: string;
+}
+
+/**
+ * ガントデータ（拡張版）
+ * @since 1.1.0
+ * @requirement REQ-1.1.0-VIS-002
+ */
+export interface ExtendedGanttData {
+  /** タイトル */
+  title?: string;
+  /** 日付フォーマット（デフォルト: YYYY-MM-DD） */
+  dateFormat?: string;
+  /** タスク一覧 */
+  tasks: ExtendedGanttTask[];
+}
+
+/**
+ * 四象限アイテム
+ * @since 1.1.0
+ * @requirement REQ-1.1.0-VIS-003
+ */
+export interface QuadrantItem {
+  /** ラベル */
+  label: string;
+  /** X座標（0-1、左から右） */
+  x: number;
+  /** Y座標（0-1、下から上） */
+  y: number;
+}
+
+/**
+ * 四象限データ
+ * @since 1.1.0
+ * @requirement REQ-1.1.0-VIS-003
+ */
+export interface QuadrantData {
+  /** タイトル */
+  title?: string;
+  /** X軸ラベル */
+  xAxisLabel?: { left: string; right: string };
+  /** Y軸ラベル */
+  yAxisLabel?: { bottom: string; top: string };
+  /** 象限ラベル */
+  quadrantLabels?: {
+    q1?: string;  // 右上
+    q2?: string;  // 左上
+    q3?: string;  // 左下
+    q4?: string;  // 右下
+  };
+  /** アイテム一覧 */
+  items: QuadrantItem[];
+}
+
+/**
+ * マインドマップノード
+ * @since 1.1.0
+ * @requirement REQ-1.1.0-VIS-004
+ */
+export interface MindmapNode {
+  /** ノードラベル */
+  label: string;
+  /** 子ノード */
+  children?: MindmapNode[];
+  /** ノード形状 */
+  shape?: 'default' | 'square' | 'rounded' | 'circle' | 'bang' | 'cloud' | 'hexagon';
+}
+
+/**
+ * マインドマップデータ
+ * @since 1.1.0
+ * @requirement REQ-1.1.0-VIS-004
+ */
+export interface MindmapData {
+  /** ルートノード */
+  root: MindmapNode;
+}

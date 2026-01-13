@@ -112,3 +112,33 @@ export {
   DialogueCollector,
   runSimpleDialogue,
 } from './dialogue';
+
+// 反復合議型リサーチワークフロー (REQ-v1.2.0)
+export {
+  // Types
+  type ConsensusResearchConfig,
+  type SearchConfig,
+  type ReportScore,
+  type AgentReport,
+  type ConflictDetail,
+  type ConflictStatement,
+  type ConsensusSelection,
+  type SourceReference,
+  type AgentStrategy,
+  type SourceType,
+  type IterationResult,
+  type IterationContext,
+  type ConsensusResearchResult,
+  type ConsensusResearchMetadata,
+  type ConsensusResearchEvent,
+  // Constants
+  DEFAULT_CONSENSUS_CONFIG,
+  DEFAULT_AGENT_STRATEGIES,
+  ConsensusResearchError,
+  ConsensusResearchErrorCode,
+  // Classes
+  ReportScorer,
+  ConsensusSelector,
+  ResearchAgent,
+  ConsensusResearchEngine,
+} from './consensus';

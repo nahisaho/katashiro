@@ -346,3 +346,151 @@ describe('ReportGenerator', () => {
     });
   });
 });
+
+// ========================================
+// v1.1.0 ダイアグラム統合テスト
+// ========================================
+
+describe('ReportGenerator - v1.1.0 Diagram Integration', () => {
+  let generator: ReportGenerator;
+
+  beforeEach(() => {
+    generator = new ReportGenerator();
+  });
+
+  describe('renderExtendedSection', () => {
+    it('should render section with timeline diagram', () => {
+      const section = {
+        heading: 'プロジェクト経緯',
+        content: 'このプロジェクトの重要なマイルストーンです。',
+        diagram: {
+          type: 'timeline' as const,
+          data: {
+            title: 'プロジェクトタイムライン',
+            events: [
+              { period: '2025年1月', title: '開始' },
+              { period: '2025年6月', title: '完了' },
+            ],
+          },
+        },
+      };
+
+      const result = generator.renderExtendedSection(section);
+
+      expect(result).toContain('## プロジェクト経緯');
+      expect(result).toContain('このプロジェクトの重要なマイルストーンです。');
+      expect(result).toContain('```mermaid');
+      expect(result).toContain('timeline');
+      expect(result).toContain('2025年1月 : 開始');
+    });
+
+    it('should render section with gantt diagram', () => {
+      const section = {
+        heading: 'スケジュール',
+        content: 'プロジェクトのスケジュール',
+        diagram: {
+          type: 'gantt' as const,
+          data: {
+            title: 'ガントチャート',
+            tasks: [
+              { id: 't1', name: 'タスク1', start: '2025-01-01', duration: '7d' },
+            ],
+          },
+        },
+      };
+
+      const result = generator.renderExtendedSection(section);
+
+      expect(result).toContain('```mermaid');
+      expect(result).toContain('gantt');
+      expect(result).toContain('タスク1');
+    });
+
+    it('should render section with quadrant diagram', () => {
+      const section = {
+        heading: 'リスク分析',
+        content: 'リスクマトリクス',
+        diagram: {
+          type: 'quadrant' as const,
+          data: {
+            title: 'リスクマトリクス',
+            items: [
+              { label: 'リスクA', x: 0.8, y: 0.9 },
+            ],
+          },
+        },
+      };
+
+      const result = generator.renderExtendedSection(section);
+
+      expect(result).toContain('```mermaid');
+      expect(result).toContain('quadrantChart');
+      expect(result).toContain('リスクA');
+    });
+
+    it('should render section with mindmap diagram', () => {
+      const section = {
+        heading: '概念図',
+        content: '関連概念のマップ',
+        diagram: {
+          type: 'mindmap' as const,
+          data: {
+            root: {
+              label: 'メイントピック',
+              children: [
+                { label: 'サブトピック1' },
+                { label: 'サブトピック2' },
+              ],
+            },
+          },
+        },
+      };
+
+      const result = generator.renderExtendedSection(section);
+
+      expect(result).toContain('```mermaid');
+      expect(result).toContain('mindmap');
+      expect(result).toContain('メイントピック');
+    });
+
+    it('should render section with table', () => {
+      const section = {
+        heading: 'データテーブル',
+        content: '以下のデータ',
+        diagram: {
+          type: 'table' as const,
+          data: {
+            headers: ['項目', '値'],
+            rows: [
+              ['A', '100'],
+              ['B', '200'],
+            ],
+          },
+        },
+      };
+
+      const result = generator.renderExtendedSection(section);
+
+      expect(result).toContain('| 項目 | 値 |');
+      expect(result).toContain('| A | 100 |');
+    });
+
+    it('should render subsections with nested levels', () => {
+      const section = {
+        heading: '親セクション',
+        content: '親の内容',
+        subsections: [
+          {
+            heading: '子セクション',
+            content: '子の内容',
+          },
+        ],
+      };
+
+      const result = generator.renderExtendedSection(section, 2);
+
+      expect(result).toContain('## 親セクション');
+      expect(result).toContain('### 子セクション');
+    });
+  });
+});

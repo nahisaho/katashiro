@@ -1564,3 +1564,209 @@ describe('DiagramGenerator - Markdown/Mermaid methods (v1.0.1)', () => {
     });
   });
 });
+
+// ========================================
+// v1.1.0 新機能テスト
+// ========================================
+
+describe('DiagramGenerator - v1.1.0 Advanced Diagrams', () => {
+  let generator: DiagramGenerator;
+
+  beforeEach(() => {
+    generator = new DiagramGenerator();
+  });
+
+  describe('generateMermaidTimeline', () => {
+    it('should generate timeline with title and events', () => {
+      const data = {
+        title: 'Project Timeline',
+        events: [
+          { period: '2025年1月', title: 'Phase 1 開始' },
+          { period: '2025年3月', title: 'Phase 2 開始' },
+          { period: '2025年6月', title: 'リリース' },
+        ],
+      };
+
+      const result = generator.generateMermaidTimeline(data);
+
+      expect(result).toContain('timeline');
+      expect(result).toContain('title Project Timeline');
+      expect(result).toContain('2025年1月 : Phase 1 開始');
+      expect(result).toContain('2025年3月 : Phase 2 開始');
+      expect(result).toContain('2025年6月 : リリース');
+    });
+
+    it('should generate timeline without title', () => {
+      const data = {
+        events: [
+          { period: 'Q1', title: 'Planning' },
+          { period: 'Q2', title: 'Development' },
+        ],
+      };
+
+      const result = generator.generateMermaidTimeline(data);
+
+      expect(result).toContain('timeline');
+      expect(result).not.toContain('title');
+      expect(result).toContain('Q1 : Planning');
+    });
+
+    it('should return empty string for empty events', () => {
+      const data = { events: [] };
+
+      const result = generator.generateMermaidTimeline(data);
+
+      expect(result).toBe('');
+    });
+  });
+
+  describe('generateMermaidGantt', () => {
+    it('should generate gantt chart with tasks', () => {
+      const data = {
+        title: 'Project Schedule',
+        tasks: [
+          { id: 'task1', name: 'Design', start: '2025-01-01', duration: '7d' },
+          { id: 'task2', name: 'Development', start: 'after task1', duration: '14d', status: 'active' as const },
+          { id: 'task3', name: 'Testing', start: 'after task2', end: '2025-02-15', status: 'crit' as const },
+        ],
+      };
+
+      const result = generator.generateMermaidGantt(data);
+
+      expect(result).toContain('gantt');
+      expect(result).toContain('title Project Schedule');
+      expect(result).toContain('Design :task1, 2025-01-01, 7d');
+      expect(result).toContain('Development :active, task2, after task1, 14d');
+      expect(result).toContain('Testing :crit, task3, after task2, 2025-02-15');
+    });
+
+    it('should generate gantt with sections', () => {
+      const data = {
+        tasks: [
+          { id: 't1', name: 'Task A', start: '2025-01-01', duration: '5d', section: 'Phase 1' },
+          { id: 't2', name: 'Task B', start: '2025-01-06', duration: '5d', section: 'Phase 2' },
+        ],
+      };
+
+      const result = generator.generateMermaidGantt(data);
+
+      expect(result).toContain('section Phase 1');
+      expect(result).toContain('section Phase 2');
+    });
+
+    it('should return empty string for empty tasks', () => {
+      const data = { tasks: [] };
+
+      const result = generator.generateMermaidGantt(data);
+
+      expect(result).toBe('');
+    });
+  });
+
+  describe('generateMermaidQuadrant', () => {
+    it('should generate quadrant chart with all options', () => {
+      const data = {
+        title: 'Risk Matrix',
+        xAxisLabel: { left: 'Low Probability', right: 'High Probability' },
+        yAxisLabel: { bottom: 'Low Impact', top: 'High Impact' },
+        quadrantLabels: {
+          q1: 'Urgent',
+          q2: 'Plan',
+          q3: 'Low Priority',
+          q4: 'Quick Win',
+        },
+        items: [
+          { label: 'Risk A', x: 0.8, y: 0.9 },
+          { label: 'Risk B', x: 0.3, y: 0.7 },
+        ],
+      };
+
+      const result = generator.generateMermaidQuadrant(data);
+
+      expect(result).toContain('quadrantChart');
+      expect(result).toContain('title Risk Matrix');
+      expect(result).toContain('x-axis Low Probability --> High Probability');
+      expect(result).toContain('y-axis Low Impact --> High Impact');
+      expect(result).toContain('quadrant-1 Urgent');
+      expect(result).toContain('Risk A: [0.80, 0.90]');
+      expect(result).toContain('Risk B: [0.30, 0.70]');
+    });
+
+    it('should clamp coordinates to 0-1 range', () => {
+      const data = {
+        items: [
+          { label: 'Over', x: 1.5, y: -0.2 },
+        ],
+      };
+
+      const result = generator.generateMermaidQuadrant(data);
+
+      expect(result).toContain('Over: [1.00, 0.00]');
+    });
+
+    it('should return empty string for empty items', () => {
+      const data = { items: [] };
+
+      const result = generator.generateMermaidQuadrant(data);
+
+      expect(result).toBe('');
+    });
+  });
+
+  describe('generateMermaidMindmap', () => {
+    it('should generate mindmap with nested structure', () => {
+      const data = {
+        root: {
+          label: 'Main Topic',
+          children: [
+            {
+              label: 'Branch 1',
+              children: [
+                { label: 'Leaf 1' },
+                { label: 'Leaf 2' },
+              ],
+            },
+            { label: 'Branch 2' },
+          ],
+        },
+      };
+
+      const result = generator.generateMermaidMindmap(data);
+
+      expect(result).toContain('mindmap');
+      expect(result).toContain('root((Main Topic))');
+      expect(result).toContain('Branch 1');
+      expect(result).toContain('Leaf 1');
+      expect(result).toContain('Branch 2');
+    });
+
+    it('should handle node shapes', () => {
+      const data = {
+        root: {
+          label: 'Center',
+          shape: 'circle' as const,
+          children: [
+            { label: 'Square Node', shape: 'square' as const },
+            { label: 'Cloud Node', shape: 'cloud' as const },
+          ],
+        },
+      };
+
+      const result = generator.generateMermaidMindmap(data);
+
+      expect(result).toContain('((Center))');
+      expect(result).toContain('[Square Node]');
+      expect(result).toContain(')Cloud Node(');
+    });
+
+    it('should handle empty root label', () => {
+      const data = { root: { label: '' } };
+
+      const result = generator.generateMermaidMindmap(data);
+
+      // Empty label still generates valid mindmap structure
+      expect(result).toContain('mindmap');
+      expect(result).toContain('root');
+    });
+  });
+});

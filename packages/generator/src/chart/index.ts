@@ -23,6 +23,15 @@ export type {
   // REQ-EXT-VIS-001: Base64/Markdown出力
   Base64ChartOutput,
   MarkdownChartOutput,
+  // REQ-1.1.0-VIS: 高度な図表生成用型
+  TimelineEvent,
+  TimelineData,
+  ExtendedGanttTask,
+  ExtendedGanttData,
+  QuadrantItem,
+  QuadrantData,
+  MindmapNode,
+  MindmapData,
 } from './types.js';
 
 export {

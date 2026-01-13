@@ -60,5 +60,8 @@ export { WakeSleepCycle, PatternQualityEvaluator, PatternCompressor } from '@nah
 export * as orchestrator from '@nahisaho/katashiro-orchestrator';
 export { TaskDecomposer, ToolRegistry, MultiAgentOrchestrator, DialogueCollector, QuestionGenerator, IntentAnalyzer, runSimpleDialogue } from '@nahisaho/katashiro-orchestrator';
 
+// Orchestrator - Consensus Research (v1.2.0)
+export { ConsensusResearchEngine, ReportScorer, ConsensusSelector, ResearchAgent, ConsensusResearchError, ConsensusResearchErrorCode, DEFAULT_CONSENSUS_CONFIG, DEFAULT_AGENT_STRATEGIES } from '@nahisaho/katashiro-orchestrator';
+
 // TrendAnalyzer submodules
 export { ForecastEngine } from '@nahisaho/katashiro-analyzer';

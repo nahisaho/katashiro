@@ -7,6 +7,102 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-01-14
+
+### Added
+
+#### @nahisaho/katashiro-orchestrator
+
+- **ConsensusResearchEngine** (REQ-1.2.0-WFL-001～005): 反復合議型リサーチワークフロー
+  - 3エージェント × 3イテレーションの多視点調査
+  - エージェント並列実行によるリサーチパイプライン
+  - コンセンサスベースの最終レポート生成
+  - 早期終了判定（2連続スコア改善<5%）
+
+- **ReportScorer** (REQ-1.2.0-SCR-001～003): レポートスコアリング
+  - 一貫性スコア（Consistency）: 矛盾の少なさを評価
+  - 信頼性スコア（Reliability）: ソースの信頼度を評価
+  - カバレッジスコア（Coverage）: 調査範囲の網羅度を評価
+  - 矛盾検出（contradiction/inconsistency/outdated）
+
+- **ConsensusSelector** (REQ-1.2.0-SEL-001): 最優秀レポート選出
+  - 総合スコアに基づくレポート選出
+  - タイブレーカー（同点時はconsistencyScoreで判定）
+  - 選出理由の自動生成
+
+- **ResearchAgent** (REQ-1.2.0-AGT-001～002): リサーチエージェント
+  - 差別化された検索戦略（公式/ニュース/分析）
+  - 依存性注入（DI）パターンによるテスト容易性
+  - 検索→スクレイピング→分析→レポート生成パイプライン
+
+### New Types
+
+- `ConsensusResearchConfig`: 合議型リサーチ設定
+- `ReportScore`: レポートスコア（consistency/reliability/coverage/total）
+- `AgentReport`: エージェントレポート
+- `ConflictDetail`: 矛盾詳細
+- `ConsensusSelection`: コンセンサス選択結果
+- `AgentStrategy`: エージェント戦略
+- `IterationContext`: イテレーションコンテキスト
+- `IterationResult`: イテレーション結果
+- `ConsensusResearchResult`: 最終結果
+
+### New Constants
+
+- `DEFAULT_CONSENSUS_CONFIG`: デフォルト設定（3エージェント×3イテレーション）
+- `DEFAULT_AGENT_STRATEGIES`: デフォルトエージェント戦略（公式/ニュース/分析）
+
+### Tests
+
+- 61 new tests for v1.2.0 consensus research system
+  - types.test.ts: 14 tests
+  - ReportScorer.test.ts: 14 tests
+  - ConsensusSelector.test.ts: 9 tests
+  - ResearchAgent.test.ts: 12 tests
+  - ConsensusResearchEngine.integration.test.ts: 12 tests
+
+## [1.1.0] - 2026-01-14
+
+### Added
+
+#### @nahisaho/katashiro-generator
+
+- **DiagramGenerator.generateMermaidTimeline()** (REQ-1.1.0-VIS-001): タイムライン図生成
+  - Mermaid timeline構文によるタイムライン生成
+  - タイトルとイベント（期間・タイトル）の指定
+  - 新しい型: `TimelineData`, `TimelineEvent`
+
+- **DiagramGenerator.generateMermaidGantt()** (REQ-1.1.0-VIS-002): 拡張ガントチャート生成
+  - セクション分け対応
+  - タスクステータス（done/active/crit/milestone）
+  - 日付範囲・期間両対応
+  - 新しい型: `ExtendedGanttData`, `ExtendedGanttTask`
+
+- **DiagramGenerator.generateMermaidQuadrant()** (REQ-1.1.0-VIS-003): 四象限チャート生成
+  - X/Y軸ラベル設定
+  - 象限ラベル設定（q1-q4）
+  - アイテムの座標（0-1範囲、自動クランプ）
+  - 新しい型: `QuadrantData`, `QuadrantItem`
+
+- **DiagramGenerator.generateMermaidMindmap()** (REQ-1.1.0-VIS-004): マインドマップ生成
+  - 再帰的なノード構造
+  - ノード形状オプション（default/square/rounded/circle/bang/cloud/hexagon）
+  - 新しい型: `MindmapData`, `MindmapNode`
+
+- **ReportGenerator.renderExtendedSection()** (REQ-1.1.0-RPT-001): ダイアグラム統合セクションレンダリング
+  - セクションに `diagram` プロパティでダイアグラムを埋め込み
+  - 対応タイプ: timeline, gantt, flowchart, quadrant, mindmap, table
+  - 新しい型: `ExtendedReportSection`, `ReportDiagramHint`, `TableData`
+
+- **ReportGenerator diagram hint comments** (REQ-1.1.0-RPT-002): ダイアグラムヒントコメント
+  - `<!-- diagram:timeline -->` などのコメントから前後の文脈を解析
+  - 日付パターン、リスト構造から自動的にダイアグラムデータを抽出
+  - 対応: timeline, gantt, quadrant, mindmap, flowchart
+
+### Tests
+
+- 24 new tests for v1.1.0 diagram features (chart.test.ts: 17, report-generator.test.ts: 7)
+
 ## [1.0.1] - 2026-01-13
 
 ### Changed
