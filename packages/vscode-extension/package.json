@@ -2,7 +2,7 @@
   "name": "katashiro-vscode",
   "displayName": "KATASHIRO",
   "description": "AI-powered research assistant with web search, content analysis, and knowledge graph",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "publisher": "nahisaho",
   "icon": "media/icon.png",
   "repository": {
@@ -167,13 +167,13 @@
     "publish": "vsce publish"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "^0.4.1",
-    "@nahisaho/katashiro-collector": "^0.4.1",
-    "@nahisaho/katashiro-analyzer": "^0.4.1",
-    "@nahisaho/katashiro-generator": "^0.4.1",
-    "@nahisaho/katashiro-knowledge": "^0.4.1",
-    "@nahisaho/katashiro-feedback": "^0.4.1",
-    "@nahisaho/katashiro-mcp-server": "^0.4.1"
+    "@nahisaho/katashiro-core": "0.6.0",
+    "@nahisaho/katashiro-collector": "0.6.0",
+    "@nahisaho/katashiro-analyzer": "0.6.0",
+    "@nahisaho/katashiro-generator": "0.6.0",
+    "@nahisaho/katashiro-knowledge": "0.6.0",
+    "@nahisaho/katashiro-feedback": "0.6.0",
+    "@nahisaho/katashiro-mcp-server": "0.6.0"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",

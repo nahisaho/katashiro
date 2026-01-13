@@ -13,6 +13,8 @@ import type {
   ChartOutput,
   ChartGeneratorConfig,
   OutputFormat,
+  Base64ChartOutput,
+  MarkdownChartOutput,
 } from './types.js';
 import {
   DEFAULT_CHART_CONFIG,
@@ -449,5 +451,178 @@ export class ChartGenerator implements IChartGenerator {
       `PNG placeholder: ${width}x${height}`,
       'utf-8'
     );
+  }
+
+  /**
+   * チャートをBase64エンコード形式で生成
+   * @since 0.6.0
+   * @requirement REQ-EXT-VIS-001
+   */
+  async generateBase64(
+    data: ChartData,
+    options: ChartOptions
+  ): Promise<Base64ChartOutput> {
+    const output = await this.generateChart(data, options, 'svg');
+    const svg = output.content as string;
+    
+    // SVGをBase64エンコード
+    const base64 = Buffer.from(svg, 'utf-8').toString('base64');
+    const dataUri = `data:image/svg+xml;base64,${base64}`;
+    
+    return {
+      ...output,
+      base64,
+      dataUri,
+      mimeType: 'image/svg+xml',
+    };
+  }
+
+  /**
+   * チャートをMarkdown埋め込み形式で生成
+   * @since 0.6.0
+   * @requirement REQ-EXT-VIS-001
+   */
+  async generateMarkdownEmbed(
+    data: ChartData,
+    options: ChartOptions & { altText?: string }
+  ): Promise<MarkdownChartOutput> {
+    const base64Output = await this.generateBase64(data, options);
+    
+    const altText = options.altText ?? options.title ?? 'Chart';
+    const markdown = `![${altText}](${base64Output.dataUri})`;
+    const html = `<img src="${base64Output.dataUri}" alt="${this.escapeHtml(altText)}" />`;
+    
+    return {
+      ...base64Output,
+      markdown,
+      html,
+      altText,
+    };
+  }
+
+  /**
+   * 棒グラフをBase64で生成
+   * @since 0.6.0
+   */
+  async generateBarChartBase64(
+    labels: string[],
+    series: Array<{ name: string; data: number[]; color?: string }>,
+    options?: Partial<ChartOptions>
+  ): Promise<Base64ChartOutput> {
+    const chartData: ChartData = {
+      labels,
+      series: series.map(s => ({
+        name: s.name,
+        data: s.data,
+        color: s.color,
+      })),
+    };
+
+    return this.generateBase64(chartData, {
+      type: 'bar',
+      ...options,
+    });
+  }
+
+  /**
+   * 折れ線グラフをBase64で生成
+   * @since 0.6.0
+   */
+  async generateLineChartBase64(
+    labels: string[],
+    series: Array<{ name: string; data: number[]; color?: string }>,
+    options?: Partial<ChartOptions>
+  ): Promise<Base64ChartOutput> {
+    const chartData: ChartData = {
+      labels,
+      series: series.map(s => ({
+        name: s.name,
+        data: s.data,
+        color: s.color,
+      })),
+    };
+
+    return this.generateBase64(chartData, {
+      type: 'line',
+      ...options,
+    });
+  }
+
+  /**
+   * 円グラフをBase64で生成
+   * @since 0.6.0
+   */
+  async generatePieChartBase64(
+    data: Array<{ label: string; value: number; color?: string }>,
+    options?: Partial<ChartOptions>
+  ): Promise<Base64ChartOutput> {
+    const chartData: ChartData = {
+      labels: data.map(d => d.label),
+      series: [
+        {
+          name: 'data',
+          data: data.map(d => ({
+            label: d.label,
+            value: d.value,
+            color: d.color,
+          })),
+        },
+      ],
+    };
+
+    return this.generateBase64(chartData, {
+      type: 'pie',
+      ...options,
+    });
+  }
+
+  /**
+   * チャートをMarkdown埋め込み形式で一括生成
+   * @since 0.6.0
+   * @requirement REQ-EXT-VIS-001
+   */
+  async generateMarkdownReport(
+    charts: Array<{
+      data: ChartData;
+      options: ChartOptions;
+      title: string;
+      description?: string;
+    }>
+  ): Promise<string> {
+    const sections: string[] = [];
+
+    for (const chart of charts) {
+      const embedded = await this.generateMarkdownEmbed(chart.data, {
+        ...chart.options,
+        altText: chart.title,
+      });
+
+      const section: string[] = [];
+      section.push(`### ${chart.title}`);
+      if (chart.description) {
+        section.push('');
+        section.push(chart.description);
+      }
+      section.push('');
+      section.push(embedded.markdown);
+      section.push('');
+
+      sections.push(section.join('\n'));
+    }
+
+    return sections.join('\n---\n\n');
+  }
+
+  /**
+   * HTMLエスケープ
+   * @since 0.6.0
+   */
+  private escapeHtml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 }

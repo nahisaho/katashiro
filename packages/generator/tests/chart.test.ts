@@ -984,3 +984,154 @@ describe('Constants and Types', () => {
     expect(error instanceof Error).toBe(true);
   });
 });
+
+describe('REQ-EXT-VIS-001: Base64/Markdown出力', () => {
+  let generator: ChartGenerator;
+
+  beforeEach(() => {
+    generator = new ChartGenerator();
+  });
+
+  const sampleData: ChartData = {
+    labels: ['A', 'B', 'C'],
+    series: [{ name: 'Series1', data: [10, 20, 30] }],
+  };
+
+  const sampleOptions: ChartOptions = {
+    type: 'bar',
+    title: 'Sample Chart',
+  };
+
+  describe('generateBase64', () => {
+    it('should generate Base64 encoded SVG', async () => {
+      const result = await generator.generateBase64(sampleData, sampleOptions);
+
+      expect(result.format).toBe('svg');
+      expect(typeof result.base64).toBe('string');
+      expect(result.base64.length).toBeGreaterThan(0);
+      expect(result.dataUri).toContain('data:image/svg+xml;base64,');
+      expect(result.mimeType).toBe('image/svg+xml');
+    });
+
+    it('should produce valid Base64 string', async () => {
+      const result = await generator.generateBase64(sampleData, sampleOptions);
+
+      // Base64をデコードしてSVGが含まれることを確認
+      const decoded = Buffer.from(result.base64, 'base64').toString('utf-8');
+      expect(decoded).toContain('<svg');
+    });
+
+    it('should include metadata', async () => {
+      const result = await generator.generateBase64(sampleData, sampleOptions);
+
+      expect(result.metadata.type).toBe('bar');
+      expect(result.metadata.library).toBe('katashiro-chart');
+      expect(result.metadata.generatedAt).toBeInstanceOf(Date);
+    });
+  });
+
+  describe('generateMarkdownEmbed', () => {
+    it('should generate Markdown image syntax', async () => {
+      const result = await generator.generateMarkdownEmbed(sampleData, sampleOptions);
+
+      expect(result.markdown).toMatch(/^!\[.*\]\(data:image\/svg\+xml;base64,.*\)$/);
+      expect(result.altText).toBe('Sample Chart');
+    });
+
+    it('should generate HTML img tag', async () => {
+      const result = await generator.generateMarkdownEmbed(sampleData, sampleOptions);
+
+      expect(result.html).toContain('<img src="data:image/svg+xml;base64,');
+      expect(result.html).toContain('alt="Sample Chart"');
+      expect(result.html).toContain('/>');
+    });
+
+    it('should use custom altText', async () => {
+      const result = await generator.generateMarkdownEmbed(sampleData, {
+        ...sampleOptions,
+        altText: 'Custom Alt Text',
+      });
+
+      expect(result.altText).toBe('Custom Alt Text');
+      expect(result.markdown).toContain('![Custom Alt Text]');
+    });
+
+    it('should escape HTML special characters in altText', async () => {
+      const result = await generator.generateMarkdownEmbed(sampleData, {
+        ...sampleOptions,
+        altText: '<script>alert("XSS")</script>',
+      });
+
+      expect(result.html).not.toContain('<script>');
+      expect(result.html).toContain('&lt;script&gt;');
+    });
+  });
+
+  describe('generateBarChartBase64', () => {
+    it('should generate bar chart in Base64 format', async () => {
+      const result = await generator.generateBarChartBase64(
+        ['Jan', 'Feb', 'Mar'],
+        [{ name: 'Sales', data: [100, 150, 200] }]
+      );
+
+      expect(result.base64.length).toBeGreaterThan(0);
+      expect(result.metadata.type).toBe('bar');
+    });
+  });
+
+  describe('generateLineChartBase64', () => {
+    it('should generate line chart in Base64 format', async () => {
+      const result = await generator.generateLineChartBase64(
+        ['Q1', 'Q2', 'Q3', 'Q4'],
+        [{ name: 'Revenue', data: [100, 120, 140, 180] }]
+      );
+
+      expect(result.base64.length).toBeGreaterThan(0);
+      expect(result.metadata.type).toBe('line');
+    });
+  });
+
+  describe('generatePieChartBase64', () => {
+    it('should generate pie chart in Base64 format', async () => {
+      const result = await generator.generatePieChartBase64([
+        { label: 'A', value: 30 },
+        { label: 'B', value: 50 },
+        { label: 'C', value: 20 },
+      ]);
+
+      expect(result.base64.length).toBeGreaterThan(0);
+      expect(result.metadata.type).toBe('pie');
+    });
+  });
+
+  describe('generateMarkdownReport', () => {
+    it('should generate multiple charts in Markdown report', async () => {
+      const report = await generator.generateMarkdownReport([
+        {
+          data: sampleData,
+          options: { type: 'bar' },
+          title: 'Bar Chart',
+          description: 'This is a bar chart.',
+        },
+        {
+          data: sampleData,
+          options: { type: 'line' },
+          title: 'Line Chart',
+        },
+      ]);
+
+      expect(report).toContain('### Bar Chart');
+      expect(report).toContain('This is a bar chart.');
+      expect(report).toContain('### Line Chart');
+      expect(report).toContain('![Bar Chart]');
+      expect(report).toContain('![Line Chart]');
+      expect(report).toContain('---');
+    });
+
+    it('should handle empty array', async () => {
+      const report = await generator.generateMarkdownReport([]);
+
+      expect(report).toBe('');
+    });
+  });
+});

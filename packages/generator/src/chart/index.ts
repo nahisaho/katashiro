@@ -20,6 +20,9 @@ export type {
   ChartOutput,
   DiagramOutput,
   ChartGeneratorConfig,
+  // REQ-EXT-VIS-001: Base64/Markdown出力
+  Base64ChartOutput,
+  MarkdownChartOutput,
 } from './types.js';
 
 export {

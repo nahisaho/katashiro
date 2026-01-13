@@ -314,3 +314,87 @@ export const DEFAULT_FACTCHECKER_CONFIG: FactCheckerConfig = {
   trustedSources: [],
   language: 'en',
 };
+
+/**
+ * 複数ソース検証結果
+ * @requirement REQ-EXT-FCK-001
+ */
+export interface MultiSourceVerificationResult {
+  /** 検証対象の主張 */
+  readonly claim: string;
+  /** 使用した独立ソース数 */
+  readonly sourceCount: number;
+  /** 必要な最小ソース数を満たしているか */
+  readonly meetsMinimumSources: boolean;
+  /** ソース間の一致度 (0-1) */
+  readonly agreementScore: number;
+  /** 各ソースからの検証結果 */
+  readonly sourceResults: SourceVerificationResult[];
+  /** 総合判定 */
+  readonly overallVerdict: VerdictLabel;
+  /** 信頼度スコア (0-100) */
+  readonly confidenceScore: number;
+  /** 検証サマリー */
+  readonly summary: string;
+}
+
+/**
+ * 個別ソース検証結果
+ */
+export interface SourceVerificationResult {
+  /** ソース名 */
+  readonly sourceName: string;
+  /** ソースタイプ */
+  readonly sourceType: VerificationSourceType;
+  /** ソースURL */
+  readonly sourceUrl: string;
+  /** 検証結果（支持/矛盾/中立） */
+  readonly verdict: EvidenceRelation;
+  /** 関連する抜粋 */
+  readonly excerpt: string;
+  /** ソースの信頼性スコア (0-1) */
+  readonly sourceCredibility: number;
+  /** 取得日時 */
+  readonly retrievedAt: Date;
+}
+
+/**
+ * 信頼度スコア計算結果
+ * @requirement REQ-EXT-FCK-002
+ */
+export interface ConfidenceScoreResult {
+  /** 信頼度スコア (0-100) */
+  readonly score: number;
+  /** スコアの内訳 */
+  readonly breakdown: ConfidenceBreakdown;
+  /** スコアレベル */
+  readonly level: ConfidenceLevel;
+  /** 説明 */
+  readonly explanation: string;
+}
+
+/**
+ * 信頼度スコアの内訳
+ */
+export interface ConfidenceBreakdown {
+  /** ソース一致スコア (0-100) */
+  readonly sourceAgreement: number;
+  /** ソース信頼性スコア (0-100) */
+  readonly sourceCredibility: number;
+  /** エビデンス量スコア (0-100) */
+  readonly evidenceQuantity: number;
+  /** 一貫性スコア (0-100) */
+  readonly consistency: number;
+  /** 最新性スコア (0-100) */
+  readonly recency: number;
+}
+
+/**
+ * 信頼度レベル
+ */
+export type ConfidenceLevel = 
+  | 'very_high'    // 90-100
+  | 'high'         // 70-89
+  | 'moderate'     // 50-69
+  | 'low'          // 30-49
+  | 'very_low';    // 0-29

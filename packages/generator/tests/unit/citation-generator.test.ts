@@ -459,4 +459,83 @@ describe('CitationGenerator', () => {
       expect(links).toHaveLength(0);
     });
   });
+
+  describe('REQ-EXT-CIT-003: URL検証', () => {
+    it('verifyUrl() が正しい構造を返す', async () => {
+      // 実際のHTTPリクエストは行わず、モック的なテスト
+      const result = await generator.verifyUrl('https://example.com');
+      
+      expect(typeof result.url).toBe('string');
+      expect(result.url).toBe('https://example.com');
+      expect(typeof result.accessible).toBe('boolean');
+      expect(typeof result.responseTimeMs).toBe('number');
+      expect(result.checkedAt).toBeInstanceOf(Date);
+      
+      // タイトルはnullまたは文字列
+      expect(result.title === null || typeof result.title === 'string').toBe(true);
+    });
+
+    it('verifyUrl() が空URLに対してエラーを返す', async () => {
+      const result = await generator.verifyUrl('');
+      
+      expect(result.accessible).toBe(false);
+      expect(result.error).toBe('URL is empty');
+    });
+
+    it('verifyUrl() が不正なURL形式に対してエラーを返す', async () => {
+      const result = await generator.verifyUrl('not-a-valid-url');
+      
+      expect(result.accessible).toBe(false);
+      expect(result.error).toBe('Invalid URL format');
+    });
+
+    it('verifyUrls() が複数URLを一括検証できる', async () => {
+      const results = await generator.verifyUrls([
+        'https://example.com',
+        '',
+        'invalid-url',
+      ]);
+      
+      expect(results).toHaveLength(3);
+      expect(results[0].url).toBe('https://example.com');
+      expect(results[1].accessible).toBe(false);
+      expect(results[1].error).toBe('URL is empty');
+      expect(results[2].accessible).toBe(false);
+      expect(results[2].error).toBe('Invalid URL format');
+    });
+
+    it('verifySourceUrl() がURLありソースを検証できる', async () => {
+      const result = await generator.verifySourceUrl(mockSource);
+      
+      expect(result.source).toBe(mockSource);
+      expect(result.verification).not.toBeNull();
+      expect(['verified', 'unverified']).toContain(result.status);
+      // unverifiedの場合はラベルがある
+      if (result.status === 'unverified') {
+        expect(result.label).toBe('[未検証]');
+      } else {
+        expect(result.label).toBeNull();
+      }
+    });
+
+    it('verifySourceUrl() がURLなしソースを正しく処理する', async () => {
+      const sourceNoUrl: Source = {
+        id: 'src-no-url',
+        metadata: { title: 'No URL Source' },
+        fetchedAt: new Date().toISOString(),
+      };
+      
+      const result = await generator.verifySourceUrl(sourceNoUrl);
+      
+      expect(result.status).toBe('no_url');
+      expect(result.verification).toBeNull();
+      expect(result.label).toBeNull();
+    });
+
+    it('verifyUrl() がレスポンス時間を記録する', async () => {
+      const result = await generator.verifyUrl('https://example.com');
+      
+      expect(result.responseTimeMs).toBeGreaterThanOrEqual(0);
+    });
+  });
 });

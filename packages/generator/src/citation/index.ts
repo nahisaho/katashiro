@@ -14,4 +14,7 @@ export type {
   GeneratedCitation,
   CitationValidationResult,
   SourceInput,
+  // REQ-EXT-CIT-003: URL検証
+  UrlVerificationResult,
+  VerifiedCitationSource,
 } from './citation-generator.js';

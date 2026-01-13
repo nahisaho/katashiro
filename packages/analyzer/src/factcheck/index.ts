@@ -47,6 +47,12 @@ export type {
   TrustedSourceConfig,
   VerdictInput,
   FactCheckerConfig,
+  // REQ-EXT-FCK-001/002: 複数ソース検証・信頼度スコア
+  MultiSourceVerificationResult,
+  SourceVerificationResult,
+  ConfidenceScoreResult,
+  ConfidenceBreakdown,
+  ConfidenceLevel,
 } from './types.js';
 
 export { DEFAULT_FACTCHECKER_CONFIG } from './types.js';

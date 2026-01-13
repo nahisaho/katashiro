@@ -464,4 +464,194 @@ describe('FactChecker', () => {
       }
     });
   });
+
+  describe('REQ-EXT-FCK-001: 複数ソース検証', () => {
+    let checker: FactChecker;
+
+    beforeEach(() => {
+      checker = new FactChecker();
+    });
+
+    it('verifyWithMultipleSources() が結果を返す', async () => {
+      const result = await checker.verifyWithMultipleSources(
+        'Water boils at 100 degrees Celsius at sea level.'
+      );
+
+      expect(result.isOk()).toBe(true);
+      if (result._tag === 'Ok') {
+        expect(result.value.claim).toBe('Water boils at 100 degrees Celsius at sea level.');
+        expect(typeof result.value.sourceCount).toBe('number');
+        expect(typeof result.value.meetsMinimumSources).toBe('boolean');
+        expect(typeof result.value.agreementScore).toBe('number');
+        expect(result.value.agreementScore).toBeGreaterThanOrEqual(0);
+        expect(result.value.agreementScore).toBeLessThanOrEqual(1);
+        expect(Array.isArray(result.value.sourceResults)).toBe(true);
+        expect(typeof result.value.overallVerdict).toBe('string');
+        expect(typeof result.value.confidenceScore).toBe('number');
+        expect(result.value.confidenceScore).toBeGreaterThanOrEqual(0);
+        expect(result.value.confidenceScore).toBeLessThanOrEqual(100);
+        expect(typeof result.value.summary).toBe('string');
+      }
+    });
+
+    it('minSources オプションが機能する', async () => {
+      const result = await checker.verifyWithMultipleSources(
+        'The Earth revolves around the Sun.',
+        { minSources: 3 }
+      );
+
+      expect(result.isOk()).toBe(true);
+      if (result._tag === 'Ok') {
+        // meetsMinimumSources は sourceCount >= minSources
+        if (result.value.sourceCount >= 3) {
+          expect(result.value.meetsMinimumSources).toBe(true);
+        } else {
+          expect(result.value.meetsMinimumSources).toBe(false);
+        }
+      }
+    });
+
+    it('空の主張に対してエラーを返す', async () => {
+      const result = await checker.verifyWithMultipleSources('');
+
+      expect(result.isOk()).toBe(false);
+      if (result._tag === 'Err') {
+        expect(result.error.code).toBe('INVALID_CLAIM');
+      }
+    });
+
+    it('sourceTypes オプションが機能する', async () => {
+      const result = await checker.verifyWithMultipleSources(
+        'Gravity is a fundamental force.',
+        { sourceTypes: ['academic', 'government'] }
+      );
+
+      expect(result.isOk()).toBe(true);
+    });
+  });
+
+  describe('REQ-EXT-FCK-002: 信頼度スコア計算', () => {
+    let checker: FactChecker;
+
+    beforeEach(() => {
+      checker = new FactChecker();
+    });
+
+    it('calculateConfidenceScore() が正しい構造を返す', () => {
+      const mockEvidence: Evidence[] = [
+        {
+          id: 'ev1',
+          sourceName: 'Source A',
+          sourceUrl: 'https://example.com/a',
+          sourceType: 'trusted_news',
+          excerpt: 'This is supporting evidence.',
+          relation: 'supports',
+          credibilityScore: 0.9,
+          retrievedAt: new Date(),
+          publishedDate: new Date(),
+        },
+        {
+          id: 'ev2',
+          sourceName: 'Source B',
+          sourceUrl: 'https://example.com/b',
+          sourceType: 'academic',
+          excerpt: 'This also supports.',
+          relation: 'supports',
+          credibilityScore: 0.85,
+          retrievedAt: new Date(),
+          publishedDate: new Date(),
+        },
+      ];
+
+      const result = checker.calculateConfidenceScore(mockEvidence);
+
+      expect(typeof result.score).toBe('number');
+      expect(result.score).toBeGreaterThanOrEqual(0);
+      expect(result.score).toBeLessThanOrEqual(100);
+      expect(result.breakdown).toBeDefined();
+      expect(typeof result.breakdown.sourceAgreement).toBe('number');
+      expect(typeof result.breakdown.sourceCredibility).toBe('number');
+      expect(typeof result.breakdown.evidenceQuantity).toBe('number');
+      expect(typeof result.breakdown.consistency).toBe('number');
+      expect(typeof result.breakdown.recency).toBe('number');
+      expect(['very_high', 'high', 'moderate', 'low', 'very_low']).toContain(result.level);
+      expect(typeof result.explanation).toBe('string');
+    });
+
+    it('エビデンスがない場合はスコア0を返す', () => {
+      const result = checker.calculateConfidenceScore([]);
+
+      expect(result.score).toBe(0);
+      expect(result.level).toBe('very_low');
+    });
+
+    it('支持エビデンスが多いと高いスコアを返す', () => {
+      const supportingEvidence: Evidence[] = Array.from({ length: 5 }, (_, i) => ({
+        id: `ev${i}`,
+        sourceName: `Source ${i}`,
+        sourceUrl: `https://example${i}.com`,
+        sourceType: 'trusted_news' as const,
+        excerpt: 'Supporting evidence.',
+        relation: 'supports' as const,
+        credibilityScore: 0.9,
+        retrievedAt: new Date(),
+        publishedDate: new Date(),
+      }));
+
+      const result = checker.calculateConfidenceScore(supportingEvidence);
+
+      expect(result.score).toBeGreaterThanOrEqual(70);
+      expect(['very_high', 'high']).toContain(result.level);
+    });
+
+    it('矛盾エビデンスがあると低いスコアを返す', () => {
+      const mixedEvidence: Evidence[] = [
+        {
+          id: 'ev1',
+          sourceName: 'Source A',
+          sourceUrl: 'https://example.com/a',
+          sourceType: 'trusted_news',
+          excerpt: 'Supporting evidence.',
+          relation: 'supports',
+          credibilityScore: 0.8,
+          retrievedAt: new Date(),
+        },
+        {
+          id: 'ev2',
+          sourceName: 'Source B',
+          sourceUrl: 'https://example.com/b',
+          sourceType: 'trusted_news',
+          excerpt: 'Contradicting evidence.',
+          relation: 'contradicts',
+          credibilityScore: 0.8,
+          retrievedAt: new Date(),
+        },
+      ];
+
+      const result = checker.calculateConfidenceScore(mixedEvidence);
+
+      // 矛盾があるとスコアが下がる
+      expect(result.score).toBeLessThan(90);
+    });
+
+    it('agreementScore パラメータが反映される', () => {
+      const evidence: Evidence[] = [
+        {
+          id: 'ev1',
+          sourceName: 'Source A',
+          sourceUrl: 'https://example.com/a',
+          sourceType: 'trusted_news',
+          excerpt: 'Neutral evidence.',
+          relation: 'neutral',
+          credibilityScore: 0.7,
+          retrievedAt: new Date(),
+        },
+      ];
+
+      const highAgreement = checker.calculateConfidenceScore(evidence, 0.9);
+      const lowAgreement = checker.calculateConfidenceScore(evidence, 0.2);
+
+      expect(highAgreement.score).toBeGreaterThan(lowAgreement.score);
+    });
+  });
 });

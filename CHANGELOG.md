@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-01-13
+
+### Added
+
+#### @nahisaho/katashiro-analyzer
+- **FactChecker.verifyWithMultipleSources()** (REQ-EXT-FCK-001): 複数ソース検証機能
+  - 2つ以上の独立ソースからの情報クロスリファレンス
+  - ソースタイプ指定（news, academic, government, organization）
+  - 検証サマリー自動生成
+  - 新しい型: `MultiSourceVerificationResult`, `SourceVerificationResult`
+
+- **FactChecker.calculateConfidenceScore()** (REQ-EXT-FCK-002): 信頼度スコア計算
+  - 0〜100の信頼度スコア算出
+  - ブレイクダウン詳細（sourceAgreement, sourceCredibility, evidenceQuantity, consistency, recency）
+  - 信頼度レベル判定（very_high, high, moderate, low, very_low）
+  - 根拠説明文自動生成
+  - 新しい型: `ConfidenceScoreResult`, `ConfidenceBreakdown`, `ConfidenceLevel`
+
+#### @nahisaho/katashiro-generator
+- **CitationGenerator.verifyUrl()** (REQ-EXT-CIT-003): URL検証機能
+  - URLアクセシビリティ検証（3秒タイムアウト）
+  - HTTPステータスコード取得
+  - ページタイトル自動抽出（title, og:title, twitter:title対応）
+  - **verifyUrls()**: 複数URL一括検証
+  - **verifySourceUrl()**: ソースURL検証（アクセス不可時に「[未検証]」ラベル追加）
+  - 新しい型: `UrlVerificationResult`, `VerifiedCitationSource`
+
+- **ChartGenerator.generateBase64()** (REQ-EXT-VIS-001): Base64チャート生成
+  - SVGをBase64エンコード
+  - Data URI形式で出力（`data:image/svg+xml;base64,...`）
+  - MIMEタイプ指定（image/svg+xml）
+  - **generateBarChartBase64()**, **generateLineChartBase64()**, **generatePieChartBase64()**: チャートタイプ別Base64生成
+
+- **ChartGenerator.generateMarkdownEmbed()** (REQ-EXT-VIS-001): Markdownチャート埋め込み
+  - `![alt](dataUri)` 形式でのMarkdown出力
+  - HTML `<img>` タグ出力
+  - altText自動生成
+  - **generateMarkdownReport()**: 複数チャートのMarkdownレポート生成
+  - 新しい型: `Base64ChartOutput`, `MarkdownChartOutput`
+
+### Changed
+- FactChecker: 複数ソース検証とスコア計算メソッドを追加
+- CitationGenerator: URL検証機能を追加
+- ChartGenerator: Base64/Markdown出力機能を追加
+
+### Tests
+- テスト追加: 42ケース（factcheck: 18, citation: 10, chart: 14）
+- 総テスト数: 1667 → 1695（+28）
+
 ## [0.5.0] - 2026-01-13
 
 ### Added

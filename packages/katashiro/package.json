@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "KATASHIRO - VS Code Agent Mode向け情報収集・分析・生成システム（オールインワンパッケージ）",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -76,13 +76,13 @@
     "url": "https://github.com/nahisaho/katashiro/issues"
   },
   "dependencies": {
-    "@nahisaho/katashiro-analyzer": "^0.3.1",
-    "@nahisaho/katashiro-collector": "^0.3.1",
-    "@nahisaho/katashiro-core": "^0.3.1",
-    "@nahisaho/katashiro-feedback": "^0.3.1",
-    "@nahisaho/katashiro-generator": "^0.3.1",
-    "@nahisaho/katashiro-knowledge": "^0.3.1",
-    "@nahisaho/katashiro-mcp-server": "^0.3.1",
+    "@nahisaho/katashiro-analyzer": "0.6.0",
+    "@nahisaho/katashiro-collector": "0.6.0",
+    "@nahisaho/katashiro-core": "0.6.0",
+    "@nahisaho/katashiro-feedback": "0.6.0",
+    "@nahisaho/katashiro-generator": "0.6.0",
+    "@nahisaho/katashiro-knowledge": "0.6.0",
+    "@nahisaho/katashiro-mcp-server": "0.6.0",
     "commander": "^12.1.0"
   },
   "engines": {

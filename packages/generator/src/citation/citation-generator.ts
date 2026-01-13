@@ -55,6 +55,46 @@ export interface InlineCitationLink {
 }
 
 /**
+ * URL検証結果
+ * @since 0.6.0
+ * @requirement REQ-EXT-CIT-003
+ */
+export interface UrlVerificationResult {
+  /** 検証対象のURL */
+  readonly url: string;
+  /** アクセス可能か */
+  readonly accessible: boolean;
+  /** ページタイトル（取得できた場合） */
+  readonly title: string | null;
+  /** HTTPステータスコード */
+  readonly statusCode?: number;
+  /** エラーメッセージ（失敗時） */
+  readonly error?: string;
+  /** レスポンス時間（ミリ秒） */
+  readonly responseTimeMs: number;
+  /** 検証日時 */
+  readonly checkedAt: Date;
+  /** リダイレクト後のURL（異なる場合） */
+  readonly finalUrl?: string;
+}
+
+/**
+ * 検証済み引用ソース
+ * @since 0.6.0
+ * @requirement REQ-EXT-CIT-003
+ */
+export interface VerifiedCitationSource {
+  /** 元のソース */
+  readonly source: Source | SourceInput;
+  /** URL検証結果 */
+  readonly verification: UrlVerificationResult | null;
+  /** 検証ステータス */
+  readonly status: 'verified' | 'unverified' | 'no_url';
+  /** ラベル（未検証の場合） */
+  readonly label: string | null;
+}
+
+/**
  * 生成された引用情報
  */
 export interface GeneratedCitation {
@@ -619,6 +659,191 @@ export class CitationGenerator {
     } catch {
       return {};
     }
+  }
+
+  /**
+   * 引用元URLのアクセシビリティを検証
+   * @since 0.6.0
+   * @requirement REQ-EXT-CIT-003
+   * @description URLにアクセスしてタイトルを取得、3秒以内に完了
+   */
+  async verifyUrl(url: string): Promise<UrlVerificationResult> {
+    const startTime = Date.now();
+    const timeoutMs = 3000; // 3秒タイムアウト
+
+    if (!url || url.trim() === '') {
+      return {
+        url,
+        accessible: false,
+        title: null,
+        error: 'URL is empty',
+        responseTimeMs: 0,
+        checkedAt: new Date(),
+      };
+    }
+
+    // URL形式を検証
+    try {
+      new URL(url);
+    } catch {
+      return {
+        url,
+        accessible: false,
+        title: null,
+        error: 'Invalid URL format',
+        responseTimeMs: Date.now() - startTime,
+        checkedAt: new Date(),
+      };
+    }
+
+    try {
+      // AbortController でタイムアウト制御
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'KATASHIRO-CitationVerifier/0.6.0',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        },
+        signal: controller.signal,
+        redirect: 'follow',
+      });
+
+      clearTimeout(timeoutId);
+      const responseTimeMs = Date.now() - startTime;
+
+      if (!response.ok) {
+        return {
+          url,
+          accessible: false,
+          title: null,
+          statusCode: response.status,
+          error: `HTTP ${response.status}: ${response.statusText}`,
+          responseTimeMs,
+          checkedAt: new Date(),
+        };
+      }
+
+      // HTMLからタイトルを抽出
+      let title: string | null = null;
+      const contentType = response.headers.get('content-type') ?? '';
+      
+      if (contentType.includes('text/html') || contentType.includes('application/xhtml')) {
+        const html = await response.text();
+        title = this.extractTitleFromHtml(html);
+      }
+
+      // タイトルが取得できなかった場合はURLから推測
+      if (!title) {
+        title = this.extractTitleFromUrl(url);
+      }
+
+      return {
+        url,
+        accessible: true,
+        title,
+        statusCode: response.status,
+        responseTimeMs,
+        checkedAt: new Date(),
+        finalUrl: response.url !== url ? response.url : undefined,
+      };
+    } catch (error) {
+      const responseTimeMs = Date.now() - startTime;
+      let errorMessage = 'Unknown error';
+
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = `Timeout: Request exceeded ${timeoutMs}ms`;
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      return {
+        url,
+        accessible: false,
+        title: null,
+        error: errorMessage,
+        responseTimeMs,
+        checkedAt: new Date(),
+      };
+    }
+  }
+
+  /**
+   * 複数のURLを一括検証
+   * @since 0.6.0
+   * @requirement REQ-EXT-CIT-003
+   */
+  async verifyUrls(urls: string[]): Promise<UrlVerificationResult[]> {
+    return Promise.all(urls.map(url => this.verifyUrl(url)));
+  }
+
+  /**
+   * ソースの引用URLを検証し、結果を付加
+   * @since 0.6.0
+   * @requirement REQ-EXT-CIT-003
+   */
+  async verifySourceUrl(source: Source | SourceInput): Promise<VerifiedCitationSource> {
+    const url = this.isSource(source) ? source.url : (source as SourceInput).url;
+    
+    if (!url) {
+      return {
+        source,
+        verification: null,
+        status: 'no_url',
+        label: null,
+      };
+    }
+
+    const verification = await this.verifyUrl(url);
+    
+    return {
+      source,
+      verification,
+      status: verification.accessible ? 'verified' : 'unverified',
+      label: verification.accessible ? null : '[未検証]',
+    };
+  }
+
+  /**
+   * HTMLからタイトルを抽出
+   * @since 0.6.0
+   */
+  private extractTitleFromHtml(html: string): string | null {
+    // <title>タグからタイトルを抽出
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    if (titleMatch?.[1]) {
+      // HTMLエンティティをデコード
+      const title = titleMatch[1]
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ')
+        .trim();
+      
+      if (title.length > 0) {
+        return title;
+      }
+    }
+
+    // og:title からフォールバック
+    const ogTitleMatch = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i);
+    if (ogTitleMatch?.[1]) {
+      return ogTitleMatch[1].trim();
+    }
+
+    // Twitter Card タイトル
+    const twitterTitleMatch = html.match(/<meta[^>]*name=["']twitter:title["'][^>]*content=["']([^"']+)["']/i);
+    if (twitterTitleMatch?.[1]) {
+      return twitterTitleMatch[1].trim();
+    }
+
+    return null;
   }
 
   /**

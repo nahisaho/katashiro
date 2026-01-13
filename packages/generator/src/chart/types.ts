@@ -360,3 +360,31 @@ export const THEME_PALETTES: Record<ChartTheme, string[]> = {
   ],
   custom: DEFAULT_CHART_CONFIG.defaultColors,
 };
+
+/**
+ * Base64チャート出力
+ * @since 0.6.0
+ * @requirement REQ-EXT-VIS-001
+ */
+export interface Base64ChartOutput extends ChartOutput {
+  /** Base64エンコードされた内容 */
+  base64: string;
+  /** Data URI形式 */
+  dataUri: string;
+  /** MIMEタイプ */
+  mimeType: string;
+}
+
+/**
+ * Markdown埋め込みチャート出力
+ * @since 0.6.0
+ * @requirement REQ-EXT-VIS-001
+ */
+export interface MarkdownChartOutput extends Base64ChartOutput {
+  /** Markdown形式（![alt](dataUri)） */
+  markdown: string;
+  /** HTML形式（<img src="dataUri" />） */
+  html: string;
+  /** 代替テキスト */
+  altText: string;
+}
