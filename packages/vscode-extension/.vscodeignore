@@ -27,5 +27,6 @@ node_modules/**
 **/.DS_Store
 **/Thumbs.db
 
-# Exclude all parent references
+# Exclude all parent directories and monorepo files
+../**
 ..
