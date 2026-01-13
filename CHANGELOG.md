@@ -7,6 +7,128 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-01-13
+
+### Added
+
+#### @nahisaho/katashiro-workspace（新パッケージ）
+- **LocalWorkspace** (REQ-011-02): ローカルファイルシステム操作
+  - 読み書き/作成/削除/リスト/検索
+  - パストラバーサル防止
+  - 読み取り専用モードサポート
+  - UTF-8/バイナリ対応
+- **DockerWorkspace** (REQ-011-04): Dockerコンテナ内ファイル操作
+  - `docker exec`ベースのファイル操作
+  - base64エンコードによる安全な書き込み
+  - 統一インターフェースでLocalWorkspaceと同一API
+- **WorkspaceFactory** (REQ-011-05): ワークスペース生成ファクトリ
+  - 型に依存しない統一インターフェース
+  - `createWorkspace()`, `readFile()`, `writeFile()` ユーティリティ
+
+#### @nahisaho/katashiro-security（新パッケージ）
+- **SecurityAnalyzer** (REQ-012): アクションリスク評価
+  - REQ-012-01: リスクレベル評価（low/medium/high/critical）
+  - REQ-012-02: 確認プロンプト判定
+  - REQ-012-03: 拒否パターンブロック（.env, node_modules, .git等）
+  - REQ-012-04: 許可パターン判定（.md, .txt, .json等）
+  - REQ-012-06: ファイル削除=高リスク自動判定
+  - カスタムポリシー/ルール追加対応
+- **ActionLogger** (REQ-012-05): 監査ログ記録
+  - タイムスタンプ付きアクションログ
+  - リスクレベル/アクションタイプ/ユーザーIDでフィルター
+  - サマリー生成（成功率、ブロック数等）
+  - InMemoryLogStorage（最大件数制限付き）
+
+### Changed
+- pnpm-workspace.yaml追加（pnpm互換性向上）
+
+## [0.4.1] - 2026-01-16
+
+### Added
+
+#### 対話型情報収集システム（MUSUBIX風）
+- **DialogueCollector**: 1問1答形式でユーザーの真の意図を引き出す
+  - セッション管理（開始/完了/キャンセル）
+  - 質問戦略（breadth_first/depth_first/adaptive/minimal）
+  - 信頼度ベースの確認質問自動生成
+  - 日本語/英語対応
+
+- **QuestionGenerator**: コンテキスト適応型質問生成
+  - 10カテゴリ（purpose/background/constraints/stakeholders/timeline/scope/priority/success/risks/resources）
+  - 各カテゴリに複数の質問テンプレート
+  - 明確化・確認質問の自動生成
+
+- **IntentAnalyzer**: ユーザー意図の深層分析
+  - 表層的意図 vs 真の意図の推定
+  - 代替解釈の生成
+  - 推定根拠の明示
+  - ドメイン自動検出
+  - 緊急度・複雑度評価
+
+#### 新エクスポート
+- `DialogueSession`, `DialogueExchange`, `DialogueQuestion`, `DialogueAnswer`
+- `ExtractedContext`, `InferredIntent`, `AlternativeInterpretation`
+- `QuestionStrategy`, `QuestionCategory`, `QuestionType`
+- `runSimpleDialogue()` ヘルパー関数
+- `DEFAULT_DIALOGUE_CONFIG` デフォルト設定
+
+### Changed
+- テスト総数: 1569 → 1589（20件増加）
+
+## [0.4.0] - 2026-01-15
+
+### Added
+
+#### 新パッケージ
+- **@nahisaho/katashiro-orchestrator**: AIエージェントオーケストレーション
+  - `TaskDecomposer` (REQ-009): 自然言語タスクをサブタスクに自動分解
+    - リサーチ/分析/レポート作成の専用戦略
+    - 依存関係解決、循環依存検出
+  - `ToolRegistry` (REQ-010): Action-Observation型安全ツールシステム
+    - JSON Schemaバリデーション
+    - リスクレベル管理（low/medium/high/critical）
+    - イベント駆動承認フロー
+  - `MultiAgentOrchestrator` (REQ-006): 複数エージェント並列実行
+    - タスク並列化（1-100同時実行）
+    - コンテキスト隔離
+    - 部分失敗時のグレースフル処理
+
+- **@nahisaho/katashiro-sandbox**: コード実行サンドボックス
+  - `LocalExecutor` (REQ-007): ローカル環境でのPython/JavaScript実行
+    - タイムアウト制御
+    - リソース制限
+  - `Sandbox`: 安全なコード実行環境
+    - 分離されたプロセス実行
+    - 出力キャプチャ
+
+- **@nahisaho/katashiro-workspace**: ファイルシステム抽象化
+  - `LocalWorkspace` (REQ-011): ローカルファイル操作
+    - 読み書き/作成/削除/リスト
+    - パスサニタイズによるセキュリティ
+  - `WorkspaceFactory`: ワークスペース生成ファクトリ
+    - ローカル/インメモリワークスペース対応
+
+- **@nahisaho/katashiro-security**: セキュリティ分析
+  - `SecurityAnalyzer` (REQ-012): アクションリスク評価
+    - パターンベースリスク判定
+    - 許可/拒否パターン設定
+    - ポリシーベース制御
+  - `ActionLogger` (REQ-012-05): 監査ログ
+    - インメモリ/永続化ストレージ
+    - 高度なフィルタリング・集計
+
+#### 統合テスト
+- Orchestrator + TaskDecomposer + ToolRegistry 連携テスト
+- Security + Workspace + Sandbox パイプラインテスト
+
+### Changed
+- テスト総数: 1551 → 1569（18件増加）
+- pnpm-workspace.yaml 追加でモノレポ管理改善
+- ToolRegistry: `validateParams`でnull/undefined安全処理
+
+### Fixed
+- SecurityAnalyzer: 高リスクアクション（file_delete等）が許可パターンでダウングレードされないよう修正
+
 ## [0.2.3] - 2026-01-12
 
 ### Added

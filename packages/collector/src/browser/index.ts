@@ -68,5 +68,18 @@ export type {
   BrowserAutomationErrorCode,
 } from './BrowserAutomation.js';
 
+// BrowserOperator (REQ-008)
+export {
+  BrowserOperator,
+  BrowserOperatorError,
+} from './BrowserOperator.js';
+export type {
+  BrowserActionType,
+  BrowserAction as BrowserOperatorAction,
+  BrowserObservation,
+  BrowserOptions,
+  BrowserOperatorErrorCode,
+} from './BrowserOperator.js';
+
 // デフォルトエクスポート
 export { BrowserAutomation as default } from './BrowserAutomation.js';

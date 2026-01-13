@@ -1,0 +1,47 @@
+{
+  "name": "@nahisaho/katashiro-workspace",
+  "version": "0.4.2",
+  "description": "KATASHIRO Workspace Management - Unified workspace interface for file operations",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@nahisaho/katashiro-core": "^0.4.1",
+    "fast-glob": "^3.3.2",
+    "dockerode": "^4.0.2"
+  },
+  "devDependencies": {
+    "@types/dockerode": "^3.3.31",
+    "@types/node": "^22.10.7",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.9"
+  },
+  "keywords": [
+    "katashiro",
+    "workspace",
+    "file-operations",
+    "local-workspace",
+    "remote-workspace",
+    "docker-workspace"
+  ],
+  "author": "nahisaho",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nahisaho/KATASHIRO.git",
+    "directory": "katashiro/packages/workspace"
+  }
+}

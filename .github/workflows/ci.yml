@@ -69,12 +69,27 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Create Reports directory
+        run: mkdir -p ../Reports/coverage
+
       - name: Test with coverage
         run: npm run test:coverage
 
-      - name: Upload coverage reports
+      - name: Copy coverage reports to Reports directory
+        run: |
+          cp -r coverage/* ../Reports/coverage/ || true
+          echo "Coverage report generated at $(date)" >> ../Reports/coverage/report-info.txt
+
+      - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
         with:
           directory: katashiro/coverage
           flags: katashiro
           fail_ci_if_error: false
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-node-20
+          path: Reports/coverage/
+          retention-days: 30

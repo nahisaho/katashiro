@@ -1,0 +1,45 @@
+{
+  "name": "@nahisaho/katashiro-security",
+  "version": "0.4.2",
+  "description": "KATASHIRO Security - Security analysis and action auditing",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@nahisaho/katashiro-core": "^0.4.2",
+    "micromatch": "^4.0.8"
+  },
+  "devDependencies": {
+    "@types/micromatch": "^4.0.9",
+    "@types/node": "^22.10.7",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.9"
+  },
+  "keywords": [
+    "katashiro",
+    "security",
+    "risk-analysis",
+    "audit-log",
+    "action-validation"
+  ],
+  "author": "nahisaho",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nahisaho/KATASHIRO.git",
+    "directory": "katashiro/packages/security"
+  }
+}

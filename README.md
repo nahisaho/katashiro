@@ -19,6 +19,8 @@
 - 🔌 **MCP対応**: VS Code Agent Modeとシームレス連携
 - 🔍 **透明性機能**: AI/人間貢献追跡、バージョン管理、共同作業 *(v0.2.0)*
 - ⚙️ **ワークフロー自動化**: パイプライン、品質ゲート、スタイルガイド *(v0.2.0)*
+- 🤖 **エージェントオーケストレーション**: タスク分解、並列実行、ツール管理 *(v0.4.0)*
+- 🔒 **セキュリティ**: リスク評価、監査ログ、サンドボックス実行 *(v0.4.0)*
 
 ## インストール
 
@@ -36,6 +38,12 @@ npm install @nahisaho/katashiro-analyzer
 npm install @nahisaho/katashiro-generator
 npm install @nahisaho/katashiro-knowledge
 npm install @nahisaho/katashiro-feedback
+
+# v0.4.0 新規パッケージ
+npm install @nahisaho/katashiro-orchestrator
+npm install @nahisaho/katashiro-sandbox
+npm install @nahisaho/katashiro-workspace
+npm install @nahisaho/katashiro-security
 ```
 
 ## クイックスタート
@@ -99,6 +107,86 @@ const report = await generator.generate({
   title: '調査レポート',
   sections: [{ heading: '分析結果', content: analysis.summary }]
 });
+```
+
+### エージェントオーケストレーション（v0.4.0）
+
+```typescript
+import {
+  TaskDecomposer,
+  MultiAgentOrchestrator,
+  ToolRegistry,
+} from '@nahisaho/katashiro-orchestrator';
+
+// タスク分解
+const decomposer = new TaskDecomposer();
+const planResult = await decomposer.decompose('AIトレンドを調査して分析レポートを作成');
+// => リサーチ → 分析 → レポート生成のサブタスクに分解
+
+// マルチエージェント並列実行
+const orchestrator = new MultiAgentOrchestrator({
+  taskDecomposer: decomposer,
+  config: { maxConcurrentAgents: 5 },
+});
+const result = await orchestrator.execute('複雑な調査タスク');
+console.log(`${result.metadata.agentsUsed}エージェントが実行`);
+
+// ツール登録とAction-Observationパターン
+const registry = new ToolRegistry();
+registry.register({
+  name: 'web_search',
+  description: 'Web検索',
+  category: 'research',
+  defaultRiskLevel: 'low',
+  defaultTimeout: 30,
+  paramsSchema: { type: 'object', required: ['query'] },
+  resultSchema: { type: 'array' },
+  execute: async (params) => { /* 検索ロジック */ },
+});
+```
+
+### セキュリティ＆サンドボックス（v0.4.0）
+
+```typescript
+import { SecurityAnalyzer, ActionLogger } from '@nahisaho/katashiro-security';
+import { LocalExecutor } from '@nahisaho/katashiro-sandbox';
+import { LocalWorkspace } from '@nahisaho/katashiro-workspace';
+
+// セキュリティ分析
+const security = new SecurityAnalyzer({
+  denyPatterns: ['*.env', '**/secrets/**'],
+  allowPatterns: ['*.md', '*.txt'],
+});
+const analysis = security.analyze({
+  type: 'file_read',
+  target: '/project/.env',
+});
+console.log(`リスクレベル: ${analysis.riskLevel}`); // => 'high'
+
+// 監査ログ
+const logger = new ActionLogger();
+logger.log({
+  actionType: 'command_execute',
+  target: 'npm install',
+  timestamp: new Date().toISOString(),
+  result: 'success',
+  riskLevel: 'medium',
+});
+const summary = logger.getSummary();
+console.log(`総アクション: ${summary.totalActions}`);
+
+// サンドボックス実行
+const executor = new LocalExecutor();
+const execResult = await executor.execute({
+  code: 'print("Hello")',
+  language: 'python',
+  timeout: 5000,
+});
+
+// ワークスペース操作
+const workspace = new LocalWorkspace('/project');
+const files = await workspace.list('/src');
+const content = await workspace.read('/src/index.ts');
 ```
 
 ### 透明性機能（v0.2.0）
@@ -184,6 +272,10 @@ console.log(`Passed: ${styleResult.passed}`);
 | [@nahisaho/katashiro-knowledge](https://www.npmjs.com/package/@nahisaho/katashiro-knowledge) | 知識グラフ |
 | [@nahisaho/katashiro-feedback](https://www.npmjs.com/package/@nahisaho/katashiro-feedback) | フィードバック |
 | [@nahisaho/katashiro-mcp-server](https://www.npmjs.com/package/@nahisaho/katashiro-mcp-server) | MCPサーバー |
+| [@nahisaho/katashiro-orchestrator](https://www.npmjs.com/package/@nahisaho/katashiro-orchestrator) | エージェントオーケストレーション *(v0.4.0)* |
+| [@nahisaho/katashiro-sandbox](https://www.npmjs.com/package/@nahisaho/katashiro-sandbox) | サンドボックス実行 *(v0.4.0)* |
+| [@nahisaho/katashiro-workspace](https://www.npmjs.com/package/@nahisaho/katashiro-workspace) | ワークスペース管理 *(v0.4.0)* |
+| [@nahisaho/katashiro-security](https://www.npmjs.com/package/@nahisaho/katashiro-security) | セキュリティ分析 *(v0.4.0)* |
 
 ## ドキュメント
 
@@ -213,8 +305,8 @@ npm test
 ## テスト
 
 ```
-Test Files  49 passed (49)
-     Tests  618 passed (618)
+Test Files  80 passed (80)
+     Tests  1569 passed | 4 skipped (1573)
 ```
 
 ## ライセンス
