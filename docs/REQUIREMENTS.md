@@ -1,9 +1,9 @@
 # KATASHIRO 要件仕様書（EARS形式）
 
-**文書バージョン**: 1.6  
+**文書バージョン**: 1.7  
 **作成日**: 2026-01-13  
 **最終更新**: 2026-01-13  
-**基準**: テスト結果（1695テスト Pass）、コードベースレビュー、M365 Copilot比較分析に基づく
+**基準**: テスト結果（1719テスト Pass）、コードベースレビュー、M365 Copilot比較分析に基づく
 
 ---
 
@@ -1011,13 +1011,12 @@ Phase 2 (v0.6.0) - 2026 Q1 ✅ **完了**
 ├── REQ-EXT-FCK-002: 信頼度スコア ✅ FactChecker.calculateConfidenceScore()
 └── REQ-EXT-VIS-001: チャート生成 ✅ ChartGenerator.generateBase64(), generateMarkdownEmbed()
 
-Phase 3 (v0.7.0) - 2026 Q2
-├── REQ-EXT-VIS-002: フローチャート生成
-├── REQ-EXT-CMP-002: 競合情報収集
-├── その他中優先度要件
-└── パフォーマンス最適化
+Phase 3 (v0.7.0) - 2026 Q1 ✅ **完了**
+├── REQ-EXT-VIS-002: フローチャート生成 ✅ MermaidBuilder.generateProcessFlowchart(), generateFlowchartFromText()
+├── REQ-EXT-CMP-002: 競合情報収集 ✅ CompetitorAnalyzer.collectCompetitorIntelligence(), collectMultipleCompetitors()
+└── その他中優先度要件
 
-Phase 4 (v1.0.0) - 2026 Q3
+Phase 4 (v1.0.0) - 2026 Q2
 ├── 低優先度要件の実装
 ├── 統合テスト
 └── GA (General Availability)
@@ -1050,6 +1049,7 @@ Phase 4 (v1.0.0) - 2026 Q3
 | 1.4 | 2026-01-13 | レビュー結果に基づく修正: REQ-IMP-001〜004実装状態更新、Extension要件と既存実装の関係明確化、カバレッジ78%に更新 | GitHub Copilot |
 | 1.5 | 2026-01-13 | Phase 1 (v0.5.0)完了: REQ-EXT-CIT-001, REQ-EXT-RTD-001/002, REQ-EXT-CMP-001を実装、カバレッジ83%に更新 | GitHub Copilot |
 | 1.6 | 2026-01-13 | Phase 2 (v0.6.0)完了: REQ-EXT-FCK-001/002, REQ-EXT-CIT-003, REQ-EXT-VIS-001を実装、テスト1695件に拡充 | GitHub Copilot |
+| 1.7 | 2026-01-13 | Phase 3 (v0.7.0)完了: REQ-EXT-VIS-002, REQ-EXT-CMP-002を実装、テスト1719件に拡充 | GitHub Copilot |
 
 ---
 

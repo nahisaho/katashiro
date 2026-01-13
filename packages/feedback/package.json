@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-feedback",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "KATASHIRO Feedback - フィードバック学習パッケージ",
   "type": "module",
   "main": "./dist/index.js",
@@ -20,7 +20,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "0.6.0"
+    "@nahisaho/katashiro-core": "0.7.0"
   },
   "author": "nahisaho",
   "license": "MIT",

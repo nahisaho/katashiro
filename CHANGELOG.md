@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-01-13
+
+### Added
+
+#### @nahisaho/katashiro-generator
+- **MermaidBuilder.generateProcessFlowchart()** (REQ-EXT-VIS-002): プロセス定義からフローチャート生成
+  - ステップ配列からMermaidフローチャート構文を自動生成
+  - 開始/終了/判断/入出力/サブプロセスノードタイプ対応
+  - 条件分岐（decision）のサポート
+  - 方向指定（TB/BT/LR/RL）
+  - 孤立ノード・無効参照の警告機能
+  - 新しい型: `ProcessStep`, `ProcessDefinition`, `ProcessFlowchartResult`
+
+- **MermaidBuilder.generateFlowchartFromText()** (REQ-EXT-VIS-002): テキストからフローチャート生成
+  - 番号付きリスト・箇条書きを自動パース
+  - 開始/終了/判断/入出力キーワード自動検出
+  - 日本語・英語両対応
+
+#### @nahisaho/katashiro-analyzer
+- **CompetitorAnalyzer.collectCompetitorIntelligence()** (REQ-EXT-CMP-002): 競合情報自動収集
+  - プレスリリース検索・収集
+  - ニュース記事検索・収集
+  - 財務データ抽出（売上高、従業員数等）
+  - センチメント分析（positive/negative/neutral）
+  - 日付自動抽出（ISO/スラッシュ/日本語形式対応）
+  - 新しい型: `CompetitorIntelligence`, `PressReleaseInfo`, `NewsArticleInfo`, `FinancialDataInfo`
+
+- **CompetitorAnalyzer.collectMultipleCompetitors()** (REQ-EXT-CMP-002): 複数企業一括収集
+- **CompetitorAnalyzer.formatIntelligenceReport()** (REQ-EXT-CMP-002): Markdownレポート生成
+  - プレスリリース・ニュース・財務データの構造化レポート
+  - センチメントアイコン表示
+
+- **ICompetitorCollector** インターフェース: カスタムコレクター対応
+
+### Changed
+- MermaidBuilder: プロセス記述からフローチャートを生成するAPIを追加
+- CompetitorAnalyzer: コンストラクタでICompetitorCollectorを受け取るように拡張
+
+### Tests
+- テスト追加: 36ケース（flowchart: 15, competitor-intelligence: 11, formatting: 10）
+- 総テスト数: 1695 → 1719（+24）
+
 ## [0.6.0] - 2026-01-13
 
 ### Added

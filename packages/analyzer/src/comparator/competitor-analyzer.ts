@@ -4,6 +4,7 @@
  * 複数企業の競合比較分析を行い、Markdown形式の比較表を生成します。
  * 
  * @requirement REQ-EXT-CMP-001 競合比較表生成
+ * @requirement REQ-EXT-CMP-002 競合情報自動収集
  * @since 0.5.0
  * 
  * @example
@@ -20,6 +21,106 @@
  * });
  * ```
  */
+
+/**
+ * 競合情報収集結果（REQ-EXT-CMP-002）
+ */
+export interface CompetitorIntelligence {
+  /** 企業名 */
+  readonly name: string;
+  /** 収集日時 */
+  readonly collectedAt: string;
+  /** プレスリリース */
+  readonly pressReleases: PressReleaseInfo[];
+  /** ニュース記事 */
+  readonly newsArticles: NewsArticleInfo[];
+  /** 財務データ（取得可能な場合） */
+  readonly financialData?: FinancialDataInfo;
+  /** 収集エラー */
+  readonly errors: string[];
+}
+
+/**
+ * プレスリリース情報（REQ-EXT-CMP-002）
+ */
+export interface PressReleaseInfo {
+  /** タイトル */
+  readonly title: string;
+  /** 日付 */
+  readonly date: string;
+  /** URL */
+  readonly url?: string;
+  /** 概要 */
+  readonly summary?: string;
+  /** カテゴリ */
+  readonly category?: string;
+}
+
+/**
+ * ニュース記事情報（REQ-EXT-CMP-002）
+ */
+export interface NewsArticleInfo {
+  /** タイトル */
+  readonly title: string;
+  /** ソース（メディア名） */
+  readonly source: string;
+  /** 日付 */
+  readonly date: string;
+  /** URL */
+  readonly url?: string;
+  /** 概要 */
+  readonly summary?: string;
+  /** センチメント（ポジティブ/ネガティブ/ニュートラル） */
+  readonly sentiment?: 'positive' | 'negative' | 'neutral';
+}
+
+/**
+ * 財務データ情報（REQ-EXT-CMP-002）
+ */
+export interface FinancialDataInfo {
+  /** 売上高 */
+  readonly revenue?: string;
+  /** 利益 */
+  readonly profit?: string;
+  /** 従業員数 */
+  readonly employees?: number;
+  /** 時価総額 */
+  readonly marketCap?: string;
+  /** 株価 */
+  readonly stockPrice?: string;
+  /** データソース */
+  readonly source?: string;
+  /** 更新日 */
+  readonly updatedAt?: string;
+}
+
+/**
+ * 競合情報収集オプション（REQ-EXT-CMP-002）
+ */
+export interface CompetitorIntelligenceOptions {
+  /** 検索クエリ（企業名以外の追加キーワード） */
+  readonly additionalKeywords?: string[];
+  /** プレスリリース取得数上限 */
+  readonly maxPressReleases?: number;
+  /** ニュース記事取得数上限 */
+  readonly maxNewsArticles?: number;
+  /** 検索対象期間（日数） */
+  readonly daysBack?: number;
+  /** 財務データを取得するか */
+  readonly includeFinancials?: boolean;
+  /** 言語 */
+  readonly language?: 'ja' | 'en';
+}
+
+/**
+ * 情報収集用のコレクターインターフェース
+ */
+export interface ICompetitorCollector {
+  /** Web検索を実行 */
+  search(query: string, maxResults?: number): Promise<Array<{ title: string; url: string; snippet?: string }>>;
+  /** ページをスクレイピング */
+  scrape?(url: string): Promise<{ title?: string; content: string; date?: string } | null>;
+}
 
 /**
  * 企業データ
@@ -130,6 +231,301 @@ export interface CompetitorSwot {
  * Competitor Analyzer
  */
 export class CompetitorAnalyzer {
+  private collector?: ICompetitorCollector;
+
+  /**
+   * コンストラクタ
+   * @param collector 情報収集用のコレクター（オプション）
+   */
+  constructor(collector?: ICompetitorCollector) {
+    this.collector = collector;
+  }
+
+  /**
+   * 競合企業の情報を収集（REQ-EXT-CMP-002）
+   * @param companyName 企業名
+   * @param options 収集オプション
+   * @returns 収集された情報
+   */
+  async collectCompetitorIntelligence(
+    companyName: string,
+    options: CompetitorIntelligenceOptions = {}
+  ): Promise<CompetitorIntelligence> {
+    const {
+      additionalKeywords = [],
+      maxPressReleases = 5,
+      maxNewsArticles = 10,
+      daysBack = 30,
+      includeFinancials = true,
+      language = 'ja',
+    } = options;
+
+    const errors: string[] = [];
+    const pressReleases: PressReleaseInfo[] = [];
+    const newsArticles: NewsArticleInfo[] = [];
+    let financialData: FinancialDataInfo | undefined;
+
+    if (!this.collector) {
+      errors.push('コレクターが設定されていません。情報収集にはICompetitorCollectorの実装が必要です。');
+      return {
+        name: companyName,
+        collectedAt: new Date().toISOString(),
+        pressReleases,
+        newsArticles,
+        financialData,
+        errors,
+      };
+    }
+
+    try {
+      // プレスリリース検索
+      const prQuery = language === 'ja'
+        ? `${companyName} プレスリリース ${additionalKeywords.join(' ')}`
+        : `${companyName} press release ${additionalKeywords.join(' ')}`;
+      
+      const prResults = await this.collector.search(prQuery, maxPressReleases * 2);
+      for (const result of prResults.slice(0, maxPressReleases)) {
+        pressReleases.push({
+          title: result.title,
+          date: this.extractDateFromText(result.snippet ?? result.title) ?? new Date().toISOString().split('T')[0],
+          url: result.url,
+          summary: result.snippet,
+          category: 'general',
+        });
+      }
+    } catch (error) {
+      errors.push(`プレスリリース検索エラー: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    try {
+      // ニュース記事検索
+      const newsQuery = language === 'ja'
+        ? `${companyName} ニュース ${additionalKeywords.join(' ')}`
+        : `${companyName} news ${additionalKeywords.join(' ')}`;
+      
+      const newsResults = await this.collector.search(newsQuery, maxNewsArticles * 2);
+      for (const result of newsResults.slice(0, maxNewsArticles)) {
+        newsArticles.push({
+          title: result.title,
+          source: this.extractSource(result.url),
+          date: this.extractDateFromText(result.snippet ?? result.title) ?? new Date().toISOString().split('T')[0],
+          url: result.url,
+          summary: result.snippet,
+          sentiment: this.analyzeSentiment(result.title + ' ' + (result.snippet ?? '')),
+        });
+      }
+    } catch (error) {
+      errors.push(`ニュース検索エラー: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    if (includeFinancials) {
+      try {
+        // 財務データ検索
+        const finQuery = language === 'ja'
+          ? `${companyName} 売上 従業員数 決算`
+          : `${companyName} revenue employees financial`;
+        
+        const finResults = await this.collector.search(finQuery, 5);
+        if (finResults.length > 0) {
+          financialData = this.extractFinancialData(finResults, companyName);
+        }
+      } catch (error) {
+        errors.push(`財務データ検索エラー: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+
+    return {
+      name: companyName,
+      collectedAt: new Date().toISOString(),
+      pressReleases,
+      newsArticles,
+      financialData,
+      errors,
+    };
+  }
+
+  /**
+   * 複数の競合企業の情報を一括収集（REQ-EXT-CMP-002）
+   * @param companyNames 企業名の配列
+   * @param options 収集オプション
+   * @returns 収集された情報の配列
+   */
+  async collectMultipleCompetitors(
+    companyNames: string[],
+    options: CompetitorIntelligenceOptions = {}
+  ): Promise<CompetitorIntelligence[]> {
+    const results: CompetitorIntelligence[] = [];
+    for (const name of companyNames) {
+      const intel = await this.collectCompetitorIntelligence(name, options);
+      results.push(intel);
+    }
+    return results;
+  }
+
+  /**
+   * 収集した情報をMarkdownレポートに変換（REQ-EXT-CMP-002）
+   */
+  formatIntelligenceReport(intelligence: CompetitorIntelligence): string {
+    let report = `# ${intelligence.name} 競合情報レポート\n\n`;
+    report += `**収集日時**: ${intelligence.collectedAt}\n\n`;
+
+    // プレスリリース
+    report += `## プレスリリース (${intelligence.pressReleases.length}件)\n\n`;
+    if (intelligence.pressReleases.length === 0) {
+      report += '*プレスリリースは見つかりませんでした*\n\n';
+    } else {
+      for (const pr of intelligence.pressReleases) {
+        report += `### ${pr.title}\n`;
+        report += `- **日付**: ${pr.date}\n`;
+        if (pr.url) report += `- **URL**: ${pr.url}\n`;
+        if (pr.summary) report += `- **概要**: ${pr.summary}\n`;
+        report += '\n';
+      }
+    }
+
+    // ニュース記事
+    report += `## ニュース記事 (${intelligence.newsArticles.length}件)\n\n`;
+    if (intelligence.newsArticles.length === 0) {
+      report += '*ニュース記事は見つかりませんでした*\n\n';
+    } else {
+      for (const news of intelligence.newsArticles) {
+        const sentimentIcon = news.sentiment === 'positive' ? '📈' : news.sentiment === 'negative' ? '📉' : '➖';
+        report += `### ${sentimentIcon} ${news.title}\n`;
+        report += `- **ソース**: ${news.source}\n`;
+        report += `- **日付**: ${news.date}\n`;
+        if (news.url) report += `- **URL**: ${news.url}\n`;
+        if (news.summary) report += `- **概要**: ${news.summary}\n`;
+        report += '\n';
+      }
+    }
+
+    // 財務データ
+    if (intelligence.financialData) {
+      report += `## 財務データ\n\n`;
+      const fin = intelligence.financialData;
+      if (fin.revenue) report += `- **売上高**: ${fin.revenue}\n`;
+      if (fin.profit) report += `- **利益**: ${fin.profit}\n`;
+      if (fin.employees) report += `- **従業員数**: ${fin.employees.toLocaleString()}人\n`;
+      if (fin.marketCap) report += `- **時価総額**: ${fin.marketCap}\n`;
+      if (fin.stockPrice) report += `- **株価**: ${fin.stockPrice}\n`;
+      if (fin.source) report += `- **データソース**: ${fin.source}\n`;
+      report += '\n';
+    }
+
+    // エラー
+    if (intelligence.errors.length > 0) {
+      report += `## 収集エラー\n\n`;
+      for (const error of intelligence.errors) {
+        report += `- ⚠️ ${error}\n`;
+      }
+      report += '\n';
+    }
+
+    return report;
+  }
+
+  /**
+   * テキストから日付を抽出
+   */
+  private extractDateFromText(text: string): string | undefined {
+    // YYYY-MM-DD形式
+    const isoMatch = text.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) return isoMatch[0];
+
+    // YYYY/MM/DD形式
+    const slashMatch = text.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+    if (slashMatch) {
+      const [, y, m, d] = slashMatch;
+      return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+
+    // 日本語形式（2024年1月15日）
+    const jpMatch = text.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+    if (jpMatch) {
+      const [, y, m, d] = jpMatch;
+      return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+
+    return undefined;
+  }
+
+  /**
+   * URLからソース名を抽出
+   */
+  private extractSource(url: string): string {
+    try {
+      const hostname = new URL(url).hostname;
+      // www.を除去して、ドメイン名を取得
+      return hostname.replace(/^www\./, '').split('.')[0] ?? hostname;
+    } catch {
+      return 'Unknown';
+    }
+  }
+
+  /**
+   * 簡易センチメント分析
+   */
+  private analyzeSentiment(text: string): 'positive' | 'negative' | 'neutral' {
+    const positiveWords = ['成長', '増益', '好調', '過去最高', '上昇', '成功', '革新', '拡大', 'growth', 'profit', 'success', 'record', 'innovation'];
+    const negativeWords = ['減益', '不振', '下落', '赤字', '撤退', '縮小', 'loss', 'decline', 'failure', 'layoff', 'restructure'];
+
+    const lowerText = text.toLowerCase();
+    let score = 0;
+
+    for (const word of positiveWords) {
+      if (lowerText.includes(word.toLowerCase())) score += 1;
+    }
+    for (const word of negativeWords) {
+      if (lowerText.includes(word.toLowerCase())) score -= 1;
+    }
+
+    if (score > 0) return 'positive';
+    if (score < 0) return 'negative';
+    return 'neutral';
+  }
+
+  /**
+   * 検索結果から財務データを抽出
+   */
+  private extractFinancialData(
+    results: Array<{ title: string; url: string; snippet?: string }>,
+    companyName: string
+  ): FinancialDataInfo | undefined {
+    const allText = results.map(r => r.title + ' ' + (r.snippet ?? '')).join(' ');
+
+    // 売上高の抽出（兆円、億円、百万円、ドル等）
+    const revenueMatch = allText.match(/売上[高額]?\s*[:：]?\s*([\d,.]+)\s*(兆|億|百万)?\s*円?/);
+    const revenueMatchEn = allText.match(/revenue\s*[:：]?\s*\$?([\d,.]+)\s*(trillion|billion|million)?/i);
+    
+    // 従業員数の抽出
+    const employeesMatch = allText.match(/従業員[数]?\s*[:：]?\s*([\d,]+)\s*人?/);
+    const employeesMatchEn = allText.match(/employees\s*[:：]?\s*([\d,]+)/i);
+
+    let revenue: string | undefined;
+    let employees: number | undefined;
+
+    if (revenueMatch) {
+      revenue = `${revenueMatch[1]}${revenueMatch[2] ?? ''}円`;
+    } else if (revenueMatchEn) {
+      revenue = `$${revenueMatchEn[1]}${revenueMatchEn[2] ? ' ' + revenueMatchEn[2] : ''}`;
+    }
+
+    if (employeesMatch) {
+      employees = parseInt(employeesMatch[1].replace(/,/g, ''), 10);
+    } else if (employeesMatchEn) {
+      employees = parseInt(employeesMatchEn[1].replace(/,/g, ''), 10);
+    }
+
+    if (!revenue && !employees) return undefined;
+
+    return {
+      revenue,
+      employees,
+      source: 'Web検索結果',
+      updatedAt: new Date().toISOString().split('T')[0],
+    };
+  }
+
   /**
    * 比較表を生成
    */

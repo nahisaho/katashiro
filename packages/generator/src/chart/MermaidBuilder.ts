@@ -2,9 +2,54 @@
  * Mermaid Builder
  * Mermaidダイアグラムを生成するユーティリティ
  * REQ-MEDIA-002-002: ダイアグラム生成
+ * REQ-EXT-VIS-002: フローチャート生成
  */
 
 import type { DiagramOptions, DiagramType } from './types.js';
+
+/**
+ * プロセスステップ（REQ-EXT-VIS-002）
+ */
+export interface ProcessStep {
+  /** ステップID（自動生成可） */
+  id?: string;
+  /** ステップ名/ラベル */
+  label: string;
+  /** ステップタイプ */
+  type?: 'start' | 'end' | 'process' | 'decision' | 'input' | 'output' | 'subprocess';
+  /** 次のステップID（単一または条件付き） */
+  next?: string | Array<{ condition: string; stepId: string }>;
+  /** 説明 */
+  description?: string;
+}
+
+/**
+ * プロセス定義（REQ-EXT-VIS-002）
+ */
+export interface ProcessDefinition {
+  /** プロセス名 */
+  name?: string;
+  /** ステップ一覧 */
+  steps: ProcessStep[];
+  /** 方向 */
+  direction?: 'TB' | 'BT' | 'LR' | 'RL';
+}
+
+/**
+ * プロセスフローチャート生成結果（REQ-EXT-VIS-002）
+ */
+export interface ProcessFlowchartResult {
+  /** Mermaid構文 */
+  mermaid: string;
+  /** SVG（生成された場合） */
+  svg?: string;
+  /** ノード数 */
+  nodeCount: number;
+  /** エッジ数 */
+  edgeCount: number;
+  /** 警告メッセージ */
+  warnings: string[];
+}
 
 /**
  * フローチャートノード
@@ -610,6 +655,195 @@ export class MermaidBuilder {
   wrapWithTheme(definition: string, theme: string): string {
     const directive = `%%{init: {'theme': '${theme}'}}%%`;
     return `${directive}\n${definition}`;
+  }
+
+  /**
+   * プロセス定義からフローチャートを生成（REQ-EXT-VIS-002）
+   * @param process プロセス定義
+   * @returns フローチャート生成結果
+   */
+  generateProcessFlowchart(process: ProcessDefinition): ProcessFlowchartResult {
+    const warnings: string[] = [];
+    const direction = process.direction ?? 'TB';
+    
+    // ステップにIDを割り当て
+    const stepsWithIds = process.steps.map((step, index) => ({
+      ...step,
+      id: step.id ?? `step${index + 1}`,
+    }));
+    
+    // ノードとエッジを構築
+    const nodes: FlowchartNode[] = [];
+    const edges: FlowchartEdge[] = [];
+    
+    for (let i = 0; i < stepsWithIds.length; i++) {
+      const step = stepsWithIds[i];
+      
+      // ノード形状を決定
+      let shape: FlowchartNode['shape'] = 'rectangle';
+      switch (step.type) {
+        case 'start':
+          shape = 'rounded';
+          break;
+        case 'end':
+          shape = 'rounded';
+          break;
+        case 'decision':
+          shape = 'diamond';
+          break;
+        case 'input':
+        case 'output':
+          shape = 'parallelogram';
+          break;
+        case 'subprocess':
+          shape = 'rounded';
+          break;
+        case 'process':
+        default:
+          shape = 'rectangle';
+      }
+      
+      nodes.push({
+        id: step.id,
+        label: step.label,
+        shape,
+      });
+      
+      // エッジを構築
+      if (step.next) {
+        if (typeof step.next === 'string') {
+          // 単一の次ステップ
+          edges.push({
+            from: step.id,
+            to: step.next,
+          });
+        } else if (Array.isArray(step.next)) {
+          // 条件付き分岐
+          for (const branch of step.next) {
+            edges.push({
+              from: step.id,
+              to: branch.stepId,
+              label: branch.condition,
+            });
+          }
+        }
+      } else if (i < stepsWithIds.length - 1 && step.type !== 'end') {
+        // 次のステップが指定されていない場合、順番に接続
+        const nextStep = stepsWithIds[i + 1];
+        edges.push({
+          from: step.id,
+          to: nextStep.id,
+        });
+      }
+    }
+    
+    // 孤立ノードの警告
+    const connectedNodes = new Set<string>();
+    for (const edge of edges) {
+      connectedNodes.add(edge.from);
+      connectedNodes.add(edge.to);
+    }
+    for (const node of nodes) {
+      if (!connectedNodes.has(node.id) && nodes.length > 1) {
+        warnings.push(`ノード "${node.id}" は他のノードと接続されていません`);
+      }
+    }
+    
+    // 存在しないノードへの参照をチェック
+    const nodeIds = new Set(nodes.map(n => n.id));
+    for (const edge of edges) {
+      if (!nodeIds.has(edge.to)) {
+        warnings.push(`エッジが存在しないノード "${edge.to}" を参照しています`);
+      }
+    }
+    
+    // Mermaid構文を生成
+    const flowchartData: FlowchartData = { nodes, edges };
+    const mermaid = this.buildFlowchart(flowchartData, { direction });
+    
+    return {
+      mermaid,
+      nodeCount: nodes.length,
+      edgeCount: edges.length,
+      warnings,
+    };
+  }
+
+  /**
+   * テキスト記述からフローチャートを生成（REQ-EXT-VIS-002）
+   * 番号付きリストや箇条書きをパースしてフローチャートに変換
+   * @param text プロセス記述テキスト
+   * @param options オプション
+   * @returns フローチャート生成結果
+   */
+  generateFlowchartFromText(
+    text: string,
+    options?: {
+      direction?: 'TB' | 'BT' | 'LR' | 'RL';
+      detectDecisions?: boolean;
+    }
+  ): ProcessFlowchartResult {
+    const warnings: string[] = [];
+    const direction = options?.direction ?? 'TB';
+    const detectDecisions = options?.detectDecisions ?? true;
+    
+    // テキストをパース
+    const lines = text.split('\n').filter(line => line.trim());
+    const steps: ProcessStep[] = [];
+    
+    // 開始/終了キーワード
+    const startKeywords = ['開始', '始め', 'start', 'begin', '最初'];
+    const endKeywords = ['終了', '終わり', 'end', 'finish', '完了'];
+    const decisionKeywords = ['判断', '確認', 'if', '条件', '分岐', '?', '？', 'check', 'decide'];
+    const inputKeywords = ['入力', 'input', '取得', '受け取'];
+    const outputKeywords = ['出力', 'output', '表示', '送信', '返す'];
+    
+    for (const line of lines) {
+      // 番号付きリストまたは箇条書きをパース
+      const match = line.match(/^[\s]*(?:(\d+)[.）)]\s*|[-*•]\s*|>\s*)?(.+)/);
+      if (!match) continue;
+      
+      const label = match[2].trim();
+      if (!label) continue;
+      
+      const lowerLabel = label.toLowerCase();
+      
+      // ステップタイプを推定
+      let type: ProcessStep['type'] = 'process';
+      
+      if (startKeywords.some(k => lowerLabel.includes(k.toLowerCase()))) {
+        type = 'start';
+      } else if (endKeywords.some(k => lowerLabel.includes(k.toLowerCase()))) {
+        type = 'end';
+      } else if (detectDecisions && decisionKeywords.some(k => lowerLabel.includes(k.toLowerCase()))) {
+        type = 'decision';
+      } else if (inputKeywords.some(k => lowerLabel.includes(k.toLowerCase()))) {
+        type = 'input';
+      } else if (outputKeywords.some(k => lowerLabel.includes(k.toLowerCase()))) {
+        type = 'output';
+      }
+      
+      steps.push({
+        label,
+        type,
+      });
+    }
+    
+    if (steps.length === 0) {
+      warnings.push('テキストからステップを検出できませんでした');
+      return {
+        mermaid: `flowchart ${direction}\n  empty["ステップなし"]`,
+        nodeCount: 0,
+        edgeCount: 0,
+        warnings,
+      };
+    }
+    
+    // ProcessDefinitionとして生成
+    return this.generateProcessFlowchart({
+      steps,
+      direction,
+    });
   }
 
   /**

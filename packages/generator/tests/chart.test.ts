@@ -1135,3 +1135,210 @@ describe('REQ-EXT-VIS-001: Base64/Markdown出力', () => {
     });
   });
 });
+
+// REQ-EXT-VIS-002: フローチャート生成テスト
+describe('MermaidBuilder - Process Flowchart (REQ-EXT-VIS-002)', () => {
+  let builder: MermaidBuilder;
+
+  beforeEach(() => {
+    builder = new MermaidBuilder();
+  });
+
+  describe('generateProcessFlowchart', () => {
+    it('should generate flowchart from simple process steps', () => {
+      const result = builder.generateProcessFlowchart({
+        steps: [
+          { label: '開始', type: 'start' },
+          { label: 'データ取得', type: 'process' },
+          { label: '処理実行', type: 'process' },
+          { label: '終了', type: 'end' },
+        ],
+      });
+
+      expect(result.mermaid).toContain('flowchart TB');
+      expect(result.nodeCount).toBe(4);
+      expect(result.edgeCount).toBe(3);
+      expect(result.warnings).toHaveLength(0);
+    });
+
+    it('should handle decision branches', () => {
+      const result = builder.generateProcessFlowchart({
+        steps: [
+          { id: 'start', label: '開始', type: 'start' },
+          { 
+            id: 'check', 
+            label: '条件確認', 
+            type: 'decision',
+            next: [
+              { condition: 'Yes', stepId: 'process' },
+              { condition: 'No', stepId: 'end' },
+            ],
+          },
+          { id: 'process', label: '処理', type: 'process', next: 'end' },
+          { id: 'end', label: '終了', type: 'end' },
+        ],
+      });
+
+      expect(result.mermaid).toContain('flowchart TB');
+      expect(result.mermaid).toContain('check{');  // diamond shape
+      expect(result.mermaid).toContain('|Yes|');
+      expect(result.mermaid).toContain('|No|');
+      expect(result.nodeCount).toBe(4);
+      expect(result.edgeCount).toBe(4);  // start->check, check->process, check->end, process->end
+    });
+
+    it('should support different directions', () => {
+      const result = builder.generateProcessFlowchart({
+        steps: [{ label: 'Step 1' }, { label: 'Step 2' }],
+        direction: 'LR',
+      });
+
+      expect(result.mermaid).toContain('flowchart LR');
+    });
+
+    it('should handle input/output node types', () => {
+      const result = builder.generateProcessFlowchart({
+        steps: [
+          { label: 'データ入力', type: 'input' },
+          { label: '処理', type: 'process' },
+          { label: '結果出力', type: 'output' },
+        ],
+      });
+
+      expect(result.mermaid).toContain('[/"データ入力"/]');  // parallelogram
+      expect(result.mermaid).toContain('[/"結果出力"/]');
+      expect(result.nodeCount).toBe(3);
+    });
+
+    it('should warn about orphan nodes', () => {
+      const result = builder.generateProcessFlowchart({
+        steps: [
+          { id: 'a', label: 'Step A', next: 'b' },
+          { id: 'b', label: 'Step B', type: 'end' },
+          { id: 'orphan', label: '孤立ノード', type: 'process' },  // 接続されていない
+        ],
+      });
+
+      expect(result.warnings.length).toBeGreaterThan(0);
+      expect(result.warnings[0]).toContain('orphan');
+    });
+
+    it('should warn about invalid node references', () => {
+      const result = builder.generateProcessFlowchart({
+        steps: [
+          { id: 'a', label: 'Step A', next: 'nonexistent' },
+        ],
+      });
+
+      expect(result.warnings.length).toBeGreaterThan(0);
+      expect(result.warnings[0]).toContain('nonexistent');
+    });
+
+    it('should auto-generate IDs when not provided', () => {
+      const result = builder.generateProcessFlowchart({
+        steps: [
+          { label: 'Step 1' },
+          { label: 'Step 2' },
+          { label: 'Step 3' },
+        ],
+      });
+
+      expect(result.mermaid).toContain('step1');
+      expect(result.mermaid).toContain('step2');
+      expect(result.mermaid).toContain('step3');
+    });
+  });
+
+  describe('generateFlowchartFromText', () => {
+    it('should parse numbered list into flowchart', () => {
+      const text = `
+        1. 開始
+        2. データを取得する
+        3. データを処理する
+        4. 終了
+      `;
+
+      const result = builder.generateFlowchartFromText(text);
+
+      expect(result.nodeCount).toBe(4);
+      expect(result.edgeCount).toBe(3);
+      expect(result.mermaid).toContain('開始');
+      expect(result.mermaid).toContain('データを取得する');
+    });
+
+    it('should parse bullet list into flowchart', () => {
+      const text = `
+        - Start the process
+        - Validate input
+        - Process data
+        - Finish
+      `;
+
+      const result = builder.generateFlowchartFromText(text);
+
+      expect(result.nodeCount).toBe(4);
+      expect(result.warnings).toHaveLength(0);
+    });
+
+    it('should detect decision keywords', () => {
+      const text = `
+        1. 開始
+        2. 条件を確認する
+        3. 処理実行
+        4. 終了
+      `;
+
+      const result = builder.generateFlowchartFromText(text, { detectDecisions: true });
+
+      expect(result.mermaid).toContain('{');  // diamond shape for decision
+    });
+
+    it('should detect input/output keywords', () => {
+      const text = `
+        1. 開始
+        2. ユーザーから入力を受け取る
+        3. 結果を表示出力する
+        4. 終了
+      `;
+
+      const result = builder.generateFlowchartFromText(text);
+
+      // parallelogram shape for input/output
+      expect(result.mermaid).toContain('[/');
+    });
+
+    it('should handle empty text gracefully', () => {
+      const result = builder.generateFlowchartFromText('');
+
+      expect(result.nodeCount).toBe(0);
+      expect(result.warnings.length).toBeGreaterThan(0);
+    });
+
+    it('should respect direction option', () => {
+      const text = '1. A\n2. B\n3. C';
+
+      const result = builder.generateFlowchartFromText(text, { direction: 'LR' });
+
+      expect(result.mermaid).toContain('flowchart LR');
+    });
+
+    it('should handle Japanese process description', () => {
+      const text = `
+        1. 最初にデータを準備する
+        2. データが正しいか確認する
+        3. 分析処理を実行する
+        4. 結果をファイルに出力する
+        5. 処理完了
+      `;
+
+      const result = builder.generateFlowchartFromText(text);
+
+      expect(result.nodeCount).toBe(5);
+      expect(result.edgeCount).toBe(4);
+      // 「確認」キーワードで判断ノードになる
+      expect(result.mermaid).toContain('{');
+      // 「出力」キーワードで出力ノードになる
+      expect(result.mermaid).toContain('[/');
+    });
+  });
+});

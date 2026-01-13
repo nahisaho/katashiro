@@ -47,6 +47,10 @@ export {
   type ClassDiagramData,
   type GanttTask,
   type GanttData,
+  // REQ-EXT-VIS-002: フローチャート生成
+  type ProcessStep,
+  type ProcessDefinition,
+  type ProcessFlowchartResult,
 } from './MermaidBuilder.js';
 
 // Generators

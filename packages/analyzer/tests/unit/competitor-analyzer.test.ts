@@ -341,4 +341,192 @@ describe('CompetitorAnalyzer', () => {
       expect(result.table).toContain('$10.0B');
     });
   });
+
+  // REQ-EXT-CMP-002: 競合情報収集テスト
+  describe('collectCompetitorIntelligence (REQ-EXT-CMP-002)', () => {
+    it('should return error when no collector is set', async () => {
+      const result = await analyzer.collectCompetitorIntelligence('TestCompany');
+
+      expect(result.name).toBe('TestCompany');
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors[0]).toContain('コレクターが設定されていません');
+      expect(result.pressReleases).toHaveLength(0);
+      expect(result.newsArticles).toHaveLength(0);
+    });
+
+    it('should collect press releases with collector', async () => {
+      const mockCollector = {
+        search: async (query: string, maxResults?: number) => {
+          if (query.includes('プレスリリース')) {
+            return [
+              { title: 'TestCompany 新製品発表', url: 'https://example.com/pr1', snippet: '2024年1月15日 - 新製品を発表' },
+              { title: 'TestCompany 業績発表', url: 'https://example.com/pr2', snippet: '2024年2月1日 - 好調な業績' },
+            ];
+          }
+          return [];
+        },
+      };
+
+      const analyzerWithCollector = new CompetitorAnalyzer(mockCollector);
+      const result = await analyzerWithCollector.collectCompetitorIntelligence('TestCompany');
+
+      expect(result.pressReleases.length).toBeGreaterThan(0);
+      expect(result.pressReleases[0].title).toBe('TestCompany 新製品発表');
+      expect(result.pressReleases[0].date).toBe('2024-01-15');
+    });
+
+    it('should collect news articles with collector', async () => {
+      const mockCollector = {
+        search: async (query: string) => {
+          if (query.includes('ニュース')) {
+            return [
+              { title: 'TestCompany 成長続く', url: 'https://news.example.com/article1', snippet: '2024年3月10日 - 順調な成長' },
+            ];
+          }
+          return [];
+        },
+      };
+
+      const analyzerWithCollector = new CompetitorAnalyzer(mockCollector);
+      const result = await analyzerWithCollector.collectCompetitorIntelligence('TestCompany');
+
+      expect(result.newsArticles.length).toBeGreaterThan(0);
+      expect(result.newsArticles[0].title).toContain('TestCompany');
+    });
+
+    it('should analyze sentiment in news articles', async () => {
+      const mockCollector = {
+        search: async (query: string) => {
+          if (query.includes('ニュース')) {
+            return [
+              { title: 'Company 過去最高益を達成', url: 'https://news.com/1', snippet: '好調な成長で増益' },
+              { title: 'Company 減益で株価下落', url: 'https://news.com/2', snippet: '業績不振で赤字' },
+              { title: 'Company 新サービス開始', url: 'https://news.com/3', snippet: '発表があった' },
+            ];
+          }
+          return [];
+        },
+      };
+
+      const analyzerWithCollector = new CompetitorAnalyzer(mockCollector);
+      const result = await analyzerWithCollector.collectCompetitorIntelligence('Company');
+
+      expect(result.newsArticles[0].sentiment).toBe('positive');
+      expect(result.newsArticles[1].sentiment).toBe('negative');
+      expect(result.newsArticles[2].sentiment).toBe('neutral');
+    });
+
+    it('should extract financial data from search results', async () => {
+      const mockCollector = {
+        search: async (query: string) => {
+          if (query.includes('売上')) {
+            return [
+              { title: 'TestCompany 決算情報', url: 'https://example.com', snippet: '売上高: 1,000億円 従業員数: 5,000人' },
+            ];
+          }
+          return [];
+        },
+      };
+
+      const analyzerWithCollector = new CompetitorAnalyzer(mockCollector);
+      const result = await analyzerWithCollector.collectCompetitorIntelligence('TestCompany', { includeFinancials: true });
+
+      expect(result.financialData).toBeDefined();
+      expect(result.financialData?.revenue).toContain('1,000');
+      expect(result.financialData?.employees).toBe(5000);
+    });
+
+    it('should handle search errors gracefully', async () => {
+      const mockCollector = {
+        search: async () => {
+          throw new Error('Network error');
+        },
+      };
+
+      const analyzerWithCollector = new CompetitorAnalyzer(mockCollector);
+      const result = await analyzerWithCollector.collectCompetitorIntelligence('TestCompany');
+
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors[0]).toContain('Network error');
+    });
+  });
+
+  describe('collectMultipleCompetitors (REQ-EXT-CMP-002)', () => {
+    it('should collect information for multiple companies', async () => {
+      const mockCollector = {
+        search: async (query: string) => {
+          return [{ title: `${query} 記事`, url: 'https://example.com', snippet: '概要' }];
+        },
+      };
+
+      const analyzerWithCollector = new CompetitorAnalyzer(mockCollector);
+      const results = await analyzerWithCollector.collectMultipleCompetitors(['CompanyA', 'CompanyB']);
+
+      expect(results).toHaveLength(2);
+      expect(results[0].name).toBe('CompanyA');
+      expect(results[1].name).toBe('CompanyB');
+    });
+  });
+
+  describe('formatIntelligenceReport (REQ-EXT-CMP-002)', () => {
+    it('should format intelligence data as Markdown report', () => {
+      const mockIntel = {
+        name: 'TestCompany',
+        collectedAt: '2024-01-15T10:00:00Z',
+        pressReleases: [
+          { title: 'New Product Launch', date: '2024-01-10', url: 'https://example.com/pr', summary: 'Exciting new product' },
+        ],
+        newsArticles: [
+          { title: 'Growth Continues', source: 'TechNews', date: '2024-01-12', sentiment: 'positive' as const },
+        ],
+        financialData: {
+          revenue: '$1B',
+          employees: 1000,
+        },
+        errors: [],
+      };
+
+      const report = analyzer.formatIntelligenceReport(mockIntel);
+
+      expect(report).toContain('# TestCompany 競合情報レポート');
+      expect(report).toContain('## プレスリリース (1件)');
+      expect(report).toContain('### New Product Launch');
+      expect(report).toContain('## ニュース記事 (1件)');
+      expect(report).toContain('📈 Growth Continues');  // positive sentiment icon
+      expect(report).toContain('## 財務データ');
+      expect(report).toContain('$1B');
+    });
+
+    it('should show error section when errors exist', () => {
+      const mockIntel = {
+        name: 'TestCompany',
+        collectedAt: '2024-01-15T10:00:00Z',
+        pressReleases: [],
+        newsArticles: [],
+        errors: ['Search failed', 'API timeout'],
+      };
+
+      const report = analyzer.formatIntelligenceReport(mockIntel);
+
+      expect(report).toContain('## 収集エラー');
+      expect(report).toContain('⚠️ Search failed');
+      expect(report).toContain('⚠️ API timeout');
+    });
+
+    it('should handle empty results gracefully', () => {
+      const mockIntel = {
+        name: 'UnknownCompany',
+        collectedAt: '2024-01-15T10:00:00Z',
+        pressReleases: [],
+        newsArticles: [],
+        errors: [],
+      };
+
+      const report = analyzer.formatIntelligenceReport(mockIntel);
+
+      expect(report).toContain('# UnknownCompany');
+      expect(report).toContain('プレスリリースは見つかりませんでした');
+      expect(report).toContain('ニュース記事は見つかりませんでした');
+    });
+  });
 });
