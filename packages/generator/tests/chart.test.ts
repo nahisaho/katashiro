@@ -1342,3 +1342,225 @@ describe('MermaidBuilder - Process Flowchart (REQ-EXT-VIS-002)', () => {
     });
   });
 });
+
+// ====================
+// v1.0.1: Markdown/Mermaid表現テスト
+// ====================
+
+describe('DiagramGenerator - Markdown/Mermaid methods (v1.0.1)', () => {
+  let generator: DiagramGenerator;
+
+  beforeEach(() => {
+    generator = new DiagramGenerator();
+  });
+
+  describe('generateMarkdownTable', () => {
+    it('should generate a basic markdown table', () => {
+      const headers = ['Name', 'Age', 'City'];
+      const rows = [
+        ['Alice', '30', 'Tokyo'],
+        ['Bob', '25', 'Osaka'],
+      ];
+
+      const result = generator.generateMarkdownTable(headers, rows);
+
+      expect(result).toContain('| Name | Age | City |');
+      expect(result).toContain('| :--- | :--- | :--- |');
+      expect(result).toContain('| Alice | 30 | Tokyo |');
+      expect(result).toContain('| Bob | 25 | Osaka |');
+    });
+
+    it('should support alignment options', () => {
+      const headers = ['Item', 'Price', 'Qty'];
+      const rows = [['Apple', '100', '5']];
+
+      const result = generator.generateMarkdownTable(headers, rows, {
+        alignment: ['left', 'right', 'center'],
+      });
+
+      expect(result).toContain('| :--- | ---: | :---: |');
+    });
+
+    it('should handle empty rows gracefully', () => {
+      const headers = ['A', 'B'];
+      const rows: string[][] = [];
+
+      const result = generator.generateMarkdownTable(headers, rows);
+
+      expect(result).toContain('| A | B |');
+      expect(result.split('\n').length).toBe(2); // header + alignment only
+    });
+
+    it('should handle missing cells in rows', () => {
+      const headers = ['A', 'B', 'C'];
+      const rows = [['1']]; // only one cell
+
+      const result = generator.generateMarkdownTable(headers, rows);
+
+      expect(result).toContain('| 1 |  |  |');
+    });
+
+    it('should return empty string for empty headers', () => {
+      const result = generator.generateMarkdownTable([], []);
+      expect(result).toBe('');
+    });
+  });
+
+  describe('generateMermaidFlowchart', () => {
+    it('should generate a mermaid flowchart definition', () => {
+      const data: FlowchartData = {
+        nodes: [
+          { id: 'A', label: 'Start' },
+          { id: 'B', label: 'Process' },
+          { id: 'C', label: 'End' },
+        ],
+        edges: [
+          { from: 'A', to: 'B' },
+          { from: 'B', to: 'C' },
+        ],
+      };
+
+      const result = generator.generateMermaidFlowchart(data);
+
+      expect(result).toContain('flowchart');
+      expect(result).toContain('A[');
+      expect(result).toContain('B[');
+      expect(result).toContain('C[');
+      expect(result).toContain('-->');
+    });
+
+    it('should support direction option', () => {
+      const data: FlowchartData = {
+        nodes: [{ id: 'A', label: 'Node' }],
+        edges: [],
+      };
+
+      // TD is internally converted to TB (they are equivalent in Mermaid)
+      const resultTD = generator.generateMermaidFlowchart(data, { direction: 'TD' });
+      expect(resultTD).toContain('flowchart TB');
+
+      const resultLR = generator.generateMermaidFlowchart(data, { direction: 'LR' });
+      expect(resultLR).toContain('flowchart LR');
+    });
+
+    it('should handle edge labels', () => {
+      const data: FlowchartData = {
+        nodes: [
+          { id: 'A', label: 'Question' },
+          { id: 'B', label: 'Yes' },
+          { id: 'C', label: 'No' },
+        ],
+        edges: [
+          { from: 'A', to: 'B', label: 'Yes' },
+          { from: 'A', to: 'C', label: 'No' },
+        ],
+      };
+
+      const result = generator.generateMermaidFlowchart(data);
+
+      expect(result).toContain('|Yes|');
+      expect(result).toContain('|No|');
+    });
+  });
+
+  describe('generateMarkdownTree', () => {
+    it('should generate a markdown tree with default marker', () => {
+      const root = {
+        label: 'Root',
+        children: [
+          { label: 'Child1' },
+          { label: 'Child2', children: [{ label: 'Grandchild' }] },
+        ],
+      };
+
+      const result = generator.generateMarkdownTree(root);
+
+      expect(result).toContain('- Root');
+      expect(result).toContain('  - Child1');
+      expect(result).toContain('  - Child2');
+      expect(result).toContain('    - Grandchild');
+    });
+
+    it('should support custom marker', () => {
+      const root = {
+        label: 'Root',
+        children: [{ label: 'Child' }],
+      };
+
+      const result = generator.generateMarkdownTree(root, { marker: '*' });
+
+      expect(result).toContain('* Root');
+      expect(result).toContain('  * Child');
+    });
+
+    it('should handle deeply nested trees', () => {
+      const root = {
+        label: 'L1',
+        children: [
+          {
+            label: 'L2',
+            children: [
+              {
+                label: 'L3',
+                children: [{ label: 'L4' }],
+              },
+            ],
+          },
+        ],
+      };
+
+      const result = generator.generateMarkdownTree(root);
+      const lines = result.split('\n');
+
+      expect(lines).toHaveLength(4);
+      expect(lines[3]).toBe('      - L4'); // 6 spaces for depth 3
+    });
+
+    it('should handle root without children', () => {
+      const root = { label: 'OnlyRoot' };
+
+      const result = generator.generateMarkdownTree(root);
+
+      expect(result).toBe('- OnlyRoot');
+    });
+  });
+
+  describe('ASCII methods deprecation (v1.0.1)', () => {
+    it('generateAsciiFlowchart should still work but is deprecated', () => {
+      const data: FlowchartData = {
+        nodes: [
+          { id: 'A', label: 'Start' },
+          { id: 'B', label: 'End' },
+        ],
+        edges: [{ from: 'A', to: 'B' }],
+      };
+
+      // Should still produce output (backward compatibility)
+      const result = generator.generateAsciiFlowchart(data);
+
+      expect(typeof result).toBe('string');
+      expect(result.length).toBeGreaterThan(0);
+    });
+
+    it('generateAsciiTable should still work but is deprecated', () => {
+      const headers = ['A', 'B'];
+      const rows = [['1', '2']];
+
+      const result = generator.generateAsciiTable(headers, rows);
+
+      expect(typeof result).toBe('string');
+      expect(result).toContain('A');
+      expect(result).toContain('B');
+    });
+
+    it('generateAsciiTree should still work but is deprecated', () => {
+      const root = { label: 'Root', children: [{ label: 'Child' }] };
+
+      const result = generator.generateAsciiTree(root);
+
+      expect(typeof result).toBe('string');
+      expect(result).toContain('Root');
+      expect(result).toContain('Child');
+    });
+  });
+});

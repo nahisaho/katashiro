@@ -576,7 +576,100 @@ export class DiagramGenerator {
   }
 
   // ====================
-  // ASCII高度化機能 (REQ-EXT-VIS-003)
+  // Markdown/Mermaid表現（推奨）
+  // ====================
+
+  /**
+   * Markdownテーブルを生成
+   * @requirement REQ-EXT-VIS-004
+   * @description 標準的なMarkdownテーブル形式で表を生成
+   * @since 1.0.1
+   */
+  generateMarkdownTable(
+    headers: string[],
+    rows: string[][],
+    options?: {
+      alignment?: ('left' | 'center' | 'right')[];
+    }
+  ): string {
+    if (!headers.length) return '';
+
+    const alignmentRow = headers.map((_, i) => {
+      const align = options?.alignment?.[i] ?? 'left';
+      switch (align) {
+        case 'right': return '---:';
+        case 'center': return ':---:';
+        default: return ':---';
+      }
+    });
+
+    const lines: string[] = [];
+    lines.push('| ' + headers.join(' | ') + ' |');
+    lines.push('| ' + alignmentRow.join(' | ') + ' |');
+    for (const row of rows) {
+      const paddedRow = headers.map((_, i) => row[i] ?? '');
+      lines.push('| ' + paddedRow.join(' | ') + ' |');
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Mermaidフローチャート文字列を生成
+   * @requirement REQ-EXT-VIS-004
+   * @description レポート埋め込み用のMermaidフローチャート定義を生成
+   * @since 1.0.1
+   */
+  generateMermaidFlowchart(
+    data: FlowchartData,
+    options?: {
+      direction?: 'TB' | 'TD' | 'BT' | 'LR' | 'RL';
+    }
+  ): string {
+    // TD is an alias for TB in Mermaid
+    const dir = options?.direction === 'TD' ? 'TB' : options?.direction;
+    return this.mermaidBuilder.buildFlowchart(data, { direction: dir });
+  }
+
+  /**
+   * Markdownツリー（インデント形式）を生成
+   * @requirement REQ-EXT-VIS-004
+   * @description インデントを使ったMarkdownリスト形式でツリーを生成
+   * @since 1.0.1
+   */
+  generateMarkdownTree(
+    root: { label: string; children?: unknown[] },
+    _options?: { marker?: '-' | '*' | '+' }
+  ): string {
+    const marker = _options?.marker ?? '-';
+    const lines: string[] = [];
+
+    const renderNode = (
+      node: { label: string; children?: unknown[] },
+      indent: number
+    ) => {
+      const prefix = '  '.repeat(indent) + marker + ' ';
+      lines.push(prefix + node.label);
+
+      if (node.children && Array.isArray(node.children)) {
+        for (const child of node.children) {
+          renderNode(child as { label: string; children?: unknown[] }, indent + 1);
+        }
+      }
+    };
+
+    lines.push(marker + ' ' + root.label);
+    if (root.children && Array.isArray(root.children)) {
+      for (const child of root.children) {
+        renderNode(child as { label: string; children?: unknown[] }, 1);
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  // ====================
+  // ASCII高度化機能（非推奨）
   // ====================
 
   /**
@@ -584,6 +677,7 @@ export class DiagramGenerator {
    * @requirement REQ-EXT-VIS-003
    * @description Unicode box-drawing文字と適切な配置でASCIIダイアグラムを生成
    * @since 1.0.0
+   * @deprecated v1.0.1以降は generateMermaidFlowchart() を使用してください
    */
   generateAsciiFlowchart(
     data: FlowchartData,
@@ -628,6 +722,7 @@ export class DiagramGenerator {
    * Unicode罫線文字を使用した改善されたASCII表を生成
    * @requirement REQ-EXT-VIS-003
    * @since 1.0.0
+   * @deprecated v1.0.1以降は generateMarkdownTable() を使用してください
    */
   generateAsciiTable(
     headers: string[],
@@ -675,6 +770,7 @@ export class DiagramGenerator {
    * Unicode罫線文字を使用したツリー図を生成
    * @requirement REQ-EXT-VIS-003
    * @since 1.0.0
+   * @deprecated v1.0.1以降は generateMarkdownTree() を使用してください
    */
   generateAsciiTree(
     root: { label: string; children?: unknown[] },

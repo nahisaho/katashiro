@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-01-13
+
+### Changed
+
+#### @nahisaho/katashiro-generator
+
+- **DiagramGenerator**: ASCII図生成メソッドを非推奨化（Markdown/Mermaid推奨）
+  - `generateAsciiFlowchart()` → `generateMermaidFlowchart()` を使用
+  - `generateAsciiTable()` → `generateMarkdownTable()` を使用
+  - `generateAsciiTree()` → `generateMarkdownTree()` を使用
+
+### Added
+
+- **DiagramGenerator.generateMarkdownTable()**: 標準Markdownテーブル生成
+  - アライメントオプション対応（left/center/right）
+  - シンプルで標準的なMarkdown形式
+
+- **DiagramGenerator.generateMermaidFlowchart()**: Mermaidフローチャート定義生成
+  - 方向オプション対応（TD/LR/BT/RL）
+  - エッジラベル対応
+
+- **DiagramGenerator.generateMarkdownTree()**: Markdownリスト形式ツリー生成
+  - カスタムマーカー対応（-/*//+）
+  - インデントベースの階層表現
+
+### Deprecated
+
+- `generateAsciiFlowchart()`: 代わりに `generateMermaidFlowchart()` を使用
+- `generateAsciiTable()`: 代わりに `generateMarkdownTable()` を使用  
+- `generateAsciiTree()`: 代わりに `generateMarkdownTree()` を使用
+
+### Tests
+
+- 1743 tests passing (+15 new tests for Markdown/Mermaid methods)
+
 ## [1.0.0] - 2026-01-13 🎉 GA Release
 
 ### 🎯 General Availability Release
