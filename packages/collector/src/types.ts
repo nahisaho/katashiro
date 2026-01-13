@@ -30,6 +30,8 @@ export interface ScrapingOptions {
   readonly javascript?: boolean;
   readonly extractImages?: boolean;
   readonly extractLinks?: boolean;
+  /** 並列実行数（scrapeMultiple用）。デフォルト: 3 */
+  readonly concurrency?: number;
 }
 
 /**

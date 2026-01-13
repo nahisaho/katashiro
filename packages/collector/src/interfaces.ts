@@ -30,9 +30,11 @@ export interface IWebSearchClient {
 /**
  * Webスクレイパーインターフェース
  * @requirement REQ-COLLECT-002
+ * @requirement REQ-IMP-002
  */
 export interface IWebScraper {
   scrape(url: string, options?: ScrapingOptions): Promise<Result<ScrapingResult, Error>>;
+  scrapeMultiple(urls: string[], options?: ScrapingOptions): Promise<Result<ScrapingResult, Error>[]>;
 }
 
 /**

@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-sandbox",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Code execution sandbox for KATASHIRO with Docker/VM isolation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

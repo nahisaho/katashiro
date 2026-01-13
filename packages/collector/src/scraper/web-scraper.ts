@@ -186,4 +186,27 @@ export class WebScraper implements IWebScraper {
       return url;
     }
   }
+
+  /**
+   * 複数URLを並列スクレイピング
+   * @requirement REQ-IMP-002
+   */
+  async scrapeMultiple(
+    urls: string[],
+    options?: ScrapingOptions
+  ): Promise<Result<ScrapingResult, Error>[]> {
+    const concurrency = options?.concurrency ?? 3;
+    const results: Result<ScrapingResult, Error>[] = [];
+    
+    // バッチ処理で並列実行
+    for (let i = 0; i < urls.length; i += concurrency) {
+      const batch = urls.slice(i, i + concurrency);
+      const batchResults = await Promise.all(
+        batch.map(url => this.scrape(url, options))
+      );
+      results.push(...batchResults);
+    }
+    
+    return results;
+  }
 }

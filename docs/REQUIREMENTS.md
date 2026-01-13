@@ -1,0 +1,770 @@
+# KATASHIRO 要件仕様書（EARS形式）
+
+**文書バージョン**: 1.2  
+**作成日**: 2026-01-13  
+**最終更新**: 2026-01-13  
+**基準**: テスト結果（1589テスト Pass）およびコードベースレビューに基づく
+
+---
+
+## 1. 文書概要
+
+### 1.1 目的
+本文書は、KATASHIROライブラリの機能要件をEARS（Easy Approach to Requirements Syntax）形式で定義する。
+
+### 1.2 EARS記法について
+
+| パターン | 構文 | 用途 |
+|----------|------|------|
+| **Ubiquitous** | The [system] shall [action] | 常に適用される要件 |
+| **Event-driven** | When [trigger], the [system] shall [action] | イベント発生時の要件 |
+| **State-driven** | While [state], the [system] shall [action] | 特定状態での要件 |
+| **Optional** | Where [feature], the [system] shall [action] | オプション機能の要件 |
+| **Unwanted** | If [condition], then the [system] shall [action] | 例外処理の要件 |
+| **Complex** | 上記の組み合わせ | 複合的な要件 |
+
+### 1.3 要件ID体系
+
+| プレフィックス | モジュール | 例 |
+|---------------|-----------|---|
+| REQ-COLLECT | Collector（情報収集） | REQ-COLLECT-001 |
+| REQ-ANALYZE | Analyzer（分析） | REQ-ANALYZE-001 |
+| REQ-GENERATE | Generator（生成） | REQ-GENERATE-001 |
+| REQ-KNOWLEDGE | Knowledge（知識管理） | REQ-KNOWLEDGE-001 |
+| REQ-FEEDBACK | Feedback（自動学習） | REQ-FEEDBACK-001 |
+| REQ-ORCH | Orchestrator（オーケストレーション） | REQ-ORCH-006 |
+| REQ-SANDBOX | Sandbox（コード実行） | REQ-SANDBOX-007 |
+| REQ-BROWSER | Browser（ブラウザ操作） | REQ-BROWSER-008 |
+| REQ-SECURITY | Security（セキュリティ） | REQ-SECURITY-012 |
+| REQ-WORKSPACE | Workspace（ワークスペース） | REQ-WORKSPACE-011 |
+| REQ-NFR | Non-Functional（非機能） | REQ-NFR-001 |
+| REQ-IMP | Improvement（改善） | REQ-IMP-001 |
+
+---
+
+## 2. 機能要件
+
+### 2.1 情報収集（Collector）モジュール
+
+#### REQ-COLLECT-001: Web検索機能
+**[Ubiquitous]**
+> The **WebSearchClient** shall provide search results from external search engines within 3 seconds.
+
+**[Event-driven]**
+> When a search query is submitted, the **WebSearchClient** shall return a minimum of 1 result if matching content exists.
+
+**[Optional]**
+> Where provider is specified, the **WebSearchClient** shall use the specified provider (duckduckgo, searxng, google, bing).
+
+**[Unwanted]**
+> If the search engine is unreachable, then the **WebSearchClient** shall return an empty array (not throw an exception).
+
+#### REQ-COLLECT-002: Webスクレイピング機能
+**[Ubiquitous]**
+> The **WebScraper** shall extract main content from HTML pages with at least 80% accuracy.
+
+**[Event-driven]**
+> When a URL is provided, the **WebScraper** shall fetch and parse the page content.
+
+**[State-driven]**
+> While rate-limiting is active, the **WebScraper** shall queue requests and process them with a minimum 1-second interval.
+
+**[Unwanted]**
+> If the target URL returns a 4xx or 5xx error, then the **WebScraper** shall return an error result containing the HTTP status code.
+
+#### REQ-COLLECT-003: YouTube文字起こし機能
+**[Ubiquitous]**
+> The **YouTubeTranscript** shall extract transcript segments from YouTube videos.
+
+**[Event-driven]**
+> When a video ID is provided, the **YouTubeTranscript** shall return a list of transcript segments with text and timestamps.
+
+#### REQ-COLLECT-004: RSSフィード機能
+**[Ubiquitous]**
+> The **FeedReader** shall parse RSS 2.0 and Atom feed formats.
+
+**[Event-driven]**
+> When a feed URL is provided, the **FeedReader** shall return a list of feed items with title, link, and publication date.
+
+#### REQ-COLLECT-005: API連携機能
+**[Ubiquitous]**
+> The **APIClient** shall support GET, POST, PUT, and DELETE HTTP methods.
+
+**[Optional]**
+> Where authentication is required, the **APIClient** shall support Bearer token and API key authentication methods.
+
+#### REQ-COLLECT-006: Deep Research機能
+**[Ubiquitous]**
+> The **WideResearchEngine** shall perform iterative deep research with configurable iteration limits.
+
+**[Event-driven]**
+> When a research query is submitted, the **WideResearchEngine** shall execute parallel searches across multiple agents.
+
+**[State-driven]**
+> While convergence threshold is not met, the **WideResearchEngine** shall continue iterations until maxIterations is reached.
+
+**[Optional]**
+> Where focusAreas are specified, the **WideResearchEngine** shall prioritize those areas in the research.
+
+#### REQ-COLLECT-007: ドキュメントパース機能
+**[Ubiquitous]**
+> The **DocumentParser** shall parse PDF, XLSX, DOCX, and other document formats.
+
+**[Event-driven]**
+> When a document file is provided, the **DocumentParser** shall extract text content and metadata.
+
+**[Optional]**
+> Where specific parser is required, the **PDFParser** or **XLSXParser** shall be used for format-specific parsing.
+
+#### REQ-COLLECT-008: メディア抽出機能
+**[Ubiquitous]**
+> The **MediaExtractor** shall extract metadata from media files (images, audio, video).
+
+**[Event-driven]**
+> When a media URL is provided, the **MediaExtractor** shall return metadata including dimensions, duration, and format.
+
+#### REQ-COLLECT-009: ソース追跡・信頼性評価機能
+**[Ubiquitous]**
+> The **SourceTracker** shall track information sources throughout the research process.
+
+**[Event-driven]**
+> When a source is added, the **CredibilityScorer** shall evaluate and return a credibility score based on domain reputation and content quality.
+
+---
+
+### 2.2 分析（Analyzer）モジュール
+
+#### REQ-ANALYZE-001: テキスト分析機能
+**[Ubiquitous]**
+> The **TextAnalyzer** shall complete analysis within 100 milliseconds for texts up to 10,000 characters.
+
+**[Event-driven]**
+> When text is submitted for analysis, the **TextAnalyzer** shall return keywords, sentiment score, and complexity metrics.
+
+**[Ubiquitous]**
+> The **TextAnalyzer** shall extract at least 5 relevant keywords from any text longer than 100 characters.
+
+#### REQ-ANALYZE-002: エンティティ抽出機能
+**[Ubiquitous]**
+> The **EntityExtractor** shall identify entities of types: PERSON, ORGANIZATION, LOCATION, DATE, TIME, URL, and EMAIL.
+
+**[Event-driven]**
+> When text containing named entities is provided, the **EntityExtractor** shall return a categorized list of extracted entities.
+
+**[Unwanted]**
+> If no entities are found, then the **EntityExtractor** shall return an empty result object (not null or undefined).
+
+#### REQ-ANALYZE-003: トピックモデリング機能
+**[Ubiquitous]**
+> The **TopicModeler** shall identify distinct topics from a collection of 3 or more documents.
+
+**[Event-driven]**
+> When a document collection is provided, the **TopicModeler** shall return topics with associated keywords and confidence scores.
+
+#### REQ-ANALYZE-004: トレンド分析機能
+**[Ubiquitous]**
+> The **TrendAnalyzer** shall analyze time-series data to identify trends.
+
+**[Event-driven]**
+> When topics are provided, the **TimeSeriesCollector** shall collect time-series data at configurable granularity (daily, weekly, monthly).
+
+**[Event-driven]**
+> When multiple topics are provided, the **TrendAnalyzer** shall compare trends across topics.
+
+#### REQ-ANALYZE-005: 品質スコアリング機能
+**[Ubiquitous]**
+> The **QualityScorer** shall provide a quality score between 0.0 and 1.0.
+
+**[Event-driven]**
+> When text is submitted for scoring, the **QualityScorer** shall evaluate readability, coherence, factuality, and completeness dimensions.
+
+**[Ubiquitous]**
+> The **QualityScorer** shall complete scoring within 50 milliseconds for texts up to 5,000 characters.
+
+#### REQ-ANALYZE-006: 構造分析機能
+**[Ubiquitous]**
+> The **StructureAnalyzer** shall detect headings, sections, lists, code blocks, and tables in Markdown-formatted text.
+
+**[Event-driven]**
+> When a structured document is provided, the **StructureAnalyzer** shall return a hierarchical outline of the document structure.
+
+#### REQ-ANALYZE-007: コンサルティングフレームワーク機能
+**[Ubiquitous]**
+> The **FrameworkAnalyzer** shall support SWOT, 3C, 4P, 5Forces, ValueChain, and MECE analysis frameworks.
+
+**[Event-driven]**
+> When analysis data is provided, the **FrameworkAnalyzer** shall return structured analysis results with strategic implications.
+
+#### REQ-ANALYZE-008: ファクトチェック機能
+**[Ubiquitous]**
+> The **FactChecker** shall verify claims against multiple sources and return credibility scores.
+
+**[Event-driven]**
+> When a claim is submitted, the **ConsistencyChecker** shall analyze source consistency and return a verdict.
+
+**[Event-driven]**
+> When fact-checking is complete, the **VerdictGenerator** shall produce a structured verdict with supporting evidence.
+
+#### REQ-ANALYZE-009: 関係分析機能
+**[Ubiquitous]**
+> The **RelationAnalyzer** shall identify relationships between entities in text.
+
+**[Event-driven]**
+> When entities are provided, the **RelationAnalyzer** shall return a list of relationships with types and confidence scores.
+
+#### REQ-ANALYZE-010: 複数ソース比較機能
+**[Ubiquitous]**
+> The **MultiSourceComparator** shall compare information from multiple sources and identify discrepancies.
+
+**[Event-driven]**
+> When multiple sources are provided, the **MultiSourceComparator** shall return a comparison matrix with agreement scores.
+
+#### REQ-ANALYZE-011: Mixture of Agents (MoA) 機能
+**[Ubiquitous]**
+> The **MixtureOfAgents** shall aggregate responses from multiple LLM agents to produce higher quality outputs.
+
+**[Event-driven]**
+> When a prompt is submitted, the **MixtureOfAgents** shall execute parallel agent invocations and aggregate results.
+
+---
+
+### 2.3 生成（Generator）モジュール
+
+#### REQ-GENERATE-001: レポート生成機能
+**[Ubiquitous]**
+> The **ReportGenerator** shall generate reports in Markdown, HTML, and plain text formats.
+
+**[Event-driven]**
+> When report parameters are provided, the **ReportGenerator** shall produce a formatted report with title, sections, and table of contents.
+
+**[Optional]**
+> Where metadata is specified, the **ReportGenerator** shall include author, date, and version information in the report header.
+
+**[Ubiquitous]**
+> The **ReportGenerator** shall complete report generation within 10 milliseconds for reports with up to 10 sections.
+
+#### REQ-GENERATE-002: 要約生成機能
+**[Ubiquitous]**
+> The **SummaryGenerator** shall produce summaries that are at most 50% of the original text length (or the specified maxLength, whichever is smaller).
+
+**[Event-driven]**
+> When text and length constraints are provided, the **SummaryGenerator** shall return a coherent summary preserving key information.
+
+**[Optional]**
+> Where style is specified as 'bullets', the **SummaryGenerator** shall format the summary as a bulleted list.
+
+#### REQ-GENERATE-003: プレゼンテーション生成機能
+**[Optional]**
+> Where presentation output is required, the **PresentationGenerator** shall generate slide-based content with titles and bullet points.
+
+#### REQ-GENERATE-004: 引用生成機能
+**[Ubiquitous]**
+> The **CitationGenerator** shall generate citations in APA, MLA, Chicago, and IEEE formats.
+
+**[Event-driven]**
+> When source metadata is provided, the **CitationGenerator** shall return a properly formatted citation string.
+
+#### REQ-GENERATE-005: チャート生成機能
+**[Ubiquitous]**
+> The **ChartGenerator** shall generate charts in SVG and Mermaid formats.
+
+**[Event-driven]**
+> When chart data is provided, the **ChartGenerator** shall return a rendered chart with the specified type (bar, line, pie, etc.).
+
+**[Optional]**
+> Where Mermaid format is requested, the **MermaidBuilder** shall generate Mermaid diagram syntax.
+
+#### REQ-GENERATE-006: OGP画像生成機能
+**[Ubiquitous]**
+> The **OGPGenerator** shall generate Open Graph Protocol images for social media sharing.
+
+**[Event-driven]**
+> When title and description are provided, the **OGPGenerator** shall return an OGP image in PNG or SVG format.
+
+#### REQ-GENERATE-007: 記事生成機能
+**[Ubiquitous]**
+> The **ArticleGenerator** shall generate structured articles with headings, sections, and references.
+
+**[Event-driven]**
+> When a topic and outline are provided, the **ArticleGenerator** shall return a complete article in the specified format.
+
+#### REQ-GENERATE-008: ビデオ生成機能
+**[Optional]**
+> Where video output is required, the **VideoGenerator** shall generate video content from frames.
+
+**[Event-driven]**
+> When frames are provided, the **FrameComposer** shall compose them into a video sequence.
+
+#### REQ-GENERATE-009: ワークフロー機能
+**[Ubiquitous]**
+> The **WorkflowEngine** shall execute multi-step content generation workflows.
+
+**[Event-driven]**
+> When a workflow definition is provided, the **PipelineOrchestrator** shall execute steps in order with dependency resolution.
+
+**[Optional]**
+> Where style guides are configured, the **StyleGuideEnforcer** shall validate generated content against style rules.
+
+---
+
+### 2.4 知識管理（Knowledge）モジュール
+
+#### REQ-KNOWLEDGE-001: ナレッジグラフ機能
+**[Ubiquitous]**
+> The **KnowledgeGraph** shall support nodes with id, type, and properties attributes.
+
+**[Event-driven]**
+> When a node is added, the **KnowledgeGraph** shall store the node and make it immediately queryable.
+
+**[Event-driven]**
+> When an edge is added, the **KnowledgeGraph** shall validate that both source and target nodes exist.
+
+**[Ubiquitous]**
+> The **KnowledgeGraph** shall support graphs with up to 10,000 nodes and 50,000 edges.
+
+#### REQ-KNOWLEDGE-002: グラフクエリ機能
+**[Ubiquitous]**
+> The **GraphQuery** shall support queries by node type, property value, and relationship traversal.
+
+**[Event-driven]**
+> When a query is executed, the **GraphQuery** shall return matching nodes or edges within 10 milliseconds for graphs with up to 1,000 nodes.
+
+#### REQ-KNOWLEDGE-003: グラフ永続化機能
+**[Ubiquitous]**
+> The **GraphPersistence** shall save and load knowledge graphs in JSON format.
+
+**[Event-driven]**
+> When save is requested, the **GraphPersistence** shall write the complete graph state to the specified file path.
+
+**[Unwanted]**
+> If the file path is invalid or write permission is denied, then the **GraphPersistence** shall return an error result with the specific failure reason.
+
+#### REQ-KNOWLEDGE-004: グラフ同期機能
+**[Ubiquitous]**
+> The **GraphSync** shall synchronize knowledge graphs across multiple instances.
+
+**[Event-driven]**
+> When sync is triggered, the **GraphSync** shall merge changes from remote sources.
+
+#### REQ-KNOWLEDGE-005: グラフ可視化機能
+**[Optional]**
+> Where visualization is required, the **GraphVisualization** shall render the knowledge graph as a visual diagram.
+
+**[Event-driven]**
+> When export is requested, the **GraphVisualization** shall generate output in SVG, PNG, or Mermaid format.
+
+---
+
+### 2.5 自動学習（Feedback）モジュール
+
+#### REQ-FEEDBACK-001: フィードバック収集機能
+**[Ubiquitous]**
+> The **FeedbackCollector** shall accept feedback with taskId, rating (1-5), category, and optional comment.
+
+**[Event-driven]**
+> When feedback is submitted, the **FeedbackCollector** shall validate the input and return a feedback object with a unique ID and timestamp.
+
+#### REQ-FEEDBACK-002: パターン検出機能
+**[Ubiquitous]**
+> The **PatternDetector** shall identify recurring patterns from a collection of 3 or more task execution records.
+
+**[Event-driven]**
+> When execution history is provided, the **PatternDetector** shall analyze success rates, duration patterns, and failure correlations.
+
+**[State-driven]**
+> While learning mode is active, the **PatternDetector** shall continuously update pattern models with new execution data.
+
+#### REQ-FEEDBACK-003: 学習エンジン機能
+**[Ubiquitous]**
+> The **LearningEngine** shall maintain a model of user preferences and task performance metrics.
+
+**[Event-driven]**
+> When learn() is called with feedback and pattern data, the **LearningEngine** shall update its internal model and return a status indicating success or failure.
+
+**[Ubiquitous]**
+> The **LearningEngine** shall persist learning state across sessions when storage is configured.
+
+#### REQ-FEEDBACK-004: 適応型レコメンデーション機能
+**[Ubiquitous]**
+> The **AdaptiveRecommender** shall provide recommendations based on learned patterns and user context.
+
+**[Event-driven]**
+> When context is provided, the **AdaptiveRecommender** shall return a ranked list of recommendations with confidence scores.
+
+**[State-driven]**
+> While cold-start mode is active (fewer than 10 feedback records), the **AdaptiveRecommender** shall return default recommendations.
+
+#### REQ-FEEDBACK-005: Wake-Sleep学習サイクル機能
+**[Ubiquitous]**
+> The **WakeSleepCycle** shall support background learning without blocking foreground operations.
+
+**[Event-driven]**
+> When the sleep phase is triggered, the **WakeSleepCycle** shall consolidate patterns, compress redundant data, and optimize the learning model.
+
+**[State-driven]**
+> While in wake phase, the **WakeSleepCycle** shall collect execution data and user feedback for later processing.
+
+**[Event-driven]**
+> When recordFeedback() is called, the **WakeSleepCycle** shall update pattern quality scores based on user feedback.
+
+**[Event-driven]**
+> When getSuggestions() is called, the **WakeSleepCycle** shall return low-quality patterns with reason, action, and impact fields.
+
+---
+
+### 2.6 オーケストレーション（Orchestrator）モジュール
+
+#### REQ-ORCH-006: マルチエージェントオーケストレーション機能
+**[Ubiquitous]**
+> The **MultiAgentOrchestrator** shall coordinate multiple agents to solve complex tasks.
+
+**[Event-driven]**
+> When a complex task is submitted, the **MultiAgentOrchestrator** shall decompose the task and assign sub-tasks to appropriate agents.
+
+**[State-driven]**
+> While agents are executing, the **MultiAgentOrchestrator** shall monitor progress and handle agent failures.
+
+#### REQ-ORCH-009: タスク分解・計画機能
+**[Ubiquitous]**
+> The **TaskDecomposer** shall break down complex tasks into executable sub-tasks.
+
+**[Event-driven]**
+> When a task description is provided, the **TaskDecomposer** shall return a structured task plan with dependencies.
+
+**[Ubiquitous]**
+> The **TaskDecomposer** shall generate tasks with clear success criteria and estimated duration.
+
+#### REQ-ORCH-010: Action-Observation型ツールシステム
+**[Ubiquitous]**
+> The **ToolRegistry** shall manage tools with type-safe action and observation schemas.
+
+**[Event-driven]**
+> When a tool is executed, the **ToolRegistry** shall validate action parameters and return typed observation results.
+
+**[Unwanted]**
+> If action validation fails, then the **ToolRegistry** shall return an error observation with detailed validation messages.
+
+#### REQ-ORCH-011: 対話型情報収集機能（MUSUBIX風）
+**[Ubiquitous]**
+> The **DialogueCollector** shall collect user intent through structured dialogue sessions.
+
+**[Event-driven]**
+> When a session is started, the **DialogueCollector** shall generate contextually appropriate questions.
+
+**[State-driven]**
+> While confidence is below threshold, the **DialogueCollector** shall continue asking clarifying questions.
+
+**[Event-driven]**
+> When getResult() is called, the **DialogueCollector** shall return inferred surface intent, true intent, and recommended approach.
+
+---
+
+### 2.7 サンドボックス（Sandbox）モジュール
+
+#### REQ-SANDBOX-007: コード実行サンドボックス機能
+**[Ubiquitous]**
+> The **SandboxFactory** shall create isolated execution environments for code.
+
+**[Optional]**
+> Where Docker is available, the **DockerExecutor** shall execute code in isolated Docker containers.
+
+**[Optional]**
+> Where Docker is unavailable, the **LocalExecutor** shall execute code with resource limits (timeout, memory).
+
+**[Event-driven]**
+> When code execution completes, the **Sandbox** shall return stdout, stderr, exit code, and execution duration.
+
+**[Unwanted]**
+> If execution exceeds timeout, then the **Sandbox** shall terminate the process and return a timeout error.
+
+---
+
+### 2.8 ブラウザ操作（Browser）モジュール
+
+#### REQ-BROWSER-008: ヘッドレスブラウザ操作機能
+**[Ubiquitous]**
+> The **BrowserOperator** shall control headless browsers via Puppeteer or Playwright.
+
+**[Event-driven]**
+> When a goto action is submitted, the **BrowserOperator** shall navigate to the specified URL.
+
+**[Event-driven]**
+> When a click action is submitted, the **BrowserOperator** shall click the element matching the selector.
+
+**[Event-driven]**
+> When a type action is submitted, the **BrowserOperator** shall input text into the specified element.
+
+**[Event-driven]**
+> When a screenshot action is submitted, the **BrowserOperator** shall capture and return a page screenshot.
+
+**[Event-driven]**
+> When an evaluate action is submitted, the **BrowserOperator** shall execute JavaScript in the page context.
+
+**[Unwanted]**
+> If element selector is not found, then the **BrowserOperator** shall return an error with selector details.
+
+---
+
+### 2.9 セキュリティ（Security）モジュール
+
+#### REQ-SECURITY-012: セキュリティ分析機能
+**[Ubiquitous]**
+> The **SecurityAnalyzer** shall evaluate risk levels (low, medium, high, critical) for all actions.
+
+**[Event-driven]**
+> When an action is analyzed, the **SecurityAnalyzer** shall return risk level, requiresConfirmation flag, and reasons.
+
+**[State-driven]**
+> While requireConfirmationLevel is set, the **SecurityAnalyzer** shall flag actions at or above that risk level for confirmation.
+
+**[Event-driven]**
+> When an action matches denyPatterns, the **SecurityAnalyzer** shall block the action and return an error.
+
+**[Event-driven]**
+> When an action matches allowPatterns, the **SecurityAnalyzer** shall allow the action without confirmation.
+
+**[Ubiquitous]**
+> The **SecurityAnalyzer** shall classify file deletion operations as high risk.
+
+#### REQ-SECURITY-012-05: 監査ログ機能
+**[Ubiquitous]**
+> The **ActionLogger** shall record all actions with timestamp, action type, parameters, and result.
+
+**[Event-driven]**
+> When an action is executed, the **ActionLogger** shall append an audit log entry.
+
+**[Optional]**
+> Where file storage is configured, the **ActionLogger** shall persist logs to the specified file path.
+
+---
+
+### 2.10 ワークスペース（Workspace）モジュール
+
+#### REQ-WORKSPACE-011: 統一ワークスペースインターフェース
+**[Ubiquitous]**
+> The **WorkspaceFactory** shall create workspace instances based on environment configuration.
+
+**[Optional]**
+> Where Docker is available, the **DockerWorkspace** shall provide file operations in isolated Docker containers.
+
+**[Optional]**
+> Where local execution is preferred, the **LocalWorkspace** shall provide file operations on the local file system.
+
+**[Ubiquitous]**
+> All workspace implementations shall support readFile, writeFile, deleteFile, listDirectory, and exists operations.
+
+---
+
+## 3. 非機能要件
+
+### 3.1 パフォーマンス要件
+
+#### REQ-NFR-001: 応答時間
+**[Ubiquitous]**
+> The system shall complete local analysis operations (TextAnalyzer, EntityExtractor, QualityScorer) within 100 milliseconds.
+
+**[Ubiquitous]**
+> The system shall complete network-dependent operations (WebSearchClient, WebScraper) within 5 seconds under normal network conditions.
+
+#### REQ-NFR-002: スループット
+**[Ubiquitous]**
+> The system shall process at least 100 analysis requests per second on a single-core CPU.
+
+### 3.2 信頼性要件
+
+#### REQ-NFR-003: エラーハンドリング
+**[Ubiquitous]**
+> The system shall use the Result type (ok/err) for all operations that may fail, never throwing unhandled exceptions.
+
+**[Unwanted]**
+> If an unexpected error occurs, then the system shall log the error with full stack trace and return a descriptive error result.
+
+#### REQ-NFR-004: データ整合性
+**[Ubiquitous]**
+> The **KnowledgeGraph** shall maintain referential integrity, preventing edges to non-existent nodes.
+
+### 3.3 互換性要件
+
+#### REQ-NFR-005: Node.js互換性
+**[Ubiquitous]**
+> The system shall support Node.js versions 20.0.0 and above.
+
+#### REQ-NFR-006: ESM互換性
+**[Ubiquitous]**
+> The system shall be distributed as ES modules with full TypeScript type definitions.
+
+### 3.4 保守性要件
+
+#### REQ-NFR-007: モジュール構造
+**[Ubiquitous]**
+> The system shall maintain separation of concerns across collector, analyzer, generator, knowledge, feedback, orchestrator, sandbox, security, and workspace modules.
+
+**[Optional]**
+> Where only specific functionality is needed, the system shall allow importing individual sub-packages (@nahisaho/katashiro-analyzer, etc.).
+
+---
+
+## 4. 改善要件
+
+### 4.1 パフォーマンス改善
+
+#### REQ-IMP-001: Web検索キャッシュ
+**[Optional]**
+> Where caching is enabled, the **WebSearchClient** shall cache search results for a configurable duration (default: 5 minutes).
+
+**[Event-driven]**
+> When a cached result exists for the same query, the **WebSearchClient** shall return the cached result without making a network request.
+
+**[Ubiquitous]**
+> The cached search response time shall be less than 10 milliseconds.
+
+**実装状態**: ❌ 未実装
+
+#### REQ-IMP-002: 並列スクレイピング
+**[Optional]**
+> Where multiple URLs are provided, the **WebScraper** shall process them in parallel with a configurable concurrency limit (default: 5).
+
+**実装状態**: ⚠️ WideResearchEngineに実装済み、WebScraperには未実装
+
+### 4.2 自動学習機能強化
+
+#### REQ-IMP-003: パターン検出精度
+**[Ubiquitous]**
+> The **PatternDetector** shall achieve at least 80% accuracy in identifying success/failure patterns after 50 feedback records.
+
+**検証方法**: 50件のフィードバック記録後にパターン検出精度をテストで検証
+
+**実装状態**: ⚠️ 実装済み、検証テスト未作成
+
+#### REQ-IMP-004: レコメンデーション精度
+**[State-driven]**
+> While sufficient data is available (50+ feedback records), the **AdaptiveRecommender** shall provide recommendations with at least 70% user satisfaction rate.
+
+**検証方法**: A/Bテストまたはユーザー評価フィードバックで測定
+
+**実装状態**: ⚠️ 実装済み、検証テスト未作成
+
+---
+
+## 5. トレーサビリティマトリクス
+
+### 5.1 コア機能要件
+
+| 要件ID | テスト状態 | 実装ファイル | 優先度 |
+|--------|-----------|-------------|--------|
+| REQ-COLLECT-001 | ✅ Pass | packages/collector/src/web-search/web-search-client.ts | High |
+| REQ-COLLECT-002 | ✅ Pass | packages/collector/src/scraper/ | High |
+| REQ-COLLECT-003 | ✅ Pass | packages/collector/src/youtube/ | Medium |
+| REQ-COLLECT-004 | ✅ Pass | packages/collector/src/feed/ | Medium |
+| REQ-COLLECT-005 | ✅ Pass | packages/collector/src/api/ | Medium |
+| REQ-COLLECT-006 | ✅ Pass | packages/collector/src/research/WideResearchEngine.ts | High |
+| REQ-COLLECT-007 | ✅ Pass | packages/collector/src/document/ | Medium |
+| REQ-COLLECT-008 | ✅ Pass | packages/collector/src/media/ | Low |
+| REQ-COLLECT-009 | ✅ Pass | packages/collector/src/source/ | Medium |
+| REQ-ANALYZE-001 | ✅ Pass | packages/analyzer/src/text/ | High |
+| REQ-ANALYZE-002 | ✅ Pass | packages/analyzer/src/entity/ | High |
+| REQ-ANALYZE-003 | ✅ Pass | packages/analyzer/src/topic/ | Medium |
+| REQ-ANALYZE-004 | ✅ Pass | packages/analyzer/src/trend/ | Medium |
+| REQ-ANALYZE-005 | ✅ Pass | packages/analyzer/src/quality/ | Medium |
+| REQ-ANALYZE-006 | ✅ Pass | packages/analyzer/src/structure/ | Low |
+| REQ-ANALYZE-007 | ✅ Pass | packages/analyzer/src/framework/ | Medium |
+| REQ-ANALYZE-008 | ✅ Pass | packages/analyzer/src/factcheck/ | Medium |
+| REQ-ANALYZE-009 | ✅ Pass | packages/analyzer/src/relation/ | Medium |
+| REQ-ANALYZE-010 | ✅ Pass | packages/analyzer/src/comparator/ | Medium |
+| REQ-ANALYZE-011 | ✅ Pass | packages/analyzer/src/moa/ | Medium |
+| REQ-GENERATE-001 | ✅ Pass | packages/generator/src/report/ | High |
+| REQ-GENERATE-002 | ✅ Pass | packages/generator/src/summary/ | High |
+| REQ-GENERATE-003 | ⚠️ Optional | packages/generator/src/presentation/ | Low |
+| REQ-GENERATE-004 | ✅ Pass | packages/generator/src/citation/ | Low |
+| REQ-GENERATE-005 | ✅ Pass | packages/generator/src/chart/ | Medium |
+| REQ-GENERATE-006 | ✅ Pass | packages/generator/src/ogp/ | Low |
+| REQ-GENERATE-007 | ✅ Pass | packages/generator/src/article/ | Medium |
+| REQ-GENERATE-008 | ⚠️ Optional | packages/generator/src/video/ | Low |
+| REQ-GENERATE-009 | ✅ Pass | packages/generator/src/workflow/ | Medium |
+| REQ-KNOWLEDGE-001 | ✅ Pass | packages/knowledge/src/graph/ | High |
+| REQ-KNOWLEDGE-002 | ✅ Pass | packages/knowledge/src/query/ | High |
+| REQ-KNOWLEDGE-003 | ✅ Pass | packages/knowledge/src/persistence/ | Medium |
+| REQ-KNOWLEDGE-004 | ✅ Pass | packages/knowledge/src/sync/ | Low |
+| REQ-KNOWLEDGE-005 | ⚠️ Optional | packages/knowledge/src/visualization/ | Low |
+| REQ-FEEDBACK-001 | ✅ Pass | packages/feedback/src/collector/ | High |
+| REQ-FEEDBACK-002 | ✅ Pass | packages/feedback/src/patterns/ | High |
+| REQ-FEEDBACK-003 | ✅ Pass | packages/feedback/src/learning/ | High |
+| REQ-FEEDBACK-004 | ✅ Pass | packages/feedback/src/recommender/ | High |
+| REQ-FEEDBACK-005 | ✅ Pass | packages/feedback/src/learning/ | High |
+
+### 5.2 拡張機能要件
+
+| 要件ID | テスト状態 | 実装ファイル | 優先度 |
+|--------|-----------|-------------|--------|
+| REQ-ORCH-006 | ✅ Pass | packages/orchestrator/src/ | High |
+| REQ-ORCH-009 | ✅ Pass | packages/orchestrator/src/task-decomposer.ts | High |
+| REQ-ORCH-010 | ✅ Pass | packages/orchestrator/src/tool-registry.ts | High |
+| REQ-ORCH-011 | ✅ Pass | packages/orchestrator/src/ | High |
+| REQ-SANDBOX-007 | ✅ Pass | packages/sandbox/src/ | High |
+| REQ-BROWSER-008 | ✅ Pass | packages/collector/src/browser/BrowserOperator.ts | Medium |
+| REQ-SECURITY-012 | ✅ Pass | packages/security/src/ | Critical |
+| REQ-WORKSPACE-011 | ✅ Pass | packages/workspace/src/ | High |
+
+### 5.3 改善要件
+
+| 要件ID | テスト状態 | 実装ファイル | 優先度 |
+|--------|-----------|-------------|--------|
+| REQ-IMP-001 | ❌ 未実装 | - | High |
+| REQ-IMP-002 | ⚠️ 部分実装 | packages/collector/src/research/ | Medium |
+| REQ-IMP-003 | ⚠️ 検証未完了 | packages/feedback/src/patterns/ | Medium |
+| REQ-IMP-004 | ⚠️ 検証未完了 | packages/feedback/src/recommender/ | Medium |
+
+---
+
+## 6. テスト結果サマリー
+
+```
+Test Files  : 81 passed (81)
+Tests       : 1589 passed | 4 skipped (1593)
+Duration    : 6.12s
+```
+
+### カバレッジ
+
+| モジュール | 要件数 | 実装済み | カバレッジ |
+|-----------|--------|---------|-----------|
+| Collector | 9 | 9 | 100% |
+| Analyzer | 11 | 11 | 100% |
+| Generator | 9 | 9 | 100% |
+| Knowledge | 5 | 5 | 100% |
+| Feedback | 5 | 5 | 100% |
+| Orchestrator | 4 | 4 | 100% |
+| Sandbox | 1 | 1 | 100% |
+| Browser | 1 | 1 | 100% |
+| Security | 2 | 2 | 100% |
+| Workspace | 1 | 1 | 100% |
+| Improvement | 4 | 1 | 25% |
+| **Total** | **52** | **49** | **94%** |
+
+---
+
+## 7. 用語集
+
+| 用語 | 定義 |
+|------|------|
+| **EARS** | Easy Approach to Requirements Syntax - 要件記述の標準的な構文パターン |
+| **Result型** | 成功(ok)または失敗(err)を表す代数的データ型 |
+| **Wake-Sleep学習** | オンライン学習とオフライン最適化を組み合わせた学習パラダイム |
+| **Cold-start** | 十分なデータがない初期状態での推薦システムの課題 |
+| **MoA** | Mixture of Agents - 複数のLLMエージェントを組み合わせて高品質な出力を生成する手法 |
+| **MUSUBIX** | 対話型情報収集システムのリファレンス実装 |
+| **Action-Observation** | ツール実行のための型安全なインターフェースパターン |
+
+---
+
+## 8. 改訂履歴
+
+| バージョン | 日付 | 変更内容 | 作成者 |
+|-----------|------|----------|--------|
+| 1.0 | 2026-01-13 | 初版作成（10課題テスト結果に基づく） | KATASHIRO Test Suite |
+| 1.1 | 2026-01-13 | コードベースレビューに基づく要件追加（REQ-006〜012）、要件ID体系統一、トレーサビリティマトリクス拡充 | GitHub Copilot |
+| 1.2 | 2026-01-13 | 全クラスレビューによる要件追加（Collector 3件、Analyzer 4件、Generator 6件、Knowledge 2件）、52要件に拡充 | GitHub Copilot |
+
+---
+
+**文書終了**

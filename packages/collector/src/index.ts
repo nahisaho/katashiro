@@ -176,3 +176,7 @@ export {
   type ExtractionResult,
   type BrowserPage,
 } from './browser/index.js';
+
+// Search Cache (v0.4.3) - REQ-IMP-001
+export { SearchCache, type SearchCacheOptions } from './cache/index.js';
+

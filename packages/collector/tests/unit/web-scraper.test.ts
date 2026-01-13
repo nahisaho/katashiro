@@ -128,4 +128,81 @@ describe('WebScraper', () => {
       }
     });
   });
+
+  describe('scrapeMultiple', () => {
+    it('should scrape multiple URLs in parallel', async () => {
+      const mockHtml = `
+        <html>
+          <head><title>Test Page</title></head>
+          <body><p>Content</p></body>
+        </html>
+      `;
+
+      vi.spyOn(scraper as any, 'fetchPage').mockResolvedValue(mockHtml);
+
+      const urls = [
+        'https://example.com/page1',
+        'https://example.com/page2',
+        'https://example.com/page3',
+      ];
+
+      const results = await scraper.scrapeMultiple(urls);
+
+      expect(results).toHaveLength(3);
+      results.forEach(result => {
+        expect(isOk(result)).toBe(true);
+      });
+    });
+
+    it('should handle mixed success and failure', async () => {
+      let callCount = 0;
+      vi.spyOn(scraper as any, 'fetchPage').mockImplementation(() => {
+        callCount++;
+        if (callCount === 2) {
+          return Promise.reject(new Error('Network error'));
+        }
+        return Promise.resolve('<html><head><title>Test</title></head></html>');
+      });
+
+      const urls = [
+        'https://example.com/page1',
+        'https://example.com/page2',
+        'https://example.com/page3',
+      ];
+
+      const results = await scraper.scrapeMultiple(urls);
+
+      expect(results).toHaveLength(3);
+      expect(isOk(results[0])).toBe(true);
+      expect(isErr(results[1])).toBe(true);
+      expect(isOk(results[2])).toBe(true);
+    });
+
+    it('should respect concurrency option', async () => {
+      const callTimes: number[] = [];
+      vi.spyOn(scraper as any, 'fetchPage').mockImplementation(async () => {
+        callTimes.push(Date.now());
+        await new Promise(resolve => setTimeout(resolve, 50));
+        return '<html><head><title>Test</title></head></html>';
+      });
+
+      const urls = [
+        'https://example.com/page1',
+        'https://example.com/page2',
+        'https://example.com/page3',
+        'https://example.com/page4',
+      ];
+
+      await scraper.scrapeMultiple(urls, { concurrency: 2 });
+
+      // With concurrency 2, pages 1-2 run together, then 3-4
+      // So page3 should start after page1 finishes
+      expect(callTimes[2] - callTimes[0]).toBeGreaterThanOrEqual(40);
+    });
+
+    it('should return empty array for empty input', async () => {
+      const results = await scraper.scrapeMultiple([]);
+      expect(results).toHaveLength(0);
+    });
+  });
 });

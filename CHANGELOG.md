@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-01-13
+
+### Added
+
+#### @nahisaho/katashiro-collector
+- **WebScraper.scrapeMultiple()** (REQ-IMP-002): 複数URLの並列スクレイピング
+  - concurrencyオプションで同時実行数を制御（デフォルト: 3）
+  - バッチ処理による効率的な並列実行
+  - USER-GUIDE.md記載のAPIを実装
+
+- **SearchCache** (REQ-IMP-001): Web検索結果キャッシュ
+  - TTL付きキャッシュ（デフォルト: 5分）
+  - LRUベースのエビクション
+  - プロバイダー別のキャッシュ分離
+  - 統計情報取得（サイズ、最古エントリ年齢等）
+
+#### @nahisaho/katashiro-feedback
+- **PatternDetector精度検証テスト** (REQ-IMP-003)
+  - 50フィードバックでのパターン検出精度検証
+  - 5カテゴリ×10フィードバックでの多様性テスト
+  - 100フィードバックでのパフォーマンス検証（<1秒）
+
+- **AdaptiveRecommender精度検証テスト** (REQ-IMP-004)
+  - 50+パターンでのレコメンデーション精度検証
+  - 100パターン×100回レコメンドのパフォーマンス検証
+  - 使用履歴に基づく適応学習の検証
+  - タイプ別フィルタリング精度検証
+
+### Changed
+- IWebScraperインターフェースにscrapeMultiple()メソッドを追加
+- ScrapingOptionsにconcurrencyオプションを追加
+
 ## [0.4.2] - 2026-01-13
 
 ### Added

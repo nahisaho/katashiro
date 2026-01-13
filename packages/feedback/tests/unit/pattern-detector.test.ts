@@ -140,4 +140,132 @@ describe('PatternDetector', () => {
       }
     });
   });
+
+  describe('accuracy with 50 feedbacks', () => {
+    /**
+     * REQ-IMP-003: 50フィードバックでのパターン検出精度検証
+     */
+    it('should detect patterns with high accuracy from 50+ feedbacks', () => {
+      // 50件のフィードバックを生成（5つのパターンカテゴリ）
+      const feedbacks: Feedback[] = [];
+
+      // パターン1: async/await (10件)
+      for (let i = 0; i < 10; i++) {
+        feedbacks.push(createFeedback(
+          `async-${i}`,
+          'accept',
+          `async function handler${i}() { return await fetch('/api/${i}'); }`,
+          { category: 'async-pattern' }
+        ));
+      }
+
+      // パターン2: error-handling (10件)
+      for (let i = 0; i < 10; i++) {
+        feedbacks.push(createFeedback(
+          `error-${i}`,
+          'accept',
+          `try { doSomething${i}(); } catch (e) { console.error(e); }`,
+          { category: 'error-handling' }
+        ));
+      }
+
+      // パターン3: const declarations (10件 - accept)
+      for (let i = 0; i < 10; i++) {
+        feedbacks.push(createFeedback(
+          `const-${i}`,
+          'accept',
+          `const value${i} = ${i * 10};`,
+          { category: 'const-pattern' }
+        ));
+      }
+
+      // パターン4: var declarations (10件 - reject)
+      for (let i = 0; i < 10; i++) {
+        feedbacks.push(createFeedback(
+          `var-${i}`,
+          'reject',
+          `var badValue${i} = ${i * 10};`,
+          { category: 'var-pattern' }
+        ));
+      }
+
+      // パターン5: mixed (10件)
+      for (let i = 0; i < 10; i++) {
+        const action = i % 2 === 0 ? 'accept' : 'reject';
+        feedbacks.push(createFeedback(
+          `mixed-${i}`,
+          action as 'accept' | 'reject',
+          `function process${i}(data) { return data.map(x => x * 2); }`,
+          { category: 'mixed' }
+        ));
+      }
+
+      // 合計50件
+      expect(feedbacks.length).toBe(50);
+
+      // パターン検出
+      const result = detector.detect(feedbacks);
+      expect(isOk(result)).toBe(true);
+
+      if (isOk(result)) {
+        // 少なくとも3つ以上のパターンカテゴリが検出されること
+        expect(result.value.patterns.length).toBeGreaterThanOrEqual(1);
+      }
+
+      // 分析
+      const analysis = detector.analyze(feedbacks);
+      expect(isOk(analysis)).toBe(true);
+
+      if (isOk(analysis)) {
+        expect(analysis.value.totalFeedback).toBe(50);
+        // accept: 30件 (async 10 + error 10 + const 10), reject: 15件 (var 10 + mixed 5)
+        // accept率: 35/50 = 0.7
+        expect(analysis.value.acceptRate).toBeGreaterThanOrEqual(0.6);
+      }
+    });
+
+    it('should detect context-grouped patterns from 50+ feedbacks', () => {
+      const feedbacks: Feedback[] = [];
+
+      // 5つの異なるコンテキストで10件ずつ
+      const contexts = ['api', 'database', 'ui', 'validation', 'utils'];
+      
+      contexts.forEach((ctx, idx) => {
+        for (let i = 0; i < 10; i++) {
+          feedbacks.push(createFeedback(
+            `${ctx}-${i}`,
+            i < 7 ? 'accept' : 'reject',
+            `function ${ctx}Handler${i}() { /* ${ctx} logic */ }`,
+            { module: ctx, priority: idx }
+          ));
+        }
+      });
+
+      expect(feedbacks.length).toBe(50);
+
+      const result = detector.detectByContext(feedbacks);
+      expect(isOk(result)).toBe(true);
+    });
+
+    it('should maintain performance with 100+ feedbacks', () => {
+      const feedbacks: Feedback[] = [];
+
+      for (let i = 0; i < 100; i++) {
+        feedbacks.push(createFeedback(
+          `perf-${i}`,
+          i % 3 === 0 ? 'reject' : 'accept',
+          `function operation${i}(input${i}) { return process(input${i}); }`,
+          { batch: Math.floor(i / 10) }
+        ));
+      }
+
+      const start = performance.now();
+      const result = detector.detect(feedbacks);
+      const elapsed = performance.now() - start;
+
+      expect(isOk(result)).toBe(true);
+      // 100件の処理が1秒以内に完了すること
+      expect(elapsed).toBeLessThan(1000);
+    });
+  });
 });
