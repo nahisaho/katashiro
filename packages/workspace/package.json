@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-workspace",
-  "version": "2.0.6",
+  "version": "2.0.8",
   "description": "KATASHIRO Workspace Management - Unified workspace interface for file operations",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -19,7 +19,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "^2.0.5",
+    "@nahisaho/katashiro-core": "^2.0.7",
     "fast-glob": "^3.3.2",
     "dockerode": "^4.0.2"
   },

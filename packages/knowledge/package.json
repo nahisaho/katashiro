@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-knowledge",
-  "version": "2.0.6",
+  "version": "2.0.8",
   "description": "KATASHIRO Knowledge - 知識管理・LLMパッケージ",
   "type": "module",
   "main": "./dist/index.js",
@@ -21,7 +21,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "^2.0.5"
+    "@nahisaho/katashiro-core": "^2.0.7"
   },
   "author": "nahisaho",
   "license": "MIT",

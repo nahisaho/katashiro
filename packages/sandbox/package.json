@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-sandbox",
-  "version": "2.0.6",
+  "version": "2.0.8",
   "description": "Code execution sandbox for KATASHIRO with Docker/VM isolation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -41,7 +41,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "^2.0.5",
+    "@nahisaho/katashiro-core": "^2.0.7",
     "dockerode": "^4.0.2"
   },
   "devDependencies": {
@@ -51,6 +51,6 @@
     "vitest": "^1.6.0"
   },
   "peerDependencies": {
-    "@nahisaho/katashiro-core": "^2.0.5"
+    "@nahisaho/katashiro-core": "^2.0.7"
   }
 }
