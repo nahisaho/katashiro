@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-orchestrator",
-  "version": "2.0.0",
+  "version": "2.0.3",
   "description": "Task decomposition, planning, and multi-agent orchestration for KATASHIRO",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
