@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-security",
-  "version": "2.0.8",
+  "version": "2.0.10",
   "description": "KATASHIRO Security - Security analysis and action auditing",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -11,6 +11,10 @@
       "default": "./dist/index.js"
     }
   },
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
@@ -19,7 +23,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "^2.0.7",
+    "@nahisaho/katashiro-core": "^2.0.8",
     "micromatch": "^4.0.8"
   },
   "devDependencies": {

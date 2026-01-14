@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-llm",
-  "version": "2.0.8",
+  "version": "2.0.10",
   "description": "LLM Provider abstraction for KATASHIRO",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -22,8 +22,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "^2.0.7",
-    "@nahisaho/katashiro-observability": "^2.0.7",
+    "@nahisaho/katashiro-core": "^2.0.8",
+    "@nahisaho/katashiro-observability": "^2.0.8",
     "zod": "^3.23.8"
   },
   "devDependencies": {

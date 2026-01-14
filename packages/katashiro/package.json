@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro",
-  "version": "2.0.8",
+  "version": "2.0.10",
   "description": "KATASHIRO - VS Code Agent Mode向け情報収集・分析・生成システム（オールインワンパッケージ）",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -20,63 +20,93 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./core": {
       "types": "./dist/core.d.ts",
-      "import": "./dist/core.js"
+      "import": "./dist/core.js",
+      "require": "./dist/core.js",
+      "default": "./dist/core.js"
     },
     "./collector": {
       "types": "./dist/collector.d.ts",
-      "import": "./dist/collector.js"
+      "import": "./dist/collector.js",
+      "require": "./dist/collector.js",
+      "default": "./dist/collector.js"
     },
     "./analyzer": {
       "types": "./dist/analyzer.d.ts",
-      "import": "./dist/analyzer.js"
+      "import": "./dist/analyzer.js",
+      "require": "./dist/analyzer.js",
+      "default": "./dist/analyzer.js"
     },
     "./generator": {
       "types": "./dist/generator.d.ts",
-      "import": "./dist/generator.js"
+      "import": "./dist/generator.js",
+      "require": "./dist/generator.js",
+      "default": "./dist/generator.js"
     },
     "./knowledge": {
       "types": "./dist/knowledge.d.ts",
-      "import": "./dist/knowledge.js"
+      "import": "./dist/knowledge.js",
+      "require": "./dist/knowledge.js",
+      "default": "./dist/knowledge.js"
     },
     "./feedback": {
       "types": "./dist/feedback.d.ts",
-      "import": "./dist/feedback.js"
+      "import": "./dist/feedback.js",
+      "require": "./dist/feedback.js",
+      "default": "./dist/feedback.js"
     },
     "./rag": {
       "types": "./dist/rag.d.ts",
-      "import": "./dist/rag.js"
+      "import": "./dist/rag.js",
+      "require": "./dist/rag.js",
+      "default": "./dist/rag.js"
     },
     "./evaluation": {
       "types": "./dist/evaluation.d.ts",
-      "import": "./dist/evaluation.js"
+      "import": "./dist/evaluation.js",
+      "require": "./dist/evaluation.js",
+      "default": "./dist/evaluation.js"
     },
     "./orchestrator": {
       "types": "./dist/orchestrator.d.ts",
-      "import": "./dist/orchestrator.js"
+      "import": "./dist/orchestrator.js",
+      "require": "./dist/orchestrator.js",
+      "default": "./dist/orchestrator.js"
     },
     "./llm": {
       "types": "./dist/llm.d.ts",
-      "import": "./dist/llm.js"
+      "import": "./dist/llm.js",
+      "require": "./dist/llm.js",
+      "default": "./dist/llm.js"
     },
     "./observability": {
       "types": "./dist/observability.d.ts",
-      "import": "./dist/observability.js"
+      "import": "./dist/observability.js",
+      "require": "./dist/observability.js",
+      "default": "./dist/observability.js"
     },
     "./sandbox": {
       "types": "./dist/sandbox.d.ts",
-      "import": "./dist/sandbox.js"
+      "import": "./dist/sandbox.js",
+      "require": "./dist/sandbox.js",
+      "default": "./dist/sandbox.js"
     },
     "./security": {
       "types": "./dist/security.d.ts",
-      "import": "./dist/security.js"
+      "import": "./dist/security.js",
+      "require": "./dist/security.js",
+      "default": "./dist/security.js"
     },
     "./workspace": {
       "types": "./dist/workspace.d.ts",
-      "import": "./dist/workspace.js"
+      "import": "./dist/workspace.js",
+      "require": "./dist/workspace.js",
+      "default": "./dist/workspace.js"
     }
   },
   "scripts": {
@@ -109,20 +139,20 @@
     "url": "https://github.com/nahisaho/katashiro/issues"
   },
   "dependencies": {
-    "@nahisaho/katashiro-analyzer": "^2.0.7",
-    "@nahisaho/katashiro-collector": "^2.0.7",
-    "@nahisaho/katashiro-core": "^2.0.7",
-    "@nahisaho/katashiro-evaluation": "^2.0.7",
-    "@nahisaho/katashiro-feedback": "^2.0.7",
-    "@nahisaho/katashiro-generator": "^2.0.7",
-    "@nahisaho/katashiro-knowledge": "^2.0.7",
-    "@nahisaho/katashiro-llm": "^2.0.7",
-    "@nahisaho/katashiro-observability": "^2.0.7",
-    "@nahisaho/katashiro-orchestrator": "^2.0.7",
-    "@nahisaho/katashiro-rag": "^2.0.7",
-    "@nahisaho/katashiro-sandbox": "^2.0.7",
-    "@nahisaho/katashiro-security": "^2.0.7",
-    "@nahisaho/katashiro-workspace": "^2.0.7",
+    "@nahisaho/katashiro-analyzer": "^2.0.8",
+    "@nahisaho/katashiro-collector": "^2.0.8",
+    "@nahisaho/katashiro-core": "^2.0.8",
+    "@nahisaho/katashiro-evaluation": "^2.0.8",
+    "@nahisaho/katashiro-feedback": "^2.0.8",
+    "@nahisaho/katashiro-generator": "^2.0.8",
+    "@nahisaho/katashiro-knowledge": "^2.0.8",
+    "@nahisaho/katashiro-llm": "^2.0.8",
+    "@nahisaho/katashiro-observability": "^2.0.8",
+    "@nahisaho/katashiro-orchestrator": "^2.0.8",
+    "@nahisaho/katashiro-rag": "^2.0.8",
+    "@nahisaho/katashiro-sandbox": "^2.0.8",
+    "@nahisaho/katashiro-security": "^2.0.8",
+    "@nahisaho/katashiro-workspace": "^2.0.8",
     "commander": "^12.1.0"
   },
   "engines": {
