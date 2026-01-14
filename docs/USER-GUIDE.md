@@ -38,6 +38,118 @@ npm install @nahisaho/katashiro-knowledge
 
 # フィードバック・学習
 npm install @nahisaho/katashiro-feedback
+
+# v2.0.0 新機能
+# RAG（Retrieval-Augmented Generation）
+npm install @nahisaho/katashiro-rag
+
+# 評価フレームワーク
+npm install @nahisaho/katashiro-evaluation
+```
+
+---
+
+## 🆕 v2.0.0 新機能
+
+### RAG Framework（@nahisaho/katashiro-rag）
+
+```typescript
+import {
+  DocumentChunker,
+  InMemoryVectorStore,
+  MockEmbeddingProvider,
+  LLMReranker,
+} from '@nahisaho/katashiro-rag';
+
+// ドキュメント分割
+const chunker = new DocumentChunker({ strategy: 'fixed', chunkSize: 500 });
+const document = { id: 'doc-1', content: 'Long text...', metadata: {} };
+const chunks = chunker.chunk(document);
+
+// ベクトルストア
+const embeddingProvider = new MockEmbeddingProvider({ dimensions: 1536 });
+const vectorStore = new InMemoryVectorStore({ similarityThreshold: 0.7 });
+
+for (const chunk of chunks) {
+  const embedding = await embeddingProvider.embed(chunk.content);
+  await vectorStore.add(chunk, embedding);
+}
+
+// 検索
+const queryEmbedding = await embeddingProvider.embed('query text');
+const results = await vectorStore.search(queryEmbedding, 5);
+```
+
+### Evaluation Framework（@nahisaho/katashiro-evaluation）
+
+```typescript
+import {
+  LengthEvaluator,
+  KeywordEvaluator,
+  CompositeEvaluator,
+  EvaluationReporter,
+} from '@nahisaho/katashiro-evaluation';
+
+// 評価器
+const lengthEval = new LengthEvaluator({ minLength: 100, maxLength: 500 });
+const keywordEval = new KeywordEvaluator({ keywords: ['AI', 'TypeScript'] });
+
+// 複合評価
+const composite = new CompositeEvaluator({
+  evaluators: [
+    { evaluator: lengthEval, weight: 0.3 },
+    { evaluator: keywordEval, weight: 0.7 },
+  ],
+  strategy: 'weighted',
+});
+
+const result = await composite.evaluate({
+  input: 'What is AI?',
+  output: 'AI is artificial intelligence...',
+});
+
+// レポート生成
+const reporter = new EvaluationReporter();
+const report = reporter.generate([result], { format: 'markdown' });
+```
+
+### Agent Framework（@nahisaho/katashiro-orchestrator）
+
+```typescript
+import {
+  AgentStateManager,
+  ToolRegistry,
+  ReActHelper,
+} from '@nahisaho/katashiro-orchestrator';
+
+// 状態管理
+const stateManager = new AgentStateManager();
+let state = stateManager.create({ goal: 'Research AI' });
+
+// ツール登録
+const registry = new ToolRegistry();
+registry.register({
+  name: 'search',
+  description: 'Web search',
+  parameters: [{ name: 'query', type: 'string', required: true }],
+  handler: async (params) => ({ results: [] }),
+});
+
+// アクション追加
+state = stateManager.addAction(state, {
+  step: 1,
+  timestamp: new Date().toISOString(),
+  type: 'thought',
+  content: { thought: 'I need to search...' },
+});
+
+// ReActパース
+const helper = new ReActHelper();
+const parsed = helper.parse(`
+Thought: I need to search
+Action: search
+Action Input: {"query": "AI"}
+`);
 ```
 
 ---
@@ -47,6 +159,7 @@ npm install @nahisaho/katashiro-feedback
 ### 1. MCPサーバーとして使用
 
 #### VS Code設定（settings.json）
+
 
 ```json
 {

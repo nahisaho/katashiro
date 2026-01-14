@@ -95,6 +95,92 @@ katashiro_knowledge_query を使用
 
 ---
 
+## 🤖 LLM統合（v2.0.0）
+
+### 「LLMで生成して」「AIに聞いて」
+
+```typescript
+import { LLMClient, PromptManager, TokenCounter } from '@nahisaho/katashiro';
+
+// LLMクライアント（OpenAI/Anthropic/Ollama対応）
+const client = new LLMClient({ provider: 'openai', model: 'gpt-4' });
+const response = await client.complete('質問内容');
+
+// プロンプト管理
+const prompts = new PromptManager();
+const prompt = prompts.get('summarize', { text: '長文' });
+
+// トークンカウント
+const tokens = new TokenCounter().count('テキスト');
+```
+
+---
+
+## 🔒 セキュリティ・サンドボックス（v2.0.0）
+
+### 「コードを安全に実行して」「セキュリティチェック」
+
+```typescript
+import { DockerExecutor, SecurityAnalyzer, ActionLogger } from '@nahisaho/katashiro';
+
+// Docker内でコード実行
+const executor = new DockerExecutor();
+const result = await executor.execute({ code: 'print("hello")' });
+
+// セキュリティリスク分析
+const analyzer = new SecurityAnalyzer();
+const analysis = await analyzer.analyze(action, context);
+
+// アクション監査ログ
+const logger = new ActionLogger();
+await logger.log(action, context, result);
+```
+
+---
+
+## 📁 ワークスペース管理（v2.0.0）
+
+### 「ファイルを読み書きして」「ワークスペース操作」
+
+```typescript
+import { LocalWorkspace, DockerWorkspace, WorkspaceFactory } from '@nahisaho/katashiro';
+
+// ローカルファイルシステム
+const workspace = new LocalWorkspace('/path/to/workspace');
+const content = await workspace.readFile('file.txt');
+await workspace.writeFile('output.txt', content);
+
+// Docker内ワークスペース
+const dockerWs = new DockerWorkspace({ image: 'node:20' });
+await dockerWs.writeFile('script.js', code);
+```
+
+---
+
+## 📊 可観測性（v2.0.0）
+
+### 「トレース」「メトリクス」「ヘルスチェック」
+
+```typescript
+import { Tracer, MetricsCollector, HealthChecker } from '@nahisaho/katashiro';
+
+// 分散トレーシング
+const tracer = new Tracer();
+const span = tracer.startSpan('operation');
+// ... 処理 ...
+span.end();
+
+// メトリクス収集
+const metrics = new MetricsCollector();
+metrics.increment('requests');
+
+// ヘルスチェック
+const health = new HealthChecker();
+const status = await health.check();
+```
+
+---
+
 ## 🔄 複合タスクのワークフロー
 
 ### 競合調査レポート

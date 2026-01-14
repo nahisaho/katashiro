@@ -25,6 +25,11 @@
 | **データ抽出** | 抽出、取り出して、リストアップ | Analyzer (EntityExtractor) |
 | **知識管理** | 保存、記録、覚えておいて | Knowledge |
 | **比較・評価** | 比較、評価、どちらが | Collector → Analyzer → Generator |
+| **LLM対話** | AIに聞いて、LLMで生成、チャット | LLMClient |
+| **コード実行** | コードを実行、スクリプト実行、安全に実行 | DockerExecutor, LocalExecutor |
+| **セキュリティ分析** | セキュリティチェック、リスク分析、監査 | SecurityAnalyzer, ActionLogger |
+| **ファイル操作** | ファイル読み書き、ワークスペース操作 | LocalWorkspace, DockerWorkspace |
+| **モニタリング** | トレース、メトリクス、ヘルスチェック | Tracer, MetricsCollector, HealthChecker |
 
 ---
 
@@ -80,6 +85,31 @@ import {
   KnowledgeGraph,    // グラフ管理
   GraphQuery,        // 検索
   GraphPersistence,  // 永続化
+  
+  // LLM統合（v2.0.0）
+  LLMClient,         // LLMクライアント（OpenAI/Anthropic/Ollama対応）
+  PromptManager,     // プロンプト管理
+  TokenCounter,      // トークンカウント
+  
+  // 可観測性（v2.0.0）
+  Tracer,            // 分散トレーシング
+  MetricsCollector,  // メトリクス収集
+  HealthChecker,     // ヘルスチェック
+  
+  // サンドボックス実行（v2.0.0）
+  DockerExecutor,    // Docker内でコード実行
+  LocalExecutor,     // ローカルサンドボックス実行
+  SandboxFactory,    // サンドボックスファクトリー
+  executeCode,       // コード実行ヘルパー
+  
+  // セキュリティ（v2.0.0）
+  SecurityAnalyzer,  // セキュリティリスク分析
+  ActionLogger,      // アクション監査ログ
+  
+  // ワークスペース管理（v2.0.0）
+  LocalWorkspace,    // ローカルファイルシステム操作
+  DockerWorkspace,   // Docker内ワークスペース
+  WorkspaceFactory,  // ワークスペースファクトリー
   
   // ユーティリティ
   ok, err, isOk, isErr,

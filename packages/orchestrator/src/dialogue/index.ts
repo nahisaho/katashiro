@@ -35,3 +35,15 @@ export { DEFAULT_DIALOGUE_CONFIG } from './types';
 export { QuestionGenerator } from './question-generator';
 export { IntentAnalyzer } from './intent-analyzer';
 export { DialogueCollector, runSimpleDialogue } from './dialogue-collector';
+
+// LLM-Powered Dialogue Collector (v2.0.0)
+export {
+  LLMDialogueCollector,
+  runDeepDiveDialogue,
+} from './llm-dialogue-collector';
+export type {
+  LLMProvider,
+  LLMDialogueConfig,
+  DeepDiveSession,
+  DeepDiveResult,
+} from './llm-dialogue-collector';

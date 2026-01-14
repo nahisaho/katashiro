@@ -66,5 +66,43 @@ export { ConsensusResearchEngine, ReportScorer, ConsensusSelector, ResearchAgent
 // Orchestrator - Cascading Research (v1.4.0)
 export { CascadingResearchEngine, CascadingAgent, StepExecutor, StepResultIntegrator, DEFAULT_CASCADING_CONFIG, CASCADING_AGENT_STRATEGIES, DEFAULT_STEP_STRATEGIES, createCascadingResearchEngine, createCascadingAgents } from '@nahisaho/katashiro-orchestrator';
 
+// Orchestrator - Agent Framework (v2.0.0)
+export { AgentStateManager, defaultAgentStateManager, ReActHelper, parseReActOutput, extractNextReActAction, DEFAULT_REACT_FORMAT, REACT_SYSTEM_PROMPT } from '@nahisaho/katashiro-orchestrator';
+export type { AgentExecutionState, AgentAction, AgentActionType, AgentStateStatus, ReActParseResult, ReActStep, ReActFormatConfig } from '@nahisaho/katashiro-orchestrator';
+
+// RAG (v2.0.0)
+export * as rag from '@nahisaho/katashiro-rag';
+export { DocumentChunker, InMemoryVectorStore, MockEmbeddingProvider, Retriever, RAGEngine, RAGPipeline, LLMReranker } from '@nahisaho/katashiro-rag';
+export type { Document, Chunk, Vector, VectorStore, EmbeddingProvider, SearchResult, RetrievalResult, RetrieverConfig } from '@nahisaho/katashiro-rag';
+
+// Evaluation (v2.0.0)
+export * as evaluation from '@nahisaho/katashiro-evaluation';
+export { LengthEvaluator, KeywordEvaluator, RegexEvaluator, JsonStructureEvaluator, CompositeEvaluator, EvaluationReporter, LLMJudgeEvaluator } from '@nahisaho/katashiro-evaluation';
+export type { Evaluator, EvaluationInput, EvaluationResult, EvaluationMetadata, CompositeEvaluatorConfig } from '@nahisaho/katashiro-evaluation';
+
+// LLM (v2.0.0)
+export * as llm from '@nahisaho/katashiro-llm';
+export { LLMClient, getLLMClient, initLLMClient, resetLLMClient, PromptManager, getPromptManager, TokenCounter, getTokenCounter } from '@nahisaho/katashiro-llm';
+
+// Observability (v2.0.0)
+export * as observability from '@nahisaho/katashiro-observability';
+export { Tracer, getGlobalTracer, trace, MetricsCollector, getMetricsCollector, HealthChecker, getHealthChecker, SpanImpl, NoopSpan } from '@nahisaho/katashiro-observability';
+export type { Span, SpanOptions, TraceContext, MetricsSnapshot, HealthCheck, HealthCheckResult } from '@nahisaho/katashiro-observability';
+
+// Sandbox (v2.0.0)
+export * as sandbox from '@nahisaho/katashiro-sandbox';
+export { DockerExecutor, LocalExecutor, SandboxFactory, SandboxError, executeCode, executeBash, executePython, executeJavaScript, executeTypeScript } from '@nahisaho/katashiro-sandbox';
+export type { SandboxConfig, ExecutionRequest, ExecutionResult, SecurityPolicy } from '@nahisaho/katashiro-sandbox';
+
+// Security (v2.0.0)
+export * as security from '@nahisaho/katashiro-security';
+export { SecurityAnalyzer, ActionLogger, InMemoryLogStorage, RiskLevel, compareRiskLevels, isRiskLevelAtLeast, DEFAULT_SECURITY_POLICY, BUILTIN_RISK_RULES, SecurityError } from '@nahisaho/katashiro-security';
+export type { Action, ActionContext, SecurityPolicy as SecurityPolicyType, SecurityAnalysis, AuditLogEntry } from '@nahisaho/katashiro-security';
+
+// Workspace (v2.0.0)
+export * as workspace from '@nahisaho/katashiro-workspace';
+export { LocalWorkspace, DockerWorkspace, WorkspaceFactory, createWorkspace, readFile, writeFile, WorkspaceError } from '@nahisaho/katashiro-workspace';
+export type { Workspace, WorkspaceConfig, FileInfo, DirectoryEntry } from '@nahisaho/katashiro-workspace';
+
 // TrendAnalyzer submodules
 export { ForecastEngine } from '@nahisaho/katashiro-analyzer';

@@ -1,5 +1,10 @@
 import { defineConfig } from 'vitest/config';
 
+// 環境変数からタイムアウト設定を取得
+const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+const testTimeout = isCI ? 30000 : 10000;
+const hookTimeout = isCI ? 30000 : 10000;
+
 export default defineConfig({
   test: {
     globals: true,
@@ -26,6 +31,8 @@ export default defineConfig({
         'packages/collector/src/browser/*.ts',
         'packages/analyzer/src/interpreter/*.ts',
         'packages/core/src/research/agents/*.ts',
+        // Testing utilities (test code itself)
+        'packages/core/src/testing/*.ts',
       ],
       thresholds: {
         lines: 70,
@@ -34,7 +41,12 @@ export default defineConfig({
         statements: 70,
       },
     },
-    testTimeout: 10000,
-    hookTimeout: 10000,
+    testTimeout,
+    hookTimeout,
+    // 環境変数をテストに渡す
+    env: {
+      MOCK_MODE: isCI ? 'true' : process.env.MOCK_MODE ?? '',
+      CI: isCI ? 'true' : '',
+    },
   },
 });

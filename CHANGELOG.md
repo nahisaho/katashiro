@@ -7,6 +7,164 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-01-14
+
+### 🚀 Major Release - RAG, Evaluation, Agent Framework
+
+KATASHIRO v2.0.0は、RAG（Retrieval-Augmented Generation）、評価フレームワーク、エージェントフレームワークを導入するメジャーリリースです。
+
+### Added
+
+#### @nahisaho/katashiro-rag (New Package)
+
+##### Embedding Providers (REQ-RAG-001)
+- **EmbeddingProvider Interface**: 標準的なembeddingプロバイダーインターフェース
+- **MockEmbeddingProvider**: テスト用の決定的なモックプロバイダー
+- **OllamaEmbeddingProvider**: Ollama連携によるローカルLLM embedding
+
+##### Vector Store (REQ-RAG-002)
+- **VectorStore Interface**: ベクトルストアの標準インターフェース
+- **InMemoryVectorStore**: インメモリベクトルストア（コサイン類似度検索）
+
+##### Document Processing (REQ-RAG-003)
+- **DocumentChunker**: 文書分割（fixed/semantic戦略、オーバーラップ対応）
+- **Chunk型**: id, documentId, content, metadata, startOffset, endOffset
+
+##### Retriever (REQ-RAG-004)
+- **BasicRetriever**: 基本的な検索パイプライン
+- **RetrieveOptions**: topK, threshold, filter対応
+
+##### LLM Reranker (REQ-RAG-103)
+- **LLMReranker**: LLMベースのリランキング
+- **RerankOptions**: topK, model, temperature, prompt設定
+- **Provider抽象化**: Ollama/OpenAI対応
+
+#### @nahisaho/katashiro-evaluation (New Package)
+
+##### Base Evaluator (REQ-EVAL-001)
+- **Evaluator Interface**: 評価器の標準インターフェース
+- **EvaluationResult**: score, passed, metrics, metadata
+
+##### Rule-based Evaluators (REQ-EVAL-002)
+- **LengthEvaluator**: 文字数評価（minLength, maxLength, targetLength）
+- **KeywordEvaluator**: キーワード存在・頻度評価
+- **RegexEvaluator**: 正規表現パターン評価
+- **FormatEvaluator**: JSON/XML/Markdown形式評価
+
+##### LLM Evaluator (REQ-EVAL-101)
+- **LLMEvaluator**: LLMによる評価（relevance, coherence, factuality, helpfulness）
+- **Provider抽象化**: OpenAI/Ollama対応
+
+##### Composite Evaluator (REQ-EVAL-102)
+- **CompositeEvaluator**: 複数評価器の組み合わせ
+- **Aggregation戦略**: average, weighted, min, max, majority
+
+##### Evaluation Reporter (REQ-EVAL-103)
+- **EvaluationReporter**: 評価結果のレポート生成
+- **Templates**: text, json, markdown, html, csv形式対応
+- **runEvaluationSuite**: 複数データセットの一括評価
+
+#### @nahisaho/katashiro-orchestrator (Enhanced)
+
+##### Agent State Manager (REQ-AGENT-001)
+- **AgentStateManager**: イミュータブルな状態管理
+- **AgentState**: sessionId, actions, context, startedAt, status
+- **Action Types**: thought, tool_call, tool_result, error
+
+##### Tool Registry (REQ-AGENT-002)
+- **ToolRegistry**: ツール登録・検索
+- **Tool型**: name, description, parameters, handler
+- **ParameterSchema**: JSONスキーマベースのパラメータ定義
+
+##### Agent Executor (REQ-AGENT-003)
+- **AgentExecutor**: エージェント実行ループ
+- **ExecutionConfig**: maxSteps, timeout, stopConditions
+
+##### ReAct Helper (REQ-AGENT-004)
+- **ReActHelper**: ReActフォーマットのパース・生成
+- **parseReActOutput**: Thought/Action/Observation/Final Answer抽出
+- **extractNextReActAction**: 次のアクション抽出
+- **formatReActSteps**: ReActステップのフォーマット
+- **REACT_SYSTEM_PROMPT**: ReActプロンプトテンプレート
+
+### Tests
+
+#### E2E Tests (REQ-TEST-002)
+- **v2-features.e2e.test.ts**: v2.0.0機能のE2Eテスト（20件）
+  - RAG Pipeline E2E（4件）: chunking, embedding, vector store, reranker
+  - Evaluation Pipeline E2E（4件）: length, keyword, composite, reporter
+  - Agent Pipeline E2E（6件）: state, actions, ReAct parse/format, tools
+  - Integrated Pipeline E2E（2件）: RAG+Evaluation, Agent+State
+  - Error Handling E2E（4件）: 空検索、無効フォーマット、欠損コンテキスト、イミュータビリティ
+
+#### Unit Tests
+- RAG Package: 150+ tests
+- Evaluation Package: 120+ tests
+- Orchestrator Agent: 100+ tests
+
+### New Types
+
+#### RAG Types
+- `EmbeddingProvider`: embedding生成インターフェース
+- `Vector`: number[]のエイリアス
+- `VectorStore`: ベクトルストアインターフェース
+- `Document`: id, content, metadata
+- `Chunk`: id, documentId, content, metadata, startOffset, endOffset
+- `SearchResult`: chunk, score
+- `Retriever`: 検索インターフェース
+- `Reranker`: リランキングインターフェース
+
+#### Evaluation Types
+- `Evaluator<T>`: 評価器インターフェース
+- `EvaluationInput`: input, output, context?, expected?, metadata?
+- `EvaluationResult`: score, passed, metrics, details?, metadata?
+- `EvaluationMetrics`: Record<string, number | string | boolean>
+- `CompositeStrategy`: 'average' | 'weighted' | 'min' | 'max' | 'majority'
+
+#### Agent Types
+- `AgentState`: セッション状態
+- `AgentAction`: step, timestamp, type, content
+- `ActionType`: 'thought' | 'tool_call' | 'tool_result' | 'error'
+- `Tool`: ツール定義
+- `ToolParameter`: パラメータ定義
+- `ReActStep`: ReActステップ
+- `ReActParseResult`: パース結果
+
+### Breaking Changes
+
+None - this is a new feature release with new packages.
+
+### Migration Guide
+
+v1.xからv2.0.0への移行は、新しいパッケージの追加のみで、既存APIへの変更はありません。
+
+```typescript
+// 新しいRAG機能を使用
+import { 
+  DocumentChunker, 
+  InMemoryVectorStore, 
+  MockEmbeddingProvider,
+  BasicRetriever,
+  LLMReranker,
+} from '@nahisaho/katashiro-rag';
+
+// 新しい評価機能を使用
+import {
+  LengthEvaluator,
+  KeywordEvaluator,
+  CompositeEvaluator,
+  EvaluationReporter,
+} from '@nahisaho/katashiro-evaluation';
+
+// 新しいエージェント機能を使用
+import {
+  AgentStateManager,
+  ToolRegistry,
+  AgentExecutor,
+  ReActHelper,
+} from '@nahisaho/katashiro-orchestrator';
+```
+
 ## [1.4.0] - 2026-01-14
 
 ### Added

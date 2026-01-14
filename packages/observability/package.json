@@ -1,0 +1,59 @@
+{
+  "name": "@nahisaho/katashiro-observability",
+  "version": "2.0.0",
+  "description": "KATASHIRO Observability - トレーシング・メトリクス・ロギング",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "katashiro",
+    "observability",
+    "tracing",
+    "metrics",
+    "logging"
+  ],
+  "author": "nahisaho",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nahisaho/katashiro.git",
+    "directory": "packages/observability"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@nahisaho/katashiro-core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  },
+  "peerDependencies": {
+    "@opentelemetry/api": "^1.7.0",
+    "langfuse": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@opentelemetry/api": {
+      "optional": true
+    },
+    "langfuse": {
+      "optional": true
+    }
+  }
+}

@@ -171,6 +171,31 @@ export class ToolRegistry extends EventEmitter {
   }
 
   /**
+   * カテゴリでフィルタリングしてツール一覧を取得
+   */
+  listByCategory(category: ActionCategory): ToolDefinition[] {
+    return Array.from(this.tools.values()).filter(
+      (tool) => tool.category === category
+    );
+  }
+
+  /**
+   * リスクレベルでフィルタリングしてツール一覧を取得
+   */
+  listByRiskLevel(riskLevel: RiskLevel): ToolDefinition[] {
+    return Array.from(this.tools.values()).filter(
+      (tool) => tool.defaultRiskLevel === riskLevel
+    );
+  }
+
+  /**
+   * 登録済みツール数を取得
+   */
+  get size(): number {
+    return this.tools.size;
+  }
+
+  /**
    * ツールが登録されているか確認
    */
   has(name: string): boolean {

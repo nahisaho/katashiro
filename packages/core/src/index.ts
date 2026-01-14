@@ -68,3 +68,21 @@ export type {
   RetryResult,
   RetryCallbacks,
 } from './errors/index.js';
+
+// テストユーティリティ
+export {
+  getTestEnvironment,
+  shouldSkipExternalServices,
+  shouldSkipOllama,
+  shouldSkipNetwork,
+  shouldSkipTest,
+  getOllamaHost,
+  getOllamaModel,
+  getEmbeddingModel,
+  getTestTimeout,
+  delay,
+  withRetry as withTestRetry,
+  withTimeout,
+} from './testing/index.js';
+
+export type { TestEnvironment, ConditionalTestOptions } from './testing/index.js';

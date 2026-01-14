@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "description": "KATASHIRO - VS Code Agent Mode向け情報収集・分析・生成システム（オールインワンパッケージ）",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -44,6 +44,38 @@
     "./feedback": {
       "types": "./dist/feedback.d.ts",
       "import": "./dist/feedback.js"
+    },
+    "./rag": {
+      "types": "./dist/rag.d.ts",
+      "import": "./dist/rag.js"
+    },
+    "./evaluation": {
+      "types": "./dist/evaluation.d.ts",
+      "import": "./dist/evaluation.js"
+    },
+    "./orchestrator": {
+      "types": "./dist/orchestrator.d.ts",
+      "import": "./dist/orchestrator.js"
+    },
+    "./llm": {
+      "types": "./dist/llm.d.ts",
+      "import": "./dist/llm.js"
+    },
+    "./observability": {
+      "types": "./dist/observability.d.ts",
+      "import": "./dist/observability.js"
+    },
+    "./sandbox": {
+      "types": "./dist/sandbox.d.ts",
+      "import": "./dist/sandbox.js"
+    },
+    "./security": {
+      "types": "./dist/security.d.ts",
+      "import": "./dist/security.js"
+    },
+    "./workspace": {
+      "types": "./dist/workspace.d.ts",
+      "import": "./dist/workspace.js"
     }
   },
   "scripts": {
@@ -76,13 +108,20 @@
     "url": "https://github.com/nahisaho/katashiro/issues"
   },
   "dependencies": {
-    "@nahisaho/katashiro-analyzer": "1.0.1",
-    "@nahisaho/katashiro-collector": "1.0.1",
-    "@nahisaho/katashiro-core": "1.0.1",
-    "@nahisaho/katashiro-feedback": "1.0.1",
-    "@nahisaho/katashiro-generator": "1.0.1",
-    "@nahisaho/katashiro-knowledge": "1.0.1",
-    "@nahisaho/katashiro-mcp-server": "1.0.1",
+    "@nahisaho/katashiro-analyzer": "workspace:*",
+    "@nahisaho/katashiro-collector": "workspace:*",
+    "@nahisaho/katashiro-core": "workspace:*",
+    "@nahisaho/katashiro-evaluation": "workspace:*",
+    "@nahisaho/katashiro-feedback": "workspace:*",
+    "@nahisaho/katashiro-generator": "workspace:*",
+    "@nahisaho/katashiro-knowledge": "workspace:*",
+    "@nahisaho/katashiro-llm": "workspace:*",
+    "@nahisaho/katashiro-observability": "workspace:*",
+    "@nahisaho/katashiro-orchestrator": "workspace:*",
+    "@nahisaho/katashiro-rag": "workspace:*",
+    "@nahisaho/katashiro-sandbox": "workspace:*",
+    "@nahisaho/katashiro-security": "workspace:*",
+    "@nahisaho/katashiro-workspace": "workspace:*",
     "commander": "^12.1.0"
   },
   "engines": {

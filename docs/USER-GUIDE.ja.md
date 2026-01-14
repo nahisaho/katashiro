@@ -38,6 +38,64 @@ npm install @nahisaho/katashiro-knowledge
 
 # フィードバック・学習
 npm install @nahisaho/katashiro-feedback
+
+# v2.0.0 新機能
+# RAG（Retrieval-Augmented Generation）
+npm install @nahisaho/katashiro-rag
+
+# 評価フレームワーク
+npm install @nahisaho/katashiro-evaluation
+```
+
+---
+
+## 🆕 v2.0.0 新機能
+
+詳細は [RELEASE-NOTES-v2.0.0.md](./RELEASE-NOTES-v2.0.0.md) を参照してください。
+
+### RAGフレームワーク
+
+```typescript
+import {
+  DocumentChunker,
+  InMemoryVectorStore,
+  MockEmbeddingProvider,
+} from '@nahisaho/katashiro-rag';
+
+// ドキュメント分割・ベクトル化・検索
+const chunker = new DocumentChunker({ strategy: 'fixed', chunkSize: 500 });
+const vectorStore = new InMemoryVectorStore({ similarityThreshold: 0.7 });
+const embeddingProvider = new MockEmbeddingProvider({ dimensions: 1536 });
+```
+
+### 評価フレームワーク
+
+```typescript
+import {
+  LengthEvaluator,
+  KeywordEvaluator,
+  CompositeEvaluator,
+  EvaluationReporter,
+} from '@nahisaho/katashiro-evaluation';
+
+// ルールベース評価・複合評価・レポート生成
+const lengthEval = new LengthEvaluator({ minLength: 100, maxLength: 500 });
+const composite = new CompositeEvaluator({ evaluators: [...], strategy: 'weighted' });
+```
+
+### エージェントフレームワーク
+
+```typescript
+import {
+  AgentStateManager,
+  ToolRegistry,
+  ReActHelper,
+} from '@nahisaho/katashiro-orchestrator';
+
+// 状態管理・ツール登録・ReActパース
+const stateManager = new AgentStateManager();
+const registry = new ToolRegistry();
+const helper = new ReActHelper();
 ```
 
 ---

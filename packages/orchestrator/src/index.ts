@@ -104,6 +104,11 @@ export {
   type AlternativeInterpretation,
   type DialogueCollectorConfig,
   type QuestionStrategy,
+  // LLM-Powered Types (v2.0.0)
+  type LLMProvider,
+  type LLMDialogueConfig,
+  type DeepDiveSession,
+  type DeepDiveResult,
   // Constants
   DEFAULT_DIALOGUE_CONFIG,
   // Classes
@@ -111,6 +116,9 @@ export {
   IntentAnalyzer,
   DialogueCollector,
   runSimpleDialogue,
+  // LLM-Powered Classes (v2.0.0)
+  LLMDialogueCollector,
+  runDeepDiveDialogue,
 } from './dialogue';
 
 // 反復合議型リサーチワークフロー (REQ-v1.2.0)
@@ -196,3 +204,50 @@ export {
   CascadingResearchEngine,
   createCascadingResearchEngine,
 } from './cascading';
+
+// Agent State Management (REQ-AGENT-002)
+export {
+  // Types
+  type AgentActionType,
+  type ToolResult,
+  type AgentAction,
+  type AgentState as AgentExecutionState, // AgentStateは既存の型と衝突するためリネーム
+  type AgentStateStatus,
+  type CreateAgentStateOptions,
+  type AddActionInput,
+  type SerializedAgentState,
+  type AgentStateManagerConfig,
+  type AgentStateSummary,
+  // Classes
+  AgentStateManager,
+  defaultAgentStateManager,
+} from './agent';
+
+// ReAct Helper (REQ-AGENT-004)
+export {
+  ReActHelper,
+  parseReActOutput,
+  extractNextReActAction,
+  DEFAULT_REACT_FORMAT,
+  REACT_SYSTEM_PROMPT,
+  type ReActParseResult,
+  type ReActStep,
+  type ReActFormatConfig,
+} from './agent';
+
+// Standard Tools (REQ-AGENT-003)
+export {
+  // Tool definitions
+  SearchTool,
+  ScrapeTool,
+  AnalyzeTool,
+  STANDARD_TOOLS,
+  registerStandardTools,
+  // Types
+  type SearchToolParams,
+  type SearchToolResult,
+  type ScrapeToolParams,
+  type ScrapeToolResult,
+  type AnalyzeToolParams,
+  type AnalyzeToolResult,
+} from './tools';
