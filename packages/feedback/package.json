@@ -21,7 +21,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "^2.0.4"
+    "@nahisaho/katashiro-core": "^2.0.5"
   },
   "author": "nahisaho",
   "license": "MIT",
