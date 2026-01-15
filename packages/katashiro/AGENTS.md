@@ -26,6 +26,75 @@
 
 ---
 
+## ⚠️ 重要: TypeScriptコード生成・実行ワークフロー
+
+DeepResearchやその他の機能でTypeScriptコードを生成・実行する際は、**必ず以下のワークフローに従ってください**。
+
+### 必須ワークフロー
+
+```
+1. コード生成
+   ↓
+2. TypeScript型チェック（tsc --noEmit）
+   ↓
+3. エラーがあれば修正
+   ↓
+4. 実行
+```
+
+### 実行前チェックリスト
+
+生成したTypeScriptコードを実行する前に、以下を確認してください：
+
+#### 1. Result型APIのチェック
+```typescript
+// ❌ 間違い - WebScraper.scrape()はResult型を返す
+const page = await scraper.scrape(url);
+console.log(page.content);  // エラー！
+
+// ✅ 正しい
+const page = await scraper.scrape(url);
+if (isOk(page)) {
+  console.log(page.value.content);
+}
+```
+
+#### 2. 直接値APIのチェック
+```typescript
+// ❌ 間違い - TextAnalyzer.analyze()は直接オブジェクトを返す
+const analysis = await analyzer.analyze(text);
+if (isOk(analysis)) {  // エラー！isOk()は不要
+  console.log(analysis.value.keywords);
+}
+
+// ✅ 正しい
+const analysis = await analyzer.analyze(text);
+console.log(analysis.keywords);
+```
+
+#### 3. 型チェックコマンド
+```bash
+# 生成したファイルの型チェック
+npx tsc --noEmit your-script.ts
+
+# エラーがあれば修正してから実行
+npx tsx your-script.ts
+```
+
+### AIエージェントへの指示
+
+**DeepResearch実行時のワークフロー**:
+
+1. **コード生成**: KATASHIROのAPIを使用してTypeScriptコードを生成
+2. **型チェック**: `npx tsc --noEmit` でコンパイルエラーをチェック
+3. **エラー修正**: 型エラーがあれば、このドキュメントの「戻り値の型について」セクションを参照して修正
+4. **実行**: エラーがなくなってから `npx tsx` で実行
+5. **結果確認**: 実行結果を確認し、必要に応じて修正
+
+**重要**: 型チェックをスキップしてはいけません。Result型と直接値の混同は最も一般的なエラーです。
+
+---
+
 ## 🔄 課題解決ワークフロー
 
 ### ステップ1: 課題の分析
