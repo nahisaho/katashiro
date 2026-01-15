@@ -126,6 +126,59 @@ import {
 } from '@nahisaho/katashiro';
 ```
 
+### ⚠️ 重要: 戻り値の型について
+
+KATASHIROのAPIには**2種類の戻り値パターン**があります。コード生成時は必ず区別してください。
+
+#### 1. 直接値を返すAPI（`isOk()` 不要）
+
+以下のAPIは**直接値を返す**ため、`isOk()` を使用しません：
+
+| API | 戻り値の型 | 使用例 |
+|-----|-----------|-------|
+| `WebSearchClient.search()` | `Promise<SearchResult[]>` | `const results = await client.search(query);` |
+| `TextAnalyzer.analyze()` | `Promise<{ keywords, complexity, sentiment, ... }>` | `const analysis = await analyzer.analyze(text);` |
+| `EntityExtractor.extract()` | `Promise<ExtractedEntities>` | `const entities = await extractor.extract(text);` |
+| `SummaryGenerator.generate()` | `Promise<string>` | `const summary = await summarizer.generate(text);` |
+| `ReportGenerator.generate()` | `Promise<string>` | `const report = await reportGen.generate(config);` |
+
+```typescript
+// ✅ 正しい使い方
+const results = await searchClient.search('AI');
+console.log(`${results.length}件の結果`);
+
+const analysis = await analyzer.analyze(text);
+console.log(`キーワード: ${analysis.keywords.join(', ')}`);
+
+const entities = await extractor.extract(text);
+console.log(`${entities.all.length}個のエンティティ`);
+
+const summary = await summarizer.generate(text);
+console.log(`${summary.length}文字の要約`);
+```
+
+#### 2. `Result<T, E>` を返すAPI（`isOk()` 必須）
+
+以下のAPIは**Result型を返す**ため、`isOk()` でチェックが必要です：
+
+| API | 戻り値の型 | 使用例 |
+|-----|-----------|-------|
+| `WebScraper.scrape()` | `Promise<Result<ScrapedContent, Error>>` | `if (isOk(page)) { ... }` |
+
+```typescript
+// ✅ 正しい使い方（Result型のみ isOk() を使用）
+const page = await scraper.scrape(url);
+if (isOk(page)) {
+  console.log(page.value.content);  // .value でアンラップ
+} else {
+  console.error(page.error);        // .error でエラー取得
+}
+
+// ❌ 間違い（直接値を返すAPIに isOk() を使用）
+const results = await searchClient.search('AI');
+// if (isOk(results)) { ... }  // エラー！results は配列
+```
+
 ---
 
 ## 📝 課題タイプ別の実装パターン
