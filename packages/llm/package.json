@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-llm",
-  "version": "2.0.14",
+  "version": "2.1.0",
   "description": "LLM Provider abstraction for KATASHIRO",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -238,12 +238,12 @@ export {
   type MoARequest,
   type MoAResult,
   type MoAConfig,
-  type AgentConfig,
+  type AgentConfig as MoAAgentConfig,
   type AgentType,
   type AgentParameters,
   type AgentResponse,
   type PeerScore,
-  type TokenUsage,
+  type TokenUsage as MoATokenUsage,
   type AggregationStrategy,
   type AggregationDetails,
   type AgentContribution,
@@ -341,3 +341,54 @@ export {
   type ReferenceValidatorConfig,
   type DocumentLoaderConfig,
 } from './consistency/index.js';
+
+// Deep Research Agent
+export {
+  DeepResearchAgent,
+  TokenTracker,
+  KnowledgeStore,
+  AnswerEvaluator,
+  ActionTracker,
+  ActionRouter,
+  QueryRewriter,
+  BaseActionHandler,
+  SearchActionHandler,
+  VisitActionHandler,
+  ReflectActionHandler,
+  AnswerActionHandler,
+  CodingActionHandler,
+} from './research/agent/index.js';
+
+export type {
+  // Agent types
+  DeepResearchAgentOptions,
+  AgentEvent,
+  AgentEventType,
+  AgentEventListener,
+  // Core types
+  ActionType,
+  AgentConfig,
+  AgentResearchResult,
+  KnowledgeItem,
+  ActionContext,
+  StepAction,
+  StepDecision,
+  LLMClientInterface,
+  // Evaluator types
+  AnswerEvaluatorOptions,
+  EvaluationResponse,
+  QuestionAnalysis,
+  // Router types
+  ActionRouterOptions,
+  DecisionContext,
+  // Rewriter types
+  QueryRewriterOptions,
+  RewriteResult,
+  IntentLayer,
+  // Token tracker types
+  TokenTrackerOptions,
+  TokenUsage as AgentTokenUsage,
+  // Action handler types
+  ActionResult,
+  ExecutionContext,
+} from './research/agent/index.js';

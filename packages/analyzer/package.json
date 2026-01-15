@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-analyzer",
-  "version": "2.0.14",
+  "version": "2.1.0",
   "description": "KATASHIRO Analyzer - 分析・推論パッケージ",
   "type": "module",
   "main": "./dist/index.js",
@@ -24,6 +24,7 @@
     "@nahisaho/katashiro-core": "^2.0.8",
     "@nahisaho/katashiro-collector": "^2.0.8",
     "@nahisaho/katashiro-knowledge": "^2.0.8",
+    "@nahisaho/katashiro-llm": "workspace:*",
     "glob": "^10.3.10"
   },
   "author": "nahisaho",

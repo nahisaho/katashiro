@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-01-16
+
+### Added
+
+#### @nahisaho/katashiro-analyzer
+
+##### DeepResearchAgent (REQ-DR-001 ~ REQ-DR-009)
+- **DeepResearchAgent**: jina-ai/node-DeepResearch風の反復型リサーチエージェント
+  - 5種類のアクション: search, visit, reflect, answer, coding
+  - トークン予算管理とGap分析による反復的深掘り
+  - Beast Mode: 強制回答モード
+  - イベント駆動型のプログレス通知
+
+- **TokenTracker**: トークン使用量追跡
+  - 予算管理、使用率計算、カテゴリ別集計
+  - 履歴保持とサマリー生成
+
+- **KnowledgeStore**: 中間知識の構造化蓄積
+  - 質問/回答ペアの管理
+  - キーワード検索、信頼度ソート
+  - Q&Aメッセージ形式への変換
+  - 類似質問検出（Jaccard係数）
+
+- **ActionTracker**: アクション履歴追跡
+  - ステップごとの成功/失敗記録
+  - ダイアリーコンテキスト生成
+  - アクション統計
+
+- **ActionRouter**: アクション決定ロジック
+  - 次のアクションのLLMベース推論
+  - Gap分析によるサブ質問生成
+  - Beast Mode判定
+
+- **QueryRewriter**: クエリ拡張・書き換え
+  - 意図レイヤー分析
+  - 多言語対応
+  - 代替クエリ生成
+
+- **AnswerEvaluator**: 回答品質評価
+  - 5つの評価基準: Freshness, Plurality, Completeness, Attribution, Definitive
+  - 0-1スケールの品質スコア
+  - 質問タイプ分析
+
+##### Action Handlers
+- **SearchActionHandler**: Web検索実行
+- **VisitActionHandler**: Webページ訪問・コンテンツ抽出
+- **ReflectActionHandler**: 収集情報の分析・サブ質問生成
+- **AnswerActionHandler**: 最終回答生成
+- **CodingActionHandler**: 計算・コード実行（日付計算、数式、単位変換）
+
 ## [2.0.14] - 2025-01-29
 
 ### Fixed

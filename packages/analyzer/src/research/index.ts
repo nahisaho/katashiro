@@ -33,3 +33,6 @@ export type {
   ReasoningStep,
   MermaidDiagrams,
 } from './types.js';
+
+// v2.1.0: jina-ai風 DeepResearchAgent
+export * from './agent/index.js';

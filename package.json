@@ -1,6 +1,6 @@
 {
   "name": "katashiro",
-  "version": "2.0.14",
+  "version": "2.1.0",
   "description": "VS Code Agent Mode向け次世代情報収集・分析・コンテンツ生成システム",
   "private": true,
   "type": "module",

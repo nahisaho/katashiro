@@ -18,6 +18,7 @@
 |-----------|-------------|-------------|
 | **調査・リサーチ** | 調べて、検索、情報収集、〜について | Collector → Analyzer → Generator |
 | **Deep Research** | 詳しく調べて、徹底的に、包括的に、網羅的に | Collector → Analyzer → Knowledge → Generator（反復） |
+| **Deep Research Agent** | エージェントで調査、自律的に調べて、反復調査 | DeepResearchAgent（v2.1.0） |
 | **戦略策定** | 戦略、SWOT、3C、5Forces、競合分析 | FrameworkAnalyzer → Generator |
 | **分析・解析** | 分析して、解析、キーワード、傾向 | Analyzer |
 | **要約・まとめ** | 要約、まとめて、短くして | Generator (SummaryGenerator) |
@@ -110,6 +111,15 @@ import {
   LocalWorkspace,    // ローカルファイルシステム操作
   DockerWorkspace,   // Docker内ワークスペース
   WorkspaceFactory,  // ワークスペースファクトリー
+  
+  // Deep Research Agent（v2.1.0）
+  DeepResearchAgent, // jina-ai風反復型リサーチエージェント
+  TokenTracker,      // トークン予算管理
+  KnowledgeStore,    // 中間知識ストア
+  ActionTracker,     // アクション履歴追跡
+  ActionRouter,      // アクション決定ロジック
+  QueryRewriter,     // クエリ拡張・書き換え
+  AnswerEvaluator,   // 回答品質評価
   
   // ユーティリティ
   ok, err, isOk, isErr,
@@ -558,6 +568,135 @@ function detectFrameworkType(input: string): string {
   if (/mece|ミーシー|漏れなく/.test(input)) return 'mece';
   return 'swot'; // デフォルト
 }
+```
+
+---
+
+## 🤖 DeepResearchAgent パターン（v2.1.0）
+
+jina-ai/node-DeepResearch風の**自律型リサーチエージェント**です。5種類のアクション（search, visit, reflect, answer, coding）を組み合わせて反復的に調査を行います。
+
+### 基本的な使用方法
+
+```typescript
+import {
+  DeepResearchAgent,
+  TokenTracker,
+  KnowledgeStore,
+} from '@nahisaho/katashiro';
+
+// LLMクライアント（chat()メソッドを持つインターフェース）
+const llmClient = {
+  async chat(options: {
+    messages: Array<{ role: string; content: string }>;
+    temperature?: number;
+    maxTokens?: number;
+  }): Promise<{ content: string; usage?: { promptTokens: number; completionTokens: number; totalTokens: number } }> {
+    // OpenAI, Anthropic, Ollama等のAPIを呼び出す実装
+  },
+};
+
+// Web検索クライアント
+const searchClient = new WebSearchClient();
+
+// Webスクレイパー
+const scraper = new WebScraper();
+
+// エージェント作成
+const agent = new DeepResearchAgent({
+  llmClient,
+  searchClient,
+  scraper,
+  config: {
+    maxSteps: 30,        // 最大ステップ数
+    tokenBudget: 500000, // トークン予算
+    maxUrls: 10,         // 最大URL訪問数
+  },
+});
+
+// イベントリスナー登録（プログレス監視）
+agent.on((event) => {
+  switch (event.type) {
+    case 'stepStart':
+      console.log(`📍 Step ${event.data.step}: ${event.data.action}`);
+      break;
+    case 'stepComplete':
+      console.log(`✅ Step ${event.data.step} completed`);
+      break;
+    case 'knowledgeAdded':
+      console.log(`📚 Knowledge: ${event.data.summary}`);
+      break;
+    case 'answerGenerated':
+      console.log(`💡 Answer generated`);
+      break;
+    case 'error':
+      console.error(`❌ Error: ${event.data.message}`);
+      break;
+  }
+});
+
+// リサーチ実行
+const result = await agent.research('AIの医療分野への影響は何ですか？');
+
+console.log('Answer:', result.answer);
+console.log('Confidence:', result.confidence);
+console.log('Steps:', result.steps.length);
+console.log('Knowledge Items:', result.knowledgeItems.length);
+console.log('Token Usage:', result.tokenUsage);
+```
+
+### 5つのアクションタイプ
+
+| アクション | 説明 | パラメータ |
+|-----------|------|-----------|
+| **search** | Web検索を実行 | `searchQueries: string[]` |
+| **visit** | URLを訪問してコンテンツ抽出 | `urlTargets: number[]` |
+| **reflect** | 収集情報を分析、サブ質問生成 | `questions: string[]` |
+| **answer** | 最終回答を生成 | `answer: string, isFinal?: boolean` |
+| **coding** | 計算・コード実行 | `codingIssue: string, code?: string` |
+
+### 回答品質評価（5つの基準）
+
+```typescript
+const evaluator = new AnswerEvaluator({ llmClient });
+
+const evaluation = await evaluator.evaluate({
+  question: 'AIの医療分野への影響は？',
+  answer: '...',
+  knowledgeItems: store.getAll(),
+});
+
+// 評価基準
+console.log('Freshness:', evaluation.freshness);      // 情報の新しさ (0-1)
+console.log('Plurality:', evaluation.plurality);      // 視点の多様性 (0-1)
+console.log('Completeness:', evaluation.completeness); // 網羅性 (0-1)
+console.log('Attribution:', evaluation.attribution);  // 根拠の明確さ (0-1)
+console.log('Definitive:', evaluation.definitive);    // 明確さ (0-1)
+console.log('Overall:', evaluation.overall);          // 総合スコア (0-1)
+```
+
+### Beast Mode（強制回答）
+
+トークン予算が尽きた場合や、ステップ上限に達した場合に強制的に回答を生成：
+
+```typescript
+const agent = new DeepResearchAgent({
+  llmClient,
+  searchClient,
+  scraper,
+  config: {
+    maxSteps: 10,
+    tokenBudget: 100000,
+    enableBeastMode: true, // 有効化
+  },
+});
+
+// Beast Modeが発動した場合
+agent.on((event) => {
+  if (event.type === 'beastModeActivated') {
+    console.log('⚡ Beast Mode activated - forcing answer generation');
+  }
+});
 ```
 
 ---

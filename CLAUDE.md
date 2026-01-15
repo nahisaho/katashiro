@@ -95,6 +95,46 @@ katashiro_knowledge_query を使用
 
 ---
 
+## 🤖 DeepResearchAgent（v2.1.0）
+
+### 「詳しく調べて」「徹底的にリサーチして」「自律的に調査して」
+
+jina-ai/node-DeepResearch風の反復型リサーチエージェントです。5種類のアクション（search, visit, reflect, answer, coding）を自律的に組み合わせて調査を行います。
+
+```typescript
+import { DeepResearchAgent, WebSearchClient, WebScraper } from '@nahisaho/katashiro';
+
+// エージェント作成
+const agent = new DeepResearchAgent({
+  llmClient,  // LLMClientInterface（chat()メソッドを持つ）
+  searchClient: new WebSearchClient(),
+  scraper: new WebScraper(),
+  config: {
+    maxSteps: 30,        // 最大ステップ数
+    tokenBudget: 500000, // トークン予算
+  },
+});
+
+// プログレス監視
+agent.on((event) => {
+  console.log(`[${event.type}]`, event.data);
+});
+
+// リサーチ実行
+const result = await agent.research('AIの医療分野への影響は？');
+console.log('Answer:', result.answer);
+console.log('Confidence:', result.confidence);
+```
+
+**回答品質評価（5基準）:**
+- `Freshness`: 情報の新しさ
+- `Plurality`: 視点の多様性
+- `Completeness`: 網羅性
+- `Attribution`: 根拠の明確さ
+- `Definitive`: 明確さ
+
+---
+
 ## 🤖 LLM統合（v2.0.0）
 
 ### 「LLMで生成して」「AIに聞いて」
