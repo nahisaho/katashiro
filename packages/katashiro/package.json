@@ -24,6 +24,11 @@
       "require": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./cli": {
+      "import": "./dist/cli.js",
+      "default": "./dist/cli.js"
+    },
+    "./dist/cli.js": "./dist/cli.js",
     "./core": {
       "types": "./dist/core.d.ts",
       "import": "./dist/core.js",

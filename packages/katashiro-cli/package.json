@@ -35,7 +35,7 @@
     "url": "https://github.com/nahisaho/katashiro/issues"
   },
   "dependencies": {
-    "@nahisaho/katashiro": "^1.2.0"
+    "@nahisaho/katashiro": "workspace:*"
   },
   "engines": {
     "node": ">=20.0.0"
