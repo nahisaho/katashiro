@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-evaluation",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "KATASHIRO Evaluation - 品質評価・A/Bテスト・実験管理",
   "type": "module",
   "main": "./dist/index.js",
