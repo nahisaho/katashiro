@@ -163,7 +163,22 @@ console.log(`${summary.length}文字の要約`);
 
 | API | 戻り値の型 | 使用例 |
 |-----|-----------|-------|
-| `WebScraper.scrape()` | `Promise<Result<ScrapedContent, Error>>` | `if (isOk(page)) { ... }` |
+| `WebScraper.scrape()` | `Promise<Result<ScrapingResult, Error>>` | `if (isOk(page)) { page.value.content }` |
+| `WebScraper.scrapeMultiple()` | `Promise<Result<ScrapingResult, Error>[]>` | 各要素を`isOk()`でチェック |
+| `SummaryGenerator.summarize()` | `Promise<Result<string, Error>>` | `if (isOk(result)) { result.value }` |
+| `SummaryGenerator.generateSummary()` | `Promise<Result<string, Error>>` | `if (isOk(result)) { result.value }` |
+| `TextAnalyzer.summarize()` | `Promise<Result<Summary, Error>>` | `if (isOk(summary)) { summary.value }` |
+| `FactChecker.checkWithSources()` | `Promise<Result<FactCheckResultDetail, Error>>` | `if (isOk(result)) { ... }` |
+| `FactChecker.detectConflicts()` | `Promise<Result<ConflictDetectionResult, Error>>` | `if (isOk(result)) { ... }` |
+| `DocumentParser.parse()` | `Promise<Result<ParsedDocument, Error>>` | `if (isOk(doc)) { doc.value }` |
+| `PDFParser.parse()` | `Promise<Result<ParsedDocument, Error>>` | `if (isOk(doc)) { ... }` |
+| `DOCXParser.parse()` | `Promise<Result<ParsedDocument, Error>>` | `if (isOk(doc)) { ... }` |
+| `XLSXParser.parse()` | `Promise<Result<ParsedDocument, Error>>` | `if (isOk(doc)) { ... }` |
+| `ApiClient.getSafe()` | `Promise<Result<T, Error>>` | `if (isOk(response)) { ... }` |
+| `ApiClient.postSafe()` | `Promise<Result<T, Error>>` | `if (isOk(response)) { ... }` |
+| `CodeInterpreter.execute()` | `Promise<Result<ExecutionResult, Error>>` | `if (isOk(result)) { ... }` |
+| `TrendAnalyzer.analyze()` | `Promise<Result<TrendAnalysisResult, Error>>` | `if (isOk(result)) { ... }` |
+| `DiagramGenerator.generate*()` | `Promise<Result<DiagramOutput, Error>>` | `if (isOk(diagram)) { ... }` |
 
 ```typescript
 // ✅ 正しい使い方（Result型のみ isOk() を使用）
@@ -174,10 +189,24 @@ if (isOk(page)) {
   console.error(page.error);        // .error でエラー取得
 }
 
+// SummaryGenerator.summarize() もResult型
+const summaryResult = await summarizer.summarize(text);
+if (isOk(summaryResult)) {
+  console.log(summaryResult.value);  // string
+}
+
 // ❌ 間違い（直接値を返すAPIに isOk() を使用）
 const results = await searchClient.search('AI');
 // if (isOk(results)) { ... }  // エラー！results は配列
+
+// ❌ 間違い（generate() と summarize() を混同）
+const summary = await summarizer.generate(text);  // これは直接string
+// if (isOk(summary)) { ... }  // エラー！summaryはstring
 ```
+
+> **注意**: `SummaryGenerator` には2つのメソッドがあります：
+> - `generate()` → 直接 `string` を返す（`isOk()` 不要）
+> - `summarize()` → `Result<string, Error>` を返す（`isOk()` 必須）
 
 ---
 
