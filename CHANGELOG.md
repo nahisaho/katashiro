@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.14] - 2025-01-29
+
+### Fixed
+- **katashiro-cli**: Fixed `workspace:*` dependency protocol to use semver (`^2.0.13`) for npm compatibility
+- **analyzer**: Added missing `glob` dependency to package.json
+
 ## [2.0.11] - 2026-01-15
 
 ### Added
