@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-observability",
-  "version": "2.0.12",
+  "version": "2.0.13",
   "description": "KATASHIRO Observability - トレーシング・メトリクス・ロギング",
   "type": "module",
   "main": "./dist/index.js",

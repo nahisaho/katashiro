@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-feedback",
-  "version": "2.0.12",
+  "version": "2.0.13",
   "description": "KATASHIRO Feedback - フィードバック学習パッケージ",
   "type": "module",
   "main": "./dist/index.js",
