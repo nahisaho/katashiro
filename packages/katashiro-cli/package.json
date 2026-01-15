@@ -1,6 +1,6 @@
 {
   "name": "katashiro",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "description": "KATASHIRO CLI - AI Research & Analysis Tool",
   "type": "module",
   "bin": {
