@@ -5,12 +5,19 @@
  * @requirement REQ-012
  */
 
-// Types
+// Types - Value exports
 export {
-  RiskLevel,
   RISK_LEVEL_ORDER,
   compareRiskLevels,
   isRiskLevelAtLeast,
+  DEFAULT_SECURITY_POLICY,
+  BUILTIN_RISK_RULES,
+  SecurityError,
+} from './types.js';
+
+// Types - Type exports
+export type {
+  RiskLevel,
   ActionType,
   Action,
   ActionContext,
@@ -23,20 +30,21 @@ export {
   AuditLogEntry,
   UserConfirmation,
   AuditLogFilter,
-  DEFAULT_SECURITY_POLICY,
-  BUILTIN_RISK_RULES,
   SecurityErrorCode,
-  SecurityError,
-} from './types';
+} from './types.js';
 
 // SecurityAnalyzer
-export { SecurityAnalyzer, SecurityAnalyzerOptions } from './security-analyzer';
+export { SecurityAnalyzer } from './security-analyzer.js';
+export type { SecurityAnalyzerOptions } from './security-analyzer.js';
 
 // ActionLogger
 export {
-  LogStorage,
   InMemoryLogStorage,
   ActionLogger,
+} from './action-logger.js';
+
+export type {
+  LogStorage,
   ActionLoggerOptions,
   AuditLogSummary,
-} from './action-logger';
+} from './action-logger.js';

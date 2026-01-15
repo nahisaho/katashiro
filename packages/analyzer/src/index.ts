@@ -293,3 +293,51 @@ export {
   type ExecutionOptions,
   type FormatOptions,
 } from './interpreter/index.js';
+
+// Document Consistency Checker (v2.0.0)
+export {
+  DocumentConsistencyChecker,
+  // Extractors
+  NumericExtractor,
+  DateExtractor,
+  TermExtractor,
+  ReferenceExtractor,
+  // Validators
+  NumericValidator,
+  DateValidator,
+  TermValidator,
+  ReferenceValidator,
+  // Reporter
+  ConsistencyReporter,
+  // Loader
+  DocumentLoader,
+  // Types
+  type CheckerConfig,
+  type Document as ConsistencyDocument,
+  type Location,
+  type Severity,
+  type IssueSeverity,
+  type NumericFormat,
+  type DateFormat,
+  type ReferenceType,
+  type TermCategory,
+  type IssueType,
+  type ExtractedNumeric,
+  type ExtractedDate,
+  type ExtractedTerm,
+  type ExtractedReference,
+  type ConsistencyIssue,
+  type ConsistencyCheckResult,
+  type CheckStatistics,
+  type CustomRule,
+  type ReporterConfig,
+  type NumericExtractorConfig,
+  type DateExtractorConfig,
+  type TermExtractorConfig,
+  type ReferenceExtractorConfig,
+  type NumericValidatorConfig,
+  type DateValidatorConfig,
+  type TermValidatorConfig,
+  type ReferenceValidatorConfig,
+  type DocumentLoaderConfig,
+} from './consistency/index.js';

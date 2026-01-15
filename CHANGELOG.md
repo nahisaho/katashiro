@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.11] - 2026-01-15
+
+### Added
+
+#### @nahisaho/katashiro-analyzer
+
+##### DocumentConsistencyChecker (REQ-DCC)
+- **DocumentConsistencyChecker**: 複数文書間の整合性を検証する統合モジュール
+- **DocumentLoader**: Markdown/JSON/TXT文書の読み込みとメタデータ抽出
+- **ConsistencyReporter**: 検証結果のMarkdown/HTML/JSON形式レポート生成
+
+##### Extractors
+- **NumericExtractor**: 数値・金額・パーセンテージの抽出（通貨・単位対応）
+- **DateExtractor**: 日付の抽出（ISO8601/和暦/US形式/相対日付対応）
+- **TermExtractor**: 専門用語・略語の抽出と正規化
+- **ReferenceExtractor**: ファイル参照・セクション参照・外部URLの抽出
+
+##### Validators
+- **NumericValidator**: 数値の整合性検証（微細な差異の検出）
+- **DateValidator**: 日付の時系列整合性検証（開始日≤終了日）
+- **TermValidator**: 用語の一貫性検証（表記揺れ・非推奨用語・禁止用語）
+- **ReferenceValidator**: 参照の有効性検証（リンク切れ・ファイル存在確認）
+
+### Fixed
+
+#### @nahisaho/katashiro-security
+- ESMモジュール形式への修正（`"type": "module"` 追加）
+- インポートパスに `.js` 拡張子を追加
+- 型エクスポートを `export type` 構文に分離
+- `byRiskLevel` アクセス時のundefinedチェックを追加
+- `pattern` パラメータに明示的な型アノテーションを追加
+
 ## [2.0.0] - 2026-01-14
 
 ### 🚀 Major Release - RAG, Evaluation, Agent Framework

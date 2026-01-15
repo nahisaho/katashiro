@@ -22,7 +22,7 @@ import {
   isRiskLevelAtLeast,
   RISK_LEVEL_ORDER,
   SecurityError,
-} from './types';
+} from './types.js';
 
 /**
  * SecurityAnalyzerオプション
@@ -254,7 +254,7 @@ export class SecurityAnalyzer {
 
     // ターゲットパターンチェック
     if (match.targetPatterns && action.target) {
-      const matchesTarget = match.targetPatterns.some((pattern) =>
+      const matchesTarget = match.targetPatterns.some((pattern: string) =>
         micromatch.isMatch(action.target!, pattern)
       );
       if (!matchesTarget) {

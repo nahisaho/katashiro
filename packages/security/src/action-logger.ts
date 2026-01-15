@@ -14,7 +14,7 @@ import {
   UserConfirmation,
   RiskLevel,
   RISK_LEVEL_ORDER,
-} from './types';
+} from './types.js';
 
 /**
  * ログストレージインターフェース
@@ -276,7 +276,10 @@ export class ActionLogger {
 
     for (const log of logs) {
       // リスクレベル別
-      summary.byRiskLevel[log.analysis.riskLevel]++;
+      const riskKey = log.analysis.riskLevel;
+      if (summary.byRiskLevel[riskKey] !== undefined) {
+        summary.byRiskLevel[riskKey]++;
+      }
 
       // アクションタイプ別
       summary.byActionType[log.action.type] =
