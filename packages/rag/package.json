@@ -22,8 +22,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "^2.0.8",
-    "@nahisaho/katashiro-llm": "^2.0.8"
+    "@nahisaho/katashiro-core": "^2.2.0",
+    "@nahisaho/katashiro-llm": "^2.2.0"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

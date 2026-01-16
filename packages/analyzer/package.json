@@ -21,9 +21,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "^2.0.8",
-    "@nahisaho/katashiro-collector": "^2.0.8",
-    "@nahisaho/katashiro-knowledge": "^2.0.8",
+    "@nahisaho/katashiro-core": "^2.2.0",
+    "@nahisaho/katashiro-collector": "^2.2.0",
+    "@nahisaho/katashiro-knowledge": "^2.2.0",
     "@nahisaho/katashiro-llm": "^2.2.0",
     "glob": "^10.3.10"
   },

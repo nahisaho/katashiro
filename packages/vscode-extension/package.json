@@ -167,13 +167,13 @@
     "publish": "vsce publish"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "^2.0.8",
-    "@nahisaho/katashiro-collector": "^2.0.8",
-    "@nahisaho/katashiro-analyzer": "^2.0.8",
-    "@nahisaho/katashiro-generator": "^2.0.8",
-    "@nahisaho/katashiro-knowledge": "^2.0.8",
-    "@nahisaho/katashiro-feedback": "^2.0.8",
-    "@nahisaho/katashiro-mcp-server": "^2.0.8"
+    "@nahisaho/katashiro-core": "^2.2.0",
+    "@nahisaho/katashiro-collector": "^2.2.0",
+    "@nahisaho/katashiro-analyzer": "^2.2.0",
+    "@nahisaho/katashiro-generator": "^2.2.0",
+    "@nahisaho/katashiro-knowledge": "^2.2.0",
+    "@nahisaho/katashiro-feedback": "^2.2.0",
+    "@nahisaho/katashiro-mcp-server": "^2.2.0"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",

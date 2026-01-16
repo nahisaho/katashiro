@@ -35,12 +35,12 @@
     "directory": "packages/orchestrator"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "^2.0.8",
+    "@nahisaho/katashiro-core": "^2.2.0",
     "local-pkg": "^0.5.1",
     "pretty-format": "^29.7.0"
   },
   "devDependencies": {
-    "@nahisaho/katashiro-llm": "^2.0.8",
+    "@nahisaho/katashiro-llm": "^2.2.0",
     "@types/node": "^20.10.0",
     "rimraf": "^5.0.5",
     "typescript": "^5.3.0",

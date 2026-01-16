@@ -22,8 +22,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "^2.0.8",
-    "@nahisaho/katashiro-observability": "^2.0.8",
+    "@nahisaho/katashiro-core": "^2.2.0",
+    "@nahisaho/katashiro-observability": "^2.2.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

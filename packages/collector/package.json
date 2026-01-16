@@ -22,7 +22,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "^2.0.8"
+    "@nahisaho/katashiro-core": "^2.2.0"
   },
   "keywords": [
     "katashiro",

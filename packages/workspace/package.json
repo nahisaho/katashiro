@@ -23,7 +23,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "^2.0.8",
+    "@nahisaho/katashiro-core": "^2.2.0",
     "fast-glob": "^3.3.2",
     "dockerode": "^4.0.2"
   },

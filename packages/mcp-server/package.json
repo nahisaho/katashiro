@@ -20,12 +20,12 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "zod": "^3.23.0",
-    "@nahisaho/katashiro-core": "^2.0.8",
-    "@nahisaho/katashiro-collector": "^2.0.8",
-    "@nahisaho/katashiro-analyzer": "^2.0.8",
-    "@nahisaho/katashiro-generator": "^2.0.8",
-    "@nahisaho/katashiro-knowledge": "^2.0.8",
-    "@nahisaho/katashiro-feedback": "^2.0.8"
+    "@nahisaho/katashiro-core": "^2.2.0",
+    "@nahisaho/katashiro-collector": "^2.2.0",
+    "@nahisaho/katashiro-analyzer": "^2.2.0",
+    "@nahisaho/katashiro-generator": "^2.2.0",
+    "@nahisaho/katashiro-knowledge": "^2.2.0",
+    "@nahisaho/katashiro-feedback": "^2.2.0"
   },
   "author": "nahisaho",
   "license": "MIT",

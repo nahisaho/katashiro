@@ -24,7 +24,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "^2.0.8",
+    "@nahisaho/katashiro-core": "^2.2.0",
     "micromatch": "^4.0.8"
   },
   "devDependencies": {
