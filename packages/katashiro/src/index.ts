@@ -16,6 +16,43 @@ export { RealTimeDataFetcher } from '@nahisaho/katashiro-collector';
 // Collector - WideResearch & DocumentParser
 export { WideResearchEngine, DocumentParser, PDFParser, DOCXParser, XLSXParser, BrowserAutomation, SearchCache } from '@nahisaho/katashiro-collector';
 
+// Collector - Deep Research v3.0.0 (MUSUBIX-based rewrite)
+export {
+  ResearchEngine,
+  createResearchEngine,
+  deepResearch,
+  KnowledgeBase as DeepResearchKnowledgeBase,
+  createKnowledgeBase as createDeepResearchKnowledgeBase,
+  LMReasoning,
+  createLMReasoning,
+  createOpenAIReasoning,
+  FetchLMProvider,
+  TemplateLMProvider,
+  JinaProvider,
+  createJinaProvider,
+  DuckDuckGoProvider,
+  createDuckDuckGoProvider,
+  SearchProviderFactory,
+  createProviderFactory,
+  DeepResearchError,
+  AllProvidersFailedError,
+  InvalidConfigurationError,
+  TokenBudgetExceededError,
+} from '@nahisaho/katashiro-collector';
+
+// Deep Research types
+export type {
+  ResearchConfig,
+  ResearchReport,
+  ResearchEvent,
+  ResearchEventListener,
+  KnowledgeItem,
+  ReflectiveQuestion,
+  DeepResearchFinding,
+  Reference,
+  ResearchEngineConfig,
+} from '@nahisaho/katashiro-collector';
+
 // Analyzer - Text analysis, entities, topics
 export * as analyzer from '@nahisaho/katashiro-analyzer';
 export { TextAnalyzer, EntityExtractor, TopicModeler, RelationAnalyzer, QualityScorer, StructureAnalyzer, FrameworkAnalyzer, DeepResearchOrchestrator } from '@nahisaho/katashiro-analyzer';

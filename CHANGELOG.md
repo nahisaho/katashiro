@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-01-16
+
+### Fixed
+
+#### @nahisaho/katashiro (CLI)
+
+- **CLIがDeep Research v3.0.0を使用するよう修正**
+  - 旧`DeepResearchOrchestrator`から新`ResearchEngine`への移行
+  - `--jina-key`/`--openai-key`オプションの追加
+  - イベントベースの進捗表示
+
+- **引用トレーサビリティの追加**
+  - レポート内の各文章にどの引用を使用したかを明示
+  - `[ref-N]`形式の参照番号
+  - レポート末尾に参照リスト
+
+### Changed
+
+- CLI deep-researchコマンドの完全再実装
+- 進捗表示の改善（イテレーション、検索、コンテンツ取得の可視化）
+
+## [2.3.0] - 2026-01-16
+
+### Added
+
+#### @nahisaho/katashiro-collector
+
+##### Deep Research v3.0.0 - MUSUBIX準拠の反復リサーチエンジン
+
+- **ResearchEngine**: Template Method Patternによる拡張可能なリサーチオーケストレーター
+  - イベント駆動型のプログレス通知
+  - トークン予算管理
+  - 信頼度ベースの収束判定
+
+- **KnowledgeBase**: 知識蓄積・検索
+  - Webコンテンツからの知識抽出
+  - キーワードベースの類似検索
+  - エクスポート/インポート機能
+
+- **LMReasoning**: LLM推論モジュール
+  - リフレクティブ質問生成
+  - 回答評価
+  - EARS形式変換
+
+- **JinaProvider**: Jina AI検索/読み取りプロバイダー
+  - s.jina.ai / r.jina.ai対応
+  - 自動リトライ/サーキットブレーカー
+
+- **DuckDuckGoProvider**: フォールバック検索プロバイダー
+  - リージョン/セーフサーチ設定
+
+- **SearchProviderFactory**: プロバイダー管理
+  - 自動フォールバック
+  - ヘルスチェック
+
+- **deepResearch()**: シンプルなヘルパー関数
+
+### Exports
+
+- `@nahisaho/katashiro`から全Deep Research機能をエクスポート
+
 ## [2.1.0] - 2026-01-16
 
 ### Added
