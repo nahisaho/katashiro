@@ -44,8 +44,8 @@
     "url": "https://github.com/nahisaho/katashiro/issues"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "workspace:*",
-    "@nahisaho/katashiro-llm": "workspace:*"
+    "@nahisaho/katashiro-core": "^2.2.0",
+    "@nahisaho/katashiro-llm": "^2.2.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
