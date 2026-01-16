@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-generator",
-  "version": "2.1.3",
+  "version": "2.2.0",
   "description": "KATASHIRO Generator - コンテンツ生成パッケージ",
   "type": "module",
   "main": "./dist/index.js",
