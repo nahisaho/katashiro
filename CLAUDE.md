@@ -574,6 +574,29 @@ npx katashiro extract "テキスト"
 
 # 要約
 npx katashiro summarize "長いテキスト" --length 300
+
+# Deep Research（v2.5.3: レートリミット対応）
+npx katashiro deep-research "調査トピック"
+npx katashiro deep-research "AI倫理" --iterations 5
+npx katashiro deep-research "競合分析" --framework swot
+npx katashiro deep-research "市場調査" --focus "トレンド,競合,顧客"
+```
+
+### 🎯 AIエージェントの推奨利用パターン
+
+ユーザーが「〜について調べて」「レポートを作成して」と依頼した場合：
+
+| パターン | 推奨度 | 説明 |
+|---------|-------|------|
+| **CLI実行** | ⭐⭐⭐ | `npx katashiro deep-research`を直接実行し、結果をファイルに保存 |
+| **MCP Server** | ⭐⭐⭐ | MCPツールとして呼び出し（設定済みの場合） |
+| **スクリプト作成** | ⭐ | 複雑なカスタマイズが必要な場合のみ |
+
+**推奨フロー:**
+```
+1. npx katashiro deep-research "トピック" --iterations 5 を実行
+2. 結果（Markdown）をユーザー指定のファイルに保存
+3. 必要に応じて追加の分析・整形を実施
 ```
 
 ## VS Code MCP設定

@@ -8,6 +8,40 @@
 
 ---
 
+## � 重要: Deep Research利用時の推奨パターン
+
+ユーザーが「〜について調べて」「レポートを作成して」と依頼した場合、**スクリプト作成ではなくCLI実行**を推奨します：
+
+### 推奨度
+
+| パターン | 推奨度 | 説明 |
+|---------|-------|------|
+| **CLI実行** | ⭐⭐⭐ | `npx katashiro deep-research`を直接実行 |
+| **MCP Server** | ⭐⭐⭐ | MCPツールとして呼び出し（設定済みの場合） |
+| **スクリプト作成** | ⭐ | 複雑なカスタマイズが必要な場合のみ |
+
+### 推奨フロー
+
+```bash
+# 1. Deep Researchを直接実行
+npx katashiro deep-research "トピック" --iterations 5 --framework auto
+
+# 2. 結果をファイルに保存
+npx katashiro deep-research "トピック" > reports/research-result.md
+
+# 3. 必要に応じてフレームワークを指定
+npx katashiro deep-research "競合分析" --framework swot
+npx katashiro deep-research "市場調査" --framework 3c
+```
+
+### なぜスクリプト作成は非推奨か
+
+1. **二重作業**: スクリプト作成→型チェック→実行と3段階になる
+2. **エラーリスク**: Result型と直接値の混同など、型エラーが発生しやすい
+3. **本来の設計意図**: Deep ResearchはCLI/MCPで直接利用するツール
+
+---
+
 ## 📋 課題タイプ別の解決アプローチ
 
 ### 課題タイプの判定
@@ -16,12 +50,12 @@
 
 | 課題タイプ | キーワード例 | 使用する機能 |
 |-----------|-------------|-------------|
-| **調査・リサーチ** | 調べて、検索、情報収集、〜について | Collector → Analyzer → Generator |
-| **Deep Research** | 詳しく調べて、徹底的に、包括的に、網羅的に | DeepResearchOrchestrator → Analyzer → Generator |
-| **Deep Research Agent** | エージェントで調査、自律的に調べて、反復調査 | DeepResearchAgent（v2.1.0） |
+| **調査・リサーチ** | 調べて、検索、情報収集、〜について | `npx katashiro deep-research` (CLI推奨) |
+| **Deep Research** | 詳しく調べて、徹底的に、包括的に、網羅的に | `npx katashiro deep-research --iterations 5` |
+| **Deep Research Agent** | エージェントで調査、自律的に調べて、反復調査 | `npx katashiro deep-research --framework auto` |
 | **高信頼調査** | 信頼性高く、リトライあり、エラー耐性 | UrlProcessor + RetryHandler + FallbackHandler |
 | **並列調査** | 並列で調べて、高速に、同時に | ParallelExecutor + DomainRateLimiter |
-| **戦略策定** | 戦略、SWOT、3C、5Forces、競合分析 | FrameworkAnalyzer → Generator |
+| **戦略策定** | 戦略、SWOT、3C、5Forces、競合分析 | `npx katashiro deep-research --framework swot` |
 | **分析・解析** | 分析して、解析、キーワード、傾向 | Analyzer |
 | **要約・まとめ** | 要約、まとめて、短くして | Generator (SummaryGenerator) |
 | **レポート作成** | レポート、報告書、文書化 | Generator (ReportGenerator) |
