@@ -49,3 +49,4 @@ temp/
 # Package lock (use npm)
 yarn.lock
 pnpm-lock.yaml
+.katashiro*

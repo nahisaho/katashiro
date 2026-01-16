@@ -52,3 +52,40 @@ export type {
   AgentSearchResult,
   AgentExecutionResult,
 } from './agents/index.js';
+
+// Deep Research (v2.2.0) - REQ-DR-S-001, REQ-DR-S-002, REQ-DR-S-003
+export {
+  DeepResearchOrchestrator,
+  UrlProcessor,
+  IterationController,
+  DeepResearchQuerySchema,
+  DEFAULT_DEEP_RESEARCH_CONFIG,
+} from './deep-research/index.js';
+
+export type {
+  DeepResearchQuery,
+  DeepResearchConfig,
+  DeepResearchResult,
+  DeepResearchError,
+  DeepResearchErrorCode,
+  DeepResearchFinding,
+  DeepResearchState,
+  DeepResearchStatistics,
+  ProcessingPhase,
+  UrlStatus,
+  IterationResult,
+  ReasoningStep,
+  ParallelConfig,
+  TimeoutConfig,
+  OrchestratorEvent,
+  OrchestratorEventType,
+  OrchestratorEventListener,
+  UrlProcessorConfig,
+  UrlProcessResult,
+  IScraperAdapter,
+  UrlProcessorEventType,
+  IterationConfig,
+  IterationState,
+  IterationEventType,
+  ShouldContinueResult,
+} from './deep-research/index.js';

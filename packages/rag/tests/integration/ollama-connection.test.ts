@@ -77,7 +77,7 @@ describe.skipIf(
       expect(embedding).toBeInstanceOf(Array);
       expect(embedding.length).toBeGreaterThan(0);
       expect(typeof embedding[0]).toBe('number');
-    });
+    }, 30000);
 
     it('should generate embeddings for batch of texts', async () => {
       if (!ollamaAvailable) return;
@@ -125,7 +125,7 @@ describe.skipIf(
 
       // Similar sentences should be more similar
       expect(sim01).toBeGreaterThan(sim02);
-    });
+    }, 60000);
   });
 
   describe('EmbeddingFactory', () => {
@@ -142,6 +142,6 @@ describe.skipIf(
       const embedding = await provider.embed('Test text');
       expect(embedding).toBeInstanceOf(Array);
       expect(embedding.length).toBeGreaterThan(0);
-    });
+    }, 30000);
   });
 });

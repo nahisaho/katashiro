@@ -124,6 +124,41 @@ export type {
   AgentSearchQuery,
   AgentSearchResult,
   AgentExecutionResult,
+  // Deep Research (v2.2.0) - REQ-DR-S-001, REQ-DR-S-002, REQ-DR-S-003
+  DeepResearchQuery,
+  DeepResearchConfig,
+  DeepResearchResult,
+  DeepResearchError,
+  DeepResearchErrorCode,
+  DeepResearchFinding,
+  DeepResearchState,
+  DeepResearchStatistics,
+  ProcessingPhase,
+  UrlStatus,
+  IterationResult,
+  ReasoningStep,
+  ParallelConfig,
+  TimeoutConfig,
+  OrchestratorEvent,
+  OrchestratorEventType,
+  OrchestratorEventListener,
+  UrlProcessorConfig,
+  UrlProcessResult,
+  IScraperAdapter,
+  UrlProcessorEventType,
+  IterationConfig,
+  IterationState,
+  IterationEventType,
+  ShouldContinueResult,
+} from './research/index.js';
+
+// Deep Research Orchestrator (v2.2.0)
+export {
+  DeepResearchOrchestrator,
+  UrlProcessor,
+  IterationController,
+  DeepResearchQuerySchema,
+  DEFAULT_DEEP_RESEARCH_CONFIG,
 } from './research/index.js';
 
 // Browser Automation (v0.2.3) - DES-COLLECT-009
@@ -194,3 +229,196 @@ export type {
   TimeSeriesData,
   RealTimeDataFetcherOptions,
 } from './realtime-data/index.js';
+
+// Retry Mechanism (v2.2.0) - REQ-DR-U-001, REQ-DR-W-001
+export {
+  RetryHandler,
+  ExponentialBackoff,
+  RetryError,
+  isRetryError,
+  RetryPolicySchema,
+  DEFAULT_RETRY_POLICY,
+  RetryContextSchema,
+} from './retry/index.js';
+
+export type {
+  RetryPolicy,
+  RetryContext,
+  RetryEvent,
+  BackoffResult,
+  BackoffOptions,
+  RetryErrorOptions,
+  RetryHandlerOptions,
+  ErrorHistoryEntry,
+} from './retry/index.js';
+
+// Logging (v2.2.0) - REQ-DR-U-002
+export {
+  StructuredLogger,
+  ConsoleTransport,
+  MemoryTransport,
+  SensitiveDataMasker,
+  getLogger,
+  setLogger,
+  LogLevelSchema,
+  LogEntrySchema,
+  LOG_LEVEL_PRIORITY,
+  DEFAULT_LOGGER_CONFIG,
+  DEFAULT_MASKING_PATTERNS,
+} from './logging/index.js';
+
+export type {
+  LogLevel,
+  LogEntry,
+  LogFormat,
+  LogTransport,
+  LoggerConfig,
+  MaskingPattern,
+} from './logging/index.js';
+
+// Fallback Mechanism (v2.2.0) - REQ-DR-U-003
+export {
+  FallbackHandler,
+  FallbackError,
+  WaybackMachineClient,
+  WaybackError,
+  FallbackSourceTypeSchema,
+  DEFAULT_FALLBACK_CONFIG,
+} from './fallback/index.js';
+
+export type {
+  FallbackSourceType,
+  FallbackResult,
+  FallbackConfig,
+  WaybackSnapshot,
+  CacheEntry,
+  AlternativeSource,
+  FallbackEvent,
+  FallbackEventListener,
+} from './fallback/index.js';
+
+// Content Management (v2.2.0) - REQ-DR-S-001, REQ-DR-S-003, REQ-DR-E-005
+export {
+  ContentCache,
+  VersionControl,
+  CheckpointManager,
+  CheckpointError,
+  ContentManager,
+  ContentStatusSchema,
+  ContentVersionSchema,
+  ContentEntrySchema,
+  CacheConfigSchema,
+  CheckpointConfigSchema,
+  ContentManagerConfigSchema,
+  DEFAULT_CACHE_CONFIG,
+  DEFAULT_CHECKPOINT_CONFIG,
+  DEFAULT_CONTENT_MANAGER_CONFIG,
+} from './content/index.js';
+
+export type {
+  ContentStatus,
+  ContentVersion,
+  ContentEntry,
+  CacheConfig,
+  CheckpointConfig,
+  ContentManagerConfig,
+  CacheStats,
+  CheckpointInfo,
+  CheckpointData,
+  ContentManagerEventType,
+  ContentManagerEvent,
+  ContentManagerEventListener,
+  ContentDiff,
+} from './content/index.js';
+
+// robots.txt (v2.2.0) - REQ-DR-W-003
+export {
+  RobotsParser,
+  RobotsConfigSchema,
+  DEFAULT_ROBOTS_CONFIG,
+} from './robots/index.js';
+
+export type {
+  RobotsConfig,
+  RobotsRule,
+  ParsedRobotsTxt,
+  RobotsCacheEntry,
+  RobotsCheckResult,
+} from './robots/index.js';
+
+// LRU Cache (v2.2.0) - REQ-DR-E-005, REQ-DR-S-003
+export {
+  LRUCache,
+  CacheKeyGenerator,
+  TTLManager,
+  CachePersistence,
+  BackupCachePersistence,
+  CacheManager,
+  LRUCacheConfigSchema,
+  CacheKeyGeneratorConfigSchema,
+  CacheManagerConfigSchema,
+  DEFAULT_LRU_CACHE_CONFIG,
+  DEFAULT_CACHE_KEY_GENERATOR_CONFIG,
+  DEFAULT_CACHE_MANAGER_CONFIG,
+  TTL_PRESETS,
+  RECOMMENDED_PATTERNS,
+} from './cache/index.js';
+
+export type {
+  CacheMetadata,
+  CacheEntry as LRUCacheEntry,
+  LRUCacheConfig,
+  CacheStatistics,
+  CacheKeyGeneratorConfig,
+  CacheManagerConfig,
+  PersistedCacheData,
+  CacheEvent,
+  CacheEventListener,
+} from './cache/index.js';
+
+// Parallel Processing (v2.2.0) - REQ-DR-S-002, REQ-DR-W-004
+export {
+  Semaphore,
+  DomainRateLimiter,
+  ConcurrencyQueue,
+  ResourceMonitor,
+  AdaptiveConcurrencyController,
+  ContentStreamHandler,
+  ParallelExecutor,
+  SemaphoreConfigSchema,
+  DomainConfigSchema,
+  DomainRateLimiterConfigSchema,
+  ConcurrencyQueueConfigSchema,
+  ResourceMonitorConfigSchema,
+  AdaptiveConcurrencyConfigSchema,
+  ParallelExecutorConfigSchema,
+  ContentStreamConfigSchema,
+  DEFAULT_SEMAPHORE_CONFIG,
+  DEFAULT_DOMAIN_RATE_LIMITER_CONFIG,
+  DEFAULT_CONCURRENCY_QUEUE_CONFIG,
+  DEFAULT_RESOURCE_MONITOR_CONFIG,
+  DEFAULT_ADAPTIVE_CONCURRENCY_CONFIG,
+  DEFAULT_PARALLEL_EXECUTOR_CONFIG,
+  DEFAULT_CONTENT_STREAM_CONFIG,
+} from './parallel/index.js';
+
+export type {
+  SemaphoreConfig,
+  DomainConfig,
+  DomainRateLimiterConfig,
+  TaskPriority,
+  QueueTask,
+  ConcurrencyQueueConfig,
+  ResourceUsage,
+  ResourceMonitorConfig,
+  AdaptiveConcurrencyConfig,
+  ParallelExecutorConfig,
+  ContentStreamConfig,
+  ParallelEvent,
+  ParallelEventListener,
+  TaskResult,
+  BatchResult,
+  TaskInput,
+  StreamResult,
+  StreamSource,
+} from './parallel/index.js';
