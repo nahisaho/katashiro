@@ -8,41 +8,47 @@
 
 ---
 
-## � 重要: Deep Research利用時の推奨パターン
+## 🚨🚨🚨 最重要: Deep Research利用時の必須ルール 🚨🚨🚨
 
-ユーザーが「〜について調べて」「レポートを作成して」と依頼した場合、**スクリプト作成ではなくCLI実行**を推奨します：
+> **⚠️ AIエージェントへの指示**: ユーザーが「〜について調べて」「調査して」「レポートを作成して」と依頼した場合、
+> **絶対にTypeScriptスクリプトを作成しないでください**。代わりに以下のCLIコマンドを直接実行してください。
 
-### 推奨度
-
-| パターン | 推奨度 | 説明 |
-|---------|-------|------|
-| **CLI実行** | ⭐⭐⭐ | `npx katashiro deep-research`を直接実行 |
-| **MCP Server** | ⭐⭐⭐ | MCPツールとして呼び出し（設定済みの場合） |
-| **スクリプト作成** | ⭐ | 複雑なカスタマイズが必要な場合のみ |
-
-### 推奨フロー
+### ✅ 正しい対応（CLI実行）
 
 ```bash
-# 1. Deep Researchを直接実行
-npx katashiro deep-research "トピック" --iterations 5 --framework auto
-
-# 2. 結果をファイルに保存
-npx katashiro deep-research "トピック" > reports/research-result.md
-
-# 3. 必要に応じてフレームワークを指定
-npx katashiro deep-research "競合分析" --framework swot
-npx katashiro deep-research "市場調査" --framework 3c
+# 調査依頼への正しい対応
+npx katashiro deep-research "調査トピック" --iterations 5 > reports/output.md
 ```
 
-### なぜスクリプト作成は非推奨か
+### ❌ 間違った対応（スクリプト作成）
 
-1. **二重作業**: スクリプト作成→型チェック→実行と3段階になる
-2. **エラーリスク**: Result型と直接値の混同など、型エラーが発生しやすい
-3. **本来の設計意図**: Deep ResearchはCLI/MCPで直接利用するツール
+```typescript
+// ❌ これはやらないでください
+import { deepResearch } from '@nahisaho/katashiro';
+const report = await deepResearch(...);  // スクリプト作成は非推奨
+```
+
+### 判定フロー
+
+```
+ユーザー依頼: 「〜について調べて」「調査して」「レポート作成」
+    ↓
+質問1: Deep Research（調査）に関連するか？
+    ├─ Yes → CLI実行: npx katashiro deep-research "トピック"
+    └─ No  → 他の機能を検討
+```
+
+### CLI実行例
+
+| 依頼例 | 実行コマンド |
+|-------|------------|
+| 「AIについて調べて」 | `npx katashiro deep-research "AI" --iterations 5` |
+| 「競合分析して」 | `npx katashiro deep-research "競合分析" --framework swot` |
+| 「市場調査して」 | `npx katashiro deep-research "市場調査" --framework 3c` |
+| 「レポート作成」 | `npx katashiro deep-research "トピック" > reports/report.md` |
 
 ---
 
-## 📋 課題タイプ別の解決アプローチ
 
 ### 課題タイプの判定
 
