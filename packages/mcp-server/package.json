@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-mcp-server",
-  "version": "2.5.1",
+  "version": "2.5.2",
   "description": "KATASHIRO MCP Server - Model Context Protocol server for AI-powered research",
   "type": "module",
   "main": "./dist/index.js",
@@ -20,12 +20,12 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "zod": "^3.23.0",
-    "@nahisaho/katashiro-core": "workspace:*",
-    "@nahisaho/katashiro-collector": "workspace:*",
-    "@nahisaho/katashiro-analyzer": "workspace:*",
-    "@nahisaho/katashiro-generator": "workspace:*",
-    "@nahisaho/katashiro-knowledge": "workspace:*",
-    "@nahisaho/katashiro-feedback": "workspace:*"
+    "@nahisaho/katashiro-core": "2.5.2",
+    "@nahisaho/katashiro-collector": "2.5.2",
+    "@nahisaho/katashiro-analyzer": "2.5.2",
+    "@nahisaho/katashiro-generator": "2.5.2",
+    "@nahisaho/katashiro-knowledge": "2.5.2",
+    "@nahisaho/katashiro-feedback": "2.5.2"
   },
   "author": "nahisaho",
   "license": "MIT",

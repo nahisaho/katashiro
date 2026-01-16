@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-security",
-  "version": "2.5.1",
+  "version": "2.5.2",
   "description": "KATASHIRO Security - Security analysis and action auditing",
   "type": "module",
   "main": "./dist/index.js",
@@ -24,7 +24,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@nahisaho/katashiro-core": "workspace:*",
+    "@nahisaho/katashiro-core": "2.5.2",
     "micromatch": "^4.0.8"
   },
   "devDependencies": {
