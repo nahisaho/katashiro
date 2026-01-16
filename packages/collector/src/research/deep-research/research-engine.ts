@@ -2,8 +2,9 @@
  * Research Engine - Main Orchestrator
  *
  * Template Method Pattern による Deep Research オーケストレーション
+ * v3.1.0: コンサルティングフレームワーク統合
  *
- * @version 3.0.0
+ * @version 3.1.0
  */
 
 import type {
@@ -23,6 +24,7 @@ import type {
   ResearchEvent,
   ResearchEventListener,
   EvaluationResult,
+  ConsultingFramework,
 } from './types.js';
 import {
   SearchProviderFactory,
@@ -30,6 +32,12 @@ import {
 } from './provider-factory.js';
 import { KnowledgeBase, createKnowledgeBase } from './knowledge-base.js';
 import { LMReasoning, createLMReasoning, FetchLMProvider } from './lm-reasoning.js';
+import {
+  FrameworkReasoning,
+  createFrameworkReasoning,
+  type FrameworkSelection,
+  type FrameworkAnalysisResult,
+} from './framework-reasoning.js';
 
 /**
  * Research Engine Configuration
@@ -41,6 +49,8 @@ export interface ResearchEngineConfig {
   knowledgeBase?: KnowledgeBase;
   /** LM Reasoning module */
   lmReasoning?: LMReasoning;
+  /** Framework Reasoning module */
+  frameworkReasoning?: FrameworkReasoning;
   /** OpenAI API Key (creates default LM) */
   openaiApiKey?: string;
   /** Enable debug logging */
@@ -58,6 +68,8 @@ interface ResearchState {
   questions: ReflectiveQuestion[];
   logs: IterationLog[];
   lastEvaluation?: EvaluationResult;
+  frameworkSelection?: FrameworkSelection;
+  frameworkAnalysis?: FrameworkAnalysisResult;
 }
 
 /**
@@ -67,10 +79,12 @@ export class ResearchEngine {
   private readonly providerFactory: SearchProviderFactory;
   private readonly knowledgeBase: KnowledgeBase;
   private readonly lmReasoning: LMReasoning;
+  private readonly frameworkReasoning: FrameworkReasoning;
   private readonly debug: boolean;
 
   private readonly listeners: Set<ResearchEventListener> = new Set();
   private state: ResearchState | null = null;
+  private currentFramework: ConsultingFramework = 'auto';
 
   constructor(config: ResearchEngineConfig = {}) {
     this.debug = config.debug ?? false;
@@ -98,6 +112,10 @@ export class ResearchEngine {
     } else {
       this.lmReasoning = createLMReasoning({ debug: this.debug });
     }
+
+    // Initialize framework reasoning
+    this.frameworkReasoning =
+      config.frameworkReasoning ?? createFrameworkReasoning({ debug: this.debug });
   }
 
   /**
@@ -110,8 +128,12 @@ export class ResearchEngine {
       maxIterations = 10,
       tokenBudget = 15000,
       outputFormat = 'markdown',
+      framework = 'auto',
       // language is available for future use
     } = config;
+
+    // Store framework selection
+    this.currentFramework = framework;
 
     // Initialize state
     this.state = {
@@ -127,8 +149,30 @@ export class ResearchEngine {
     this.knowledgeBase.clear();
     this.lmReasoning.resetTokenCount();
 
+    // Step 0: Classify query and select framework
+    if (framework === 'auto' || framework !== 'none') {
+      const frameworkSelection = this.frameworkReasoning.classifyQuery(query);
+      this.state.frameworkSelection = frameworkSelection;
+
+      this.emit({
+        type: 'framework_selected',
+        data: {
+          framework: frameworkSelection.primaryFramework,
+          queryType: frameworkSelection.queryType,
+          reasoning: frameworkSelection.reasoning,
+        },
+        timestamp: Date.now(),
+      });
+
+      if (this.debug) {
+        console.log(
+          `[ResearchEngine] Framework selected: ${frameworkSelection.primaryFramework} for ${frameworkSelection.queryType}`
+        );
+      }
+    }
+
     // Emit start event
-    this.emit({ type: 'start', data: { query, maxIterations }, timestamp: Date.now() });
+    this.emit({ type: 'start', data: { query, maxIterations, framework: this.currentFramework }, timestamp: Date.now() });
 
     try {
       // Main research loop
@@ -224,6 +268,7 @@ export class ResearchEngine {
 
   /**
    * Step 1: Generate reflective questions
+   * v3.1.0: フレームワークベースの質問生成
    */
   protected async generateQuestions(query: string): Promise<void> {
     if (!this.state) return;
@@ -236,13 +281,35 @@ export class ResearchEngine {
       previousQuestions: this.state.questions,
     };
 
-    const questions = await this.lmReasoning.generateReflectiveQuestions(context);
+    let questions: ReflectiveQuestion[];
+
+    // Use framework-based questions if a framework is selected
+    if (this.state.frameworkSelection && this.currentFramework !== 'none') {
+      questions = this.frameworkReasoning.generateFrameworkQuestions(
+        this.state.frameworkSelection,
+        context,
+        this.knowledgeBase.getAll()
+      );
+
+      if (this.debug) {
+        console.log(
+          `[ResearchEngine] Generated ${questions.length} framework-based questions`
+        );
+      }
+
+      // Also generate some LM-based questions for coverage
+      const lmQuestions = await this.lmReasoning.generateReflectiveQuestions(context);
+      questions.push(...lmQuestions.slice(0, 2));
+    } else {
+      // Fallback to LM-only questions
+      questions = await this.lmReasoning.generateReflectiveQuestions(context);
+    }
 
     // Add new questions
     this.state.questions.push(...questions);
 
     if (this.debug) {
-      console.log(`[ResearchEngine] Generated ${questions.length} questions`);
+      console.log(`[ResearchEngine] Total questions generated: ${questions.length}`);
     }
   }
 
@@ -349,6 +416,7 @@ export class ResearchEngine {
 
   /**
    * Step 4: Reason and synthesize
+   * v3.1.0: フレームワーク分析統合
    */
   protected async reason(query: string): Promise<void> {
     if (!this.state) return;
@@ -356,7 +424,28 @@ export class ResearchEngine {
     const knowledgeItems = this.knowledgeBase.getAll();
     const beforeTokens = this.lmReasoning.getTokensUsed();
 
-    // Synthesize current knowledge
+    // Apply framework analysis if selected
+    if (this.state.frameworkSelection && this.currentFramework !== 'none') {
+      // Classify knowledge by framework axes
+      const classifiedKnowledge = this.frameworkReasoning.classifyKnowledge(
+        this.state.frameworkSelection,
+        knowledgeItems
+      );
+
+      // Analyze with framework
+      this.state.frameworkAnalysis = this.frameworkReasoning.analyzeWithFramework(
+        this.state.frameworkSelection,
+        classifiedKnowledge
+      );
+
+      if (this.debug) {
+        console.log(
+          `[ResearchEngine] Framework analysis complete: ${this.state.frameworkAnalysis.axes.length} axes analyzed`
+        );
+      }
+    }
+
+    // Also synthesize current knowledge using LM
     await this.lmReasoning.synthesizeKnowledge(query, knowledgeItems);
 
     const tokensUsed = this.lmReasoning.getTokensUsed() - beforeTokens;
@@ -370,7 +459,11 @@ export class ResearchEngine {
     this.emit({
       type: 'reason_complete',
       iteration: this.state.iteration,
-      data: { tokensUsed, knowledgeCount: knowledgeItems.length },
+      data: {
+        tokensUsed,
+        knowledgeCount: knowledgeItems.length,
+        frameworkApplied: this.state.frameworkAnalysis?.framework,
+      },
       timestamp: Date.now(),
     });
   }
@@ -398,6 +491,7 @@ export class ResearchEngine {
 
   /**
    * Generate final report
+   * v3.1.0: フレームワーク形式のレポート生成
    */
   protected async generateReport(
     query: string,
@@ -432,6 +526,7 @@ export class ResearchEngine {
       confidence: this.state.lastEvaluation?.confidence ?? 0,
       knowledgeCount: knowledgeItems.length,
       urlsVisited: this.state.visitedUrls.size,
+      frameworkUsed: this.state.frameworkAnalysis?.framework,
     };
 
     const report: ResearchReport = {
@@ -446,10 +541,72 @@ export class ResearchEngine {
 
     // Add markdown if requested
     if (format === 'markdown') {
-      report.markdown = this.formatAsMarkdown(report);
+      // Use framework-formatted markdown if framework analysis is available
+      if (this.state.frameworkAnalysis) {
+        report.markdown = this.frameworkReasoning.formatAsMarkdown(
+          query,
+          this.state.frameworkAnalysis,
+          summary
+        );
+
+        // Append standard sections
+        const additionalSections = this.formatAdditionalSections(report);
+        report.markdown += '\n' + additionalSections;
+      } else {
+        report.markdown = this.formatAsMarkdown(report);
+      }
     }
 
     return report;
+  }
+
+  /**
+   * Format additional sections (findings, references, metadata)
+   */
+  private formatAdditionalSections(report: ResearchReport): string {
+    const lines: string[] = [];
+
+    // Findings
+    if (report.findings.length > 0) {
+      lines.push('## 📌 主な発見');
+      lines.push('');
+      for (const finding of report.findings) {
+        lines.push(`- ${finding.statement}`);
+        if (finding.citations.length > 0) {
+          lines.push(`  - *出典: ${finding.citations[0]}*`);
+        }
+      }
+      lines.push('');
+    }
+
+    // References
+    if (report.references.length > 0) {
+      lines.push('## 📚 参考文献');
+      lines.push('');
+      for (const ref of report.references) {
+        lines.push(`- [${ref.title}](${ref.url}) (${ref.accessDate})`);
+      }
+      lines.push('');
+    }
+
+    // Metadata
+    lines.push('---');
+    lines.push('');
+    lines.push('## ⚙️ メタデータ');
+    lines.push('');
+    lines.push(`| 項目 | 値 |`);
+    lines.push(`| :--- | :--- |`);
+    lines.push(`| イテレーション | ${report.metadata.iterations} |`);
+    lines.push(`| トークン使用量 | ${report.metadata.tokensUsed} |`);
+    lines.push(`| 実行時間 | ${(report.metadata.durationMs / 1000).toFixed(1)}秒 |`);
+    lines.push(`| 信頼度 | ${(report.metadata.confidence * 100).toFixed(0)}% |`);
+    lines.push(`| 収集知識 | ${report.metadata.knowledgeCount}件 |`);
+    lines.push(`| 訪問URL | ${report.metadata.urlsVisited}件 |`);
+    if ((report.metadata as { frameworkUsed?: string }).frameworkUsed) {
+      lines.push(`| フレームワーク | ${(report.metadata as { frameworkUsed?: string }).frameworkUsed?.toUpperCase()} |`);
+    }
+
+    return lines.join('\n');
   }
 
   /**
@@ -674,5 +831,6 @@ export async function deepResearch(
     tokenBudget: options?.tokenBudget ?? 10000,
     outputFormat: options?.outputFormat ?? 'markdown',
     language: options?.language ?? 'ja',
+    framework: options?.framework ?? 'auto',
   });
 }

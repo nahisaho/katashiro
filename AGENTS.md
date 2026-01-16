@@ -1813,5 +1813,5 @@ interface ReasoningStep {
 
 **Project**: KATASHIRO
 **npm**: @nahisaho/katashiro
-**Last Updated**: 2026-01-16
-**Version**: 2.2.0
+**Last Updated**: 2026-01-17
+**Version**: 2.5.1

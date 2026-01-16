@@ -6,6 +6,19 @@
  */
 
 /**
+ * Consulting Framework Type
+ */
+export type ConsultingFramework =
+  | 'auto'         // Automatically select based on query
+  | 'swot'         // Strengths, Weaknesses, Opportunities, Threats
+  | '3c'           // Company, Customer, Competitor
+  | '4p'           // Product, Price, Place, Promotion
+  | '5forces'      // Porter's Five Forces
+  | 'valuechain'   // Value Chain Analysis
+  | 'pestel'       // Political, Economic, Social, Technological, Environmental, Legal
+  | 'none';        // No framework (general research)
+
+/**
  * Research Configuration
  */
 export interface ResearchConfig {
@@ -23,6 +36,8 @@ export interface ResearchConfig {
   language?: string;
   /** Enable debug logging */
   debug?: boolean;
+  /** Consulting framework to use (default: 'auto') */
+  framework?: ConsultingFramework;
 }
 
 /**
@@ -340,7 +355,8 @@ export type ResearchEventType =
   | 'iteration_complete'
   | 'answer_found'
   | 'complete'
-  | 'error';
+  | 'error'
+  | 'framework_selected';
 
 /**
  * Research Event

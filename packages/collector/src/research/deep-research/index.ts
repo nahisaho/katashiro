@@ -1,7 +1,7 @@
 /**
  * Deep Research Module - Public API
  *
- * @version 3.0.0
+ * @version 3.1.0
  */
 
 // Types
@@ -31,6 +31,7 @@ export type {
   ResearchEventType,
   ResearchEvent,
   ResearchEventListener,
+  ConsultingFramework,
 } from './types.js';
 
 // Error classes
@@ -80,3 +81,21 @@ export {
   deepResearch,
 } from './research-engine.js';
 export type { ResearchEngineConfig } from './research-engine.js';
+
+// Framework Reasoning (v3.1.0)
+export {
+  FrameworkReasoning,
+  createFrameworkReasoning,
+} from './framework-reasoning.js';
+export type {
+  FrameworkType,
+  QueryType,
+  FrameworkSelection,
+  FrameworkAxis,
+  FrameworkAnalysisResult,
+  AnalyzedAxis,
+  AxisItem,
+  CrossAnalysisResult,
+  CrossStrategy,
+  FrameworkReasoningConfig,
+} from './framework-reasoning.js';

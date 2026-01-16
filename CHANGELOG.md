@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.1] - 2026-01-17
+
+### Fixed
+
+- パッケージ再公開（v2.5.0公開後のビルド修正を含む）
+
+## [2.5.0] - 2026-01-16
+
+### Added
+
+#### @nahisaho/katashiro-collector
+
+##### Deep Research v3.1.0 - コンサルティングフレームワーク統合
+
+- **FrameworkReasoning**: フレームワーク統合推論モジュール
+  - クエリタイプ自動判定（戦略/市場/競合/製品など）
+  - 適切なフレームワーク自動選択（SWOT/3C/4P/5Forces/ValueChain/PESTEL）
+  - フレームワーク軸に基づいた質問生成
+  - 知識のフレームワーク軸への自動分類
+  - クロスSWOT戦略生成
+
+- **ResearchConfig.framework オプション追加**
+  - `'auto'`: クエリから自動選択（デフォルト）
+  - `'swot'`: SWOT分析強制
+  - `'3c'`: 3C分析強制
+  - `'4p'`: 4P分析強制
+  - `'5forces'`: 5Forces分析強制
+  - `'valuechain'`: バリューチェーン分析強制
+  - `'pestel'`: PESTEL分析強制
+  - `'none'`: フレームワークなし（汎用調査）
+
+- **フレームワーク形式レポート生成**
+  - 各フレームワーク軸のセクション自動生成
+  - クロスSWOT戦略セクション
+  - インサイト・推奨事項の構造化
+
+### Changed
+
+- ResearchEngineがFrameworkReasoningを統合
+- 質問生成がフレームワーク軸をカバーするよう改善
+- レポート生成がフレームワーク形式をサポート
+- `framework_selected`イベント追加
+
+### Example Usage
+
+```typescript
+import { deepResearch } from '@nahisaho/katashiro';
+
+// 自動フレームワーク選択（戦略関連クエリはSWOT分析を適用）
+const report = await deepResearch('AI業界への新規参入戦略');
+console.log(report.markdown);
+// 出力にはSWOT分析（Strengths/Weaknesses/Opportunities/Threats）と
+// クロスSWOT戦略（SO/WO/ST/WT）が含まれる
+
+// フレームワーク指定
+const marketReport = await deepResearch('スマホ市場の競合分析', {
+  framework: '3c',  // Company/Customer/Competitor
+});
+```
+
 ## [2.3.1] - 2026-01-16
 
 ### Fixed
