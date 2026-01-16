@@ -1,55 +1,82 @@
 /**
- * DeepResearch モジュール - エクスポート
+ * Deep Research Module - Public API
  *
- * @requirement REQ-DR-S-001, REQ-DR-S-002, REQ-DR-S-003
- * @requirement REQ-DR-U-001, REQ-DR-U-002, REQ-DR-U-003
- * @requirement REQ-DR-E-001, REQ-DR-E-005
- * @task TASK-031~034
+ * @version 3.0.0
  */
 
 // Types
+export type {
+  ResearchConfig,
+  ProviderConfig,
+  SERPQuery,
+  SearchResult,
+  WebContent,
+  WebReadRequest,
+  KnowledgeItem,
+  ReflectiveQuestion,
+  ResearchContext,
+  Finding,
+  TechnicalOption,
+  Recommendation,
+  Reference,
+  ReportMetadata,
+  ResearchReport,
+  IterationLog,
+  ResearchAction,
+  TokenUsage,
+  SearchProvider,
+  LMProvider,
+  LMGenerationOptions,
+  EvaluationResult,
+  ResearchEventType,
+  ResearchEvent,
+  ResearchEventListener,
+} from './types.js';
+
+// Error classes
 export {
-  DeepResearchQuerySchema,
-  DEFAULT_DEEP_RESEARCH_CONFIG,
-} from './types.js';
-
-export type {
-  DeepResearchQuery,
-  DeepResearchConfig,
-  DeepResearchResult,
   DeepResearchError,
-  DeepResearchErrorCode,
-  DeepResearchFinding,
-  DeepResearchState,
-  DeepResearchStatistics,
-  ProcessingPhase,
-  UrlStatus,
-  IterationResult,
-  ReasoningStep,
-  ParallelConfig,
-  TimeoutConfig,
-  OrchestratorEvent,
-  OrchestratorEventType,
-  OrchestratorEventListener,
+  AllProvidersFailedError,
+  InvalidConfigurationError,
+  TokenBudgetExceededError,
 } from './types.js';
 
-// URL Processor
-export { UrlProcessor } from './UrlProcessor.js';
-export type {
-  UrlProcessorConfig,
-  UrlProcessResult,
-  IScraperAdapter,
-  UrlProcessorEventType,
-} from './UrlProcessor.js';
+// Jina Provider
+export { JinaProvider, createJinaProvider } from './jina-provider.js';
+export type { JinaProviderConfig } from './jina-provider.js';
 
-// Iteration Controller
-export { IterationController } from './IterationController.js';
-export type {
-  IterationConfig,
-  IterationState,
-  IterationEventType,
-  ShouldContinueResult,
-} from './IterationController.js';
+// DuckDuckGo Provider
+export {
+  DuckDuckGoProvider,
+  createDuckDuckGoProvider,
+} from './duckduckgo-provider.js';
+export type { DuckDuckGoProviderConfig } from './duckduckgo-provider.js';
 
-// Orchestrator
-export { DeepResearchOrchestrator } from './DeepResearchOrchestrator.js';
+// Provider Factory
+export {
+  SearchProviderFactory,
+  createProviderFactory,
+} from './provider-factory.js';
+export type { ProviderFactoryConfig } from './provider-factory.js';
+
+// Knowledge Base
+export { KnowledgeBase, createKnowledgeBase } from './knowledge-base.js';
+export type { KnowledgeBaseConfig } from './knowledge-base.js';
+
+// LM Reasoning
+export {
+  LMReasoning,
+  createLMReasoning,
+  createOpenAIReasoning,
+  FetchLMProvider,
+  TemplateLMProvider,
+} from './lm-reasoning.js';
+export type { LMReasoningConfig } from './lm-reasoning.js';
+
+// Research Engine (Main)
+export {
+  ResearchEngine,
+  createResearchEngine,
+  deepResearch,
+} from './research-engine.js';
+export type { ResearchEngineConfig } from './research-engine.js';
