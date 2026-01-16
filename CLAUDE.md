@@ -93,6 +93,67 @@ katashiro_knowledge_query を使用
 - 「〇〇に関連する情報を知識グラフから検索して」
 - 「保存した情報を検索して」
 
+### 「リトライ付きで取得して」「エラー耐性を持って」（v2.2.0）
+
+```
+RetryHandler を使用
+```
+
+例:
+- 「リトライ付きでURLを取得して」
+- 「エラー時に自動再試行して」
+
+### 「アーカイブから取得して」「フォールバックを使って」（v2.2.0）
+
+```
+FallbackHandler, WaybackMachineClient を使用
+```
+
+例:
+- 「ページが見つからない場合はアーカイブから取得して」
+- 「Wayback Machineで過去のバージョンを取得」
+
+### 「並列で処理して」「高速に取得して」（v2.2.0）
+
+```
+ParallelExecutor, DomainRateLimiter を使用
+```
+
+例:
+- 「これらのURLを並列で処理して」
+- 「高速に複数ページを取得して」
+
+### 「ログを構造化して」「機密情報をマスクして」（v2.2.0）
+
+```
+StructuredLogger, SensitiveDataMasker を使用
+```
+
+例:
+- 「処理ログをJSON形式で出力して」
+- 「メールアドレスをマスクしてログ出力」
+
+### 「robots.txtを確認して」「クロール許可を確認」（v2.2.0）
+
+```
+RobotsParser を使用
+```
+
+例:
+- 「このURLはクロール可能か確認して」
+- 「robots.txtのルールを取得して」
+
+### 「キャッシュを使って」「チェックポイントを保存」（v2.2.0）
+
+```
+ContentManager, ContentCache, CheckpointManager を使用
+```
+
+例:
+- 「取得済みのコンテンツはキャッシュから使って」
+- 「調査の途中状態を保存して」
+- 「前回の続きから再開して」
+
 ---
 
 ## 🤖 DeepResearchAgent（v2.1.0）
@@ -132,6 +193,119 @@ console.log('Confidence:', result.confidence);
 - `Completeness`: 網羅性
 - `Attribution`: 根拠の明確さ
 - `Definitive`: 明確さ
+
+---
+
+## 🔧 DeepResearch強化機能（v2.2.0）
+
+### 「エラー耐性のある調査」「信頼性の高い調査」
+
+DeepResearchOrchestratorを使用して、リトライ・フォールバック・キャッシュを統合した堅牢な調査を実行します。
+
+```typescript
+import { DeepResearchOrchestrator } from '@nahisaho/katashiro';
+
+const orchestrator = new DeepResearchOrchestrator({
+  maxConcurrency: 5,
+  maxRetries: 3,
+  cacheEnabled: true,
+});
+
+const result = await orchestrator.research('AIの最新動向');
+console.log('Findings:', result.findings);
+console.log('Cache hits:', result.stats.cacheHits);
+```
+
+### 「リトライ付きで実行」「エラー時に再試行」
+
+RetryHandlerで指数バックオフリトライを実行します。
+
+```typescript
+import { RetryHandler } from '@nahisaho/katashiro';
+
+const retryHandler = new RetryHandler({
+  maxRetries: 5,
+  initialBackoff: 1000,
+  maxBackoff: 60000,
+});
+
+const result = await retryHandler.execute(async () => {
+  return await fetchData(url);
+});
+```
+
+### 「フォールバック付きで取得」「アーカイブから取得」
+
+FallbackHandlerでWayback Machine等の代替ソースを利用します。
+
+```typescript
+import { FallbackHandler, WaybackMachineClient } from '@nahisaho/katashiro';
+
+const fallback = new FallbackHandler({
+  strategies: ['wayback', 'cached'],
+});
+
+const result = await fallback.fetchWithFallback(url);
+console.log('Source:', result.source);  // 'primary' or 'wayback'
+```
+
+### 「並列で処理」「高速に調査」
+
+ParallelExecutorで大規模URL処理を並列実行します。
+
+```typescript
+import { ParallelExecutor, DomainRateLimiter } from '@nahisaho/katashiro';
+
+const executor = new ParallelExecutor({
+  maxConcurrency: 10,
+  domainConcurrency: 2,
+});
+
+const results = await executor.executeAll(urls, async (url) => {
+  return await scraper.scrape(url);
+});
+```
+
+### 「ログを出力して」「機密情報をマスクして」
+
+StructuredLoggerで構造化ログを出力し、SensitiveDataMaskerで機密情報をマスキングします。
+
+```typescript
+import { StructuredLogger, SensitiveDataMasker } from '@nahisaho/katashiro';
+
+const logger = new StructuredLogger({ level: 'info', format: 'json' });
+logger.info('Research started', { topic: 'AI' });
+
+const masker = new SensitiveDataMasker();
+const masked = masker.mask({ email: 'user@example.com' });
+// { email: '***@***.com' }
+```
+
+### 「robots.txtを確認して」「クロール許可を確認」
+
+RobotsParserでWebサイトのクローリングルールを遵守します。
+
+```typescript
+import { RobotsParser } from '@nahisaho/katashiro';
+
+const parser = new RobotsParser({ userAgent: 'KATASHIRO' });
+const allowed = await parser.isAllowed('https://example.com/page');
+```
+
+### 「キャッシュから取得」「チェックポイントを保存」
+
+ContentManagerでキャッシュ・チェックポイント・バージョン管理を統合します。
+
+```typescript
+import { ContentManager, CheckpointManager } from '@nahisaho/katashiro';
+
+const manager = new ContentManager({ cacheDir: './.cache' });
+const content = await manager.getOrFetch(url, () => scraper.scrape(url));
+
+// チェックポイント保存・復元
+await manager.saveCheckpoint('session-1', { processedUrls, findings });
+const state = await manager.loadCheckpoint('session-1');
+```
 
 ---
 
@@ -365,4 +539,5 @@ collector, analyzer, generator, knowledge, feedback (coreに依存)
 
 **Project**: KATASHIRO
 **npm**: @nahisaho/katashiro
-**Updated**: 2026-01-10
+**Updated**: 2026-01-16
+**Version**: 2.2.0

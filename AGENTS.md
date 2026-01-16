@@ -17,8 +17,10 @@
 | 課題タイプ | キーワード例 | 使用する機能 |
 |-----------|-------------|-------------|
 | **調査・リサーチ** | 調べて、検索、情報収集、〜について | Collector → Analyzer → Generator |
-| **Deep Research** | 詳しく調べて、徹底的に、包括的に、網羅的に | Collector → Analyzer → Knowledge → Generator（反復） |
+| **Deep Research** | 詳しく調べて、徹底的に、包括的に、網羅的に | DeepResearchOrchestrator → Analyzer → Generator |
 | **Deep Research Agent** | エージェントで調査、自律的に調べて、反復調査 | DeepResearchAgent（v2.1.0） |
+| **高信頼調査** | 信頼性高く、リトライあり、エラー耐性 | UrlProcessor + RetryHandler + FallbackHandler |
+| **並列調査** | 並列で調べて、高速に、同時に | ParallelExecutor + DomainRateLimiter |
 | **戦略策定** | 戦略、SWOT、3C、5Forces、競合分析 | FrameworkAnalyzer → Generator |
 | **分析・解析** | 分析して、解析、キーワード、傾向 | Analyzer |
 | **要約・まとめ** | 要約、まとめて、短くして | Generator (SummaryGenerator) |
@@ -134,6 +136,44 @@ import {
   WebSearchClient,   // キーワード検索
   FeedReader,        // RSSフィード
   ApiClient,         // API呼び出し
+  
+  // DeepResearch 強化機能（v2.2.0）
+  DeepResearchOrchestrator, // Deep Research統括オーケストレーター
+  UrlProcessor,      // URL処理（リトライ+フォールバック+キャッシュ統合）
+  IterationController, // イテレーション制御・収束判定
+  
+  // リトライ機構（v2.2.0）
+  RetryHandler,      // 指数バックオフリトライ
+  ExponentialBackoff, // バックオフ計算
+  RetryError,        // リトライエラー型
+  
+  // フォールバック機構（v2.2.0）
+  FallbackHandler,   // フォールバック戦略実行
+  WaybackMachineClient, // Internet Archive連携
+  
+  // ロギング（v2.2.0）
+  StructuredLogger,  // 構造化ログ出力（JSON/Text）
+  SensitiveDataMasker, // 機密情報マスキング
+  ConsoleTransport,  // コンソール出力
+  MemoryTransport,   // メモリ蓄積（テスト用）
+  
+  // robots.txt準拠（v2.2.0）
+  RobotsParser,      // robots.txtパース・判定
+  
+  // 並列処理（v2.2.0）
+  ParallelExecutor,  // 並列実行オーケストレーター
+  Semaphore,         // セマフォ（同時実行数制御）
+  DomainRateLimiter, // ドメイン別レート制限
+  AdaptiveConcurrencyController, // 動的並列度調整
+  ConcurrencyQueue,  // 並列キュー管理
+  ResourceMonitor,   // CPU/メモリ監視
+  ContentStreamHandler, // 大規模コンテンツストリーム処理
+  
+  // キャッシュ管理（v2.2.0）
+  ContentManager,    // キャッシュ+バージョン管理統合
+  ContentCache,      // LRUキャッシュ
+  CheckpointManager, // チェックポイント保存・復元
+  VersionControl,    // コンテンツバージョン管理
   
   // テキスト分析（テキストデータがある場合）
   TextAnalyzer,      // キーワード・複雑度分析
@@ -1072,6 +1112,411 @@ const mcpTools = {
 
 ---
 
+## 🔧 DeepResearch 強化機能（v2.2.0）
+
+v2.2.0では、DeepResearchの信頼性・スケーラビリティを大幅に向上させる機能を追加しました。
+
+### DeepResearchOrchestrator - 統合オーケストレーター
+
+複数のコンポーネントを統合し、エラー耐性のある調査ワークフローを実行します。
+
+```typescript
+import {
+  DeepResearchOrchestrator,
+  DeepResearchConfig,
+} from '@nahisaho/katashiro';
+
+// オーケストレーター作成
+const orchestrator = new DeepResearchOrchestrator({
+  // 並列処理設定
+  maxConcurrency: 5,           // 最大同時処理数
+  domainRateLimit: 1000,       // ドメインあたりレート制限(ms)
+  
+  // リトライ設定
+  maxRetries: 3,               // 最大リトライ回数
+  initialBackoff: 1000,        // 初回バックオフ(ms)
+  maxBackoff: 30000,           // 最大バックオフ(ms)
+  
+  // キャッシュ設定
+  cacheEnabled: true,          // キャッシュ有効化
+  cacheTTL: 86400000,          // キャッシュTTL(24時間)
+  maxCacheSize: 1000,          // 最大キャッシュエントリ数
+  
+  // ロギング設定
+  logLevel: 'info',            // ログレベル
+  logFormat: 'json',           // ログ形式
+  
+  // イテレーション設定
+  maxIterations: 10,           // 最大イテレーション数
+  convergenceThreshold: 0.1,   // 収束閾値
+  minNewInfoRate: 0.05,        // 最小新規情報率
+});
+
+// イベントリスナー
+orchestrator.on('iterationStart', (data) => {
+  console.log(`📍 Iteration ${data.iteration} started`);
+});
+
+orchestrator.on('urlProcessed', (data) => {
+  console.log(`✅ ${data.url} processed (${data.fromCache ? 'cache' : 'fetch'})`);
+});
+
+orchestrator.on('convergence', (data) => {
+  console.log(`🎯 Converged at iteration ${data.iteration}`);
+});
+
+// 調査実行
+const result = await orchestrator.research('AIの医療分野への影響');
+
+console.log('Findings:', result.findings);
+console.log('Sources:', result.sources);
+console.log('Iterations:', result.iterationCount);
+console.log('Cache Hits:', result.stats.cacheHits);
+```
+
+### RetryHandler - 指数バックオフリトライ
+
+ネットワークエラーやレート制限に対する堅牢なリトライ機構を提供します。
+
+```typescript
+import {
+  RetryHandler,
+  RetryError,
+} from '@nahisaho/katashiro';
+
+// リトライハンドラー作成
+const retryHandler = new RetryHandler({
+  maxRetries: 5,                // 最大リトライ回数
+  initialBackoff: 1000,         // 初回バックオフ(ms)
+  maxBackoff: 60000,            // 最大バックオフ(ms)
+  backoffMultiplier: 2.0,       // バックオフ倍率
+  jitter: 0.2,                  // ジッター（0-0.5）
+  retryableErrors: ['ETIMEDOUT', 'ECONNRESET', 'RATE_LIMITED'],
+});
+
+// リトライ付き実行
+const result = await retryHandler.execute(async () => {
+  const page = await scraper.scrape(url);
+  if (!isOk(page)) {
+    throw new Error('Scraping failed');
+  }
+  return page.value;
+});
+
+// リトライ付き fetch
+const response = await retryHandler.fetchWithRetry(url, {
+  timeout: 10000,
+  headers: { 'User-Agent': 'KATASHIRO/2.2.0' },
+});
+
+// 統計情報
+const stats = retryHandler.getStats();
+console.log('Total Attempts:', stats.totalAttempts);
+console.log('Retries:', stats.retries);
+console.log('Failures:', stats.failures);
+console.log('Success Rate:', stats.successRate);
+```
+
+### FallbackHandler - フォールバック戦略
+
+主要ソースの取得に失敗した場合、代替ソース（Wayback Machine等）からコンテンツを取得します。
+
+```typescript
+import {
+  FallbackHandler,
+  WaybackMachineClient,
+} from '@nahisaho/katashiro';
+
+// フォールバックハンドラー作成
+const fallback = new FallbackHandler({
+  strategies: ['wayback', 'alternative', 'cached'],
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 最大7日前のアーカイブ
+});
+
+// フォールバック付き取得
+const result = await fallback.fetchWithFallback(url);
+
+if (result.source === 'primary') {
+  console.log('Primary source used');
+} else if (result.source === 'wayback') {
+  console.log(`Wayback archive from ${result.archiveDate}`);
+}
+
+// Wayback Machineクライアント直接使用
+const wayback = new WaybackMachineClient();
+
+// 利用可能なスナップショットを確認
+const available = await wayback.check(url);
+if (available.archived) {
+  console.log('Latest snapshot:', available.latestSnapshot);
+}
+
+// 特定日時のスナップショット取得
+const snapshot = await wayback.getSnapshot(url, {
+  timestamp: '20240101',  // YYYYMMDDhhmmss形式
+});
+```
+
+### StructuredLogger - 構造化ロギング
+
+機密情報のマスキング機能付き構造化ログを提供します。
+
+```typescript
+import {
+  StructuredLogger,
+  SensitiveDataMasker,
+  ConsoleTransport,
+  MemoryTransport,
+} from '@nahisaho/katashiro';
+
+// ロガー作成
+const logger = new StructuredLogger({
+  level: 'info',               // debug, info, warn, error
+  format: 'json',              // json, text
+  transports: [new ConsoleTransport()],
+  context: { service: 'deep-research' },
+});
+
+// ログ出力
+logger.info('Research started', { topic: 'AI' });
+logger.debug('URL processing', { url: 'https://example.com' });
+logger.warn('Rate limited', { domain: 'api.example.com' });
+logger.error('Scraping failed', { error: err.message });
+
+// 機密情報マスキング
+const masker = new SensitiveDataMasker({
+  patterns: ['email', 'apiKey', 'password', 'creditCard'],
+  customPatterns: [/secret-\w+/gi],
+});
+
+const masked = masker.mask({
+  email: 'user@example.com',
+  apiKey: 'sk-1234567890',
+  data: 'Contains secret-abc123',
+});
+// { email: '***@***.com', apiKey: 'sk-***', data: 'Contains ***' }
+```
+
+### RobotsParser - robots.txt準拠
+
+Webサイトのrobots.txtを解析し、クローリングルールを遵守します。
+
+```typescript
+import { RobotsParser } from '@nahisaho/katashiro';
+
+const robotsParser = new RobotsParser({
+  userAgent: 'KATASHIRO',
+  timeout: 5000,
+});
+
+// URL許可確認
+const allowed = await robotsParser.isAllowed('https://example.com/page');
+if (allowed) {
+  // クロール許可
+}
+
+// Crawl-delay取得
+const delay = await robotsParser.getCrawlDelay('https://example.com');
+console.log('Crawl delay:', delay, 'ms');
+
+// robots.txt解析
+const rules = await robotsParser.parse('https://example.com/robots.txt');
+console.log('Disallowed paths:', rules.disallowedPaths);
+console.log('Sitemaps:', rules.sitemaps);
+```
+
+### ParallelExecutor - 並列処理オーケストレーター
+
+大規模なURL処理を効率的に並列実行します。
+
+```typescript
+import {
+  ParallelExecutor,
+  Semaphore,
+  DomainRateLimiter,
+  AdaptiveConcurrencyController,
+  ResourceMonitor,
+  ConcurrencyQueue,
+} from '@nahisaho/katashiro';
+
+// 並列実行オーケストレーター
+const executor = new ParallelExecutor({
+  maxConcurrency: 10,          // 最大同時処理数
+  domainConcurrency: 2,        // ドメインあたり同時処理数
+  timeout: 30000,              // タイムアウト(ms)
+  adaptiveConcurrency: true,   // 動的並列度調整
+});
+
+// URL一括処理
+const urls = ['https://a.com', 'https://b.com', 'https://c.com'];
+const results = await executor.executeAll(urls, async (url) => {
+  const page = await scraper.scrape(url);
+  return isOk(page) ? page.value : null;
+});
+
+// Semaphore（同時実行数制御）
+const semaphore = new Semaphore(5);  // 最大5並列
+await semaphore.acquire();
+try {
+  // クリティカルセクション
+} finally {
+  semaphore.release();
+}
+
+// ドメイン別レート制限
+const rateLimiter = new DomainRateLimiter({
+  defaultLimit: 1000,  // デフォルト1秒
+  domainLimits: {
+    'api.example.com': 2000,  // 特定ドメインは2秒
+  },
+});
+await rateLimiter.waitForDomain('api.example.com');
+
+// 動的並列度調整
+const controller = new AdaptiveConcurrencyController({
+  minConcurrency: 2,
+  maxConcurrency: 20,
+  targetLatency: 1000,        // 目標レイテンシ(ms)
+  adjustmentInterval: 5000,   // 調整間隔(ms)
+});
+
+// リソースモニター
+const monitor = new ResourceMonitor();
+const usage = monitor.getUsage();
+console.log('CPU:', usage.cpu, '%');
+console.log('Memory:', usage.memory, '%');
+
+// 並列キュー
+const queue = new ConcurrencyQueue<string>(5);
+queue.enqueue(async () => await fetchUrl('https://a.com'));
+queue.enqueue(async () => await fetchUrl('https://b.com'));
+await queue.waitAll();
+```
+
+### ContentManager - コンテンツ管理統合
+
+キャッシュ、チェックポイント、バージョン管理を統合したコンテンツ管理を提供します。
+
+```typescript
+import {
+  ContentManager,
+  ContentCache,
+  CheckpointManager,
+  VersionControl,
+} from '@nahisaho/katashiro';
+
+// コンテンツマネージャー作成
+const contentManager = new ContentManager({
+  cacheDir: './.cache',
+  checkpointDir: './.checkpoints',
+  maxCacheSize: 1000,
+  cacheTTL: 86400000,          // 24時間
+  autoCheckpoint: true,        // 自動チェックポイント
+  checkpointInterval: 300000,  // 5分間隔
+});
+
+// コンテンツ取得（キャッシュ対応）
+const content = await contentManager.getOrFetch(url, async () => {
+  const page = await scraper.scrape(url);
+  return isOk(page) ? page.value.content : null;
+});
+
+// チェックポイント保存
+await contentManager.saveCheckpoint('research-session-1', {
+  processedUrls: ['https://a.com', 'https://b.com'],
+  findings: [...],
+  iteration: 3,
+});
+
+// チェックポイント復元
+const state = await contentManager.loadCheckpoint('research-session-1');
+if (state) {
+  console.log('Resuming from iteration', state.iteration);
+}
+
+// バージョン管理
+const versionControl = new VersionControl('./.versions');
+await versionControl.commit('research-data', data, 'Initial data');
+const history = await versionControl.getHistory('research-data');
+const oldVersion = await versionControl.checkout('research-data', history[0].version);
+```
+
+### UrlProcessor - URL処理統合
+
+リトライ、フォールバック、キャッシュを統合したURL処理を提供します。
+
+```typescript
+import { UrlProcessor } from '@nahisaho/katashiro';
+
+// URL処理器作成
+const urlProcessor = new UrlProcessor({
+  scraper,
+  retryHandler,
+  fallbackHandler,
+  contentManager,
+  robotsParser,
+  domainRateLimiter,
+});
+
+// URL処理（全機能統合）
+const result = await urlProcessor.process(url);
+
+console.log('Content:', result.content);
+console.log('Source:', result.source);      // 'primary', 'cache', 'wayback'
+console.log('Retries:', result.retries);
+console.log('Duration:', result.duration);
+
+// バッチ処理
+const urls = ['https://a.com', 'https://b.com', 'https://c.com'];
+const results = await urlProcessor.processAll(urls, {
+  onProgress: (completed, total) => {
+    console.log(`Progress: ${completed}/${total}`);
+  },
+});
+```
+
+### IterationController - イテレーション制御
+
+収束判定とイテレーション管理を提供します。
+
+```typescript
+import { IterationController } from '@nahisaho/katashiro';
+
+// イテレーション制御器作成
+const controller = new IterationController({
+  maxIterations: 10,
+  convergenceThreshold: 0.1,   // 新規情報率が10%以下で収束
+  minNewInfoRate: 0.05,        // 最小5%の新規情報
+  stabilityWindow: 3,          // 3イテレーション安定で収束
+});
+
+// イテレーション実行
+while (!controller.isConverged()) {
+  const iteration = controller.getCurrentIteration();
+  console.log(`Starting iteration ${iteration}`);
+  
+  // 調査実行
+  const newFindings = await performResearch();
+  
+  // 進捗記録
+  controller.recordIteration({
+    findings: newFindings.length,
+    newInfo: newFindings.filter(f => !existingFindings.includes(f)).length,
+    totalInfo: existingFindings.length + newFindings.length,
+  });
+  
+  // 収束判定結果
+  const status = controller.getConvergenceStatus();
+  console.log('New info rate:', status.newInfoRate);
+  console.log('Is converging:', status.isConverging);
+  console.log('Stability:', status.stabilityCount);
+}
+
+console.log('Research converged after', controller.getCurrentIteration(), 'iterations');
+```
+
+---
+
 ## 🎭 KOTODAMA4Biz プロンプトテンプレート統合
 
 ユーザーの課題が**ビジネス課題**の場合、[KOTODAMA4Biz](https://github.com/nahisaho/KOTODAMA4Biz)のプロンプトテンプレートを参照して、専門家視点でのアドバイスを提供してください。
@@ -1368,5 +1813,5 @@ interface ReasoningStep {
 
 **Project**: KATASHIRO
 **npm**: @nahisaho/katashiro
-**Last Updated**: 2026-01-12
-**Version**: 0.2.7
+**Last Updated**: 2026-01-16
+**Version**: 2.2.0
