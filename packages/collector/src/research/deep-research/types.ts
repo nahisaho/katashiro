@@ -38,6 +38,8 @@ export interface ResearchConfig {
   debug?: boolean;
   /** Consulting framework to use (default: 'auto') */
   framework?: ConsultingFramework;
+  /** Delay between search requests in ms (default: 0, handled by rate limiter) */
+  searchDelayMs?: number;
 }
 
 /**

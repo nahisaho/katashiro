@@ -74,6 +74,7 @@ interface ResearchState {
 
 /**
  * ResearchEngine - Deep Research オーケストレーター
+ * v2.5.3: レートリミット対応
  */
 export class ResearchEngine {
   private readonly providerFactory: SearchProviderFactory;
@@ -85,6 +86,8 @@ export class ResearchEngine {
   private readonly listeners: Set<ResearchEventListener> = new Set();
   private state: ResearchState | null = null;
   private currentFramework: ConsultingFramework = 'auto';
+  /** Current research config (stored for use in performSearches) */
+  private config: ResearchConfig | null = null;
 
   constructor(config: ResearchEngineConfig = {}) {
     this.debug = config.debug ?? false;
@@ -122,6 +125,9 @@ export class ResearchEngine {
    * Run deep research
    */
   async research(config: ResearchConfig): Promise<ResearchReport> {
+    // Store config for use in performSearches
+    this.config = config;
+
     // Validate and set defaults
     const {
       query,
@@ -315,6 +321,7 @@ export class ResearchEngine {
 
   /**
    * Step 2: Perform searches
+   * v2.5.3: 検索間に遅延を追加してレートリミットを回避
    */
   protected async performSearches(): Promise<void> {
     if (!this.state) return;
@@ -323,7 +330,13 @@ export class ResearchEngine {
     const questions = this.state.questions.slice(-5);
     const searchResults: SearchResult[] = [];
 
-    for (const question of questions) {
+    // v2.5.3: 検索間の遅延設定 (DuckDuckGoProviderのレートリミッターと連携)
+    const searchDelayMs = this.config?.searchDelayMs ?? 0;
+
+    for (let i = 0; i < questions.length; i++) {
+      const question = questions[i];
+      if (!question) continue;
+
       const serpQuery: SERPQuery = {
         keywords: question.question,
         topK: 5,
@@ -340,6 +353,11 @@ export class ResearchEngine {
           query: question.question,
           resultsCount: results.length,
         });
+
+        // v2.5.3: 次の検索の前に遅延を入れる（最後のクエリ以外）
+        if (searchDelayMs > 0 && i < questions.length - 1) {
+          await this.delay(searchDelayMs);
+        }
       } catch (error) {
         if (this.debug) {
           console.error(`[ResearchEngine] Search failed: ${(error as Error).message}`);
@@ -802,6 +820,14 @@ export class ResearchEngine {
 
     this.state.logs.push(log);
   }
+
+  /**
+   * Delay helper
+   * v2.5.3: レートリミット対応用
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
 }
 
 /**
@@ -815,6 +841,7 @@ export function createResearchEngine(
 
 /**
  * Quick research helper
+ * v2.5.3: searchDelayMsオプション追加
  */
 export async function deepResearch(
   query: string,
@@ -832,5 +859,6 @@ export async function deepResearch(
     outputFormat: options?.outputFormat ?? 'markdown',
     language: options?.language ?? 'ja',
     framework: options?.framework ?? 'auto',
+    searchDelayMs: options?.searchDelayMs,
   });
 }

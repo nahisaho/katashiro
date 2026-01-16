@@ -1,6 +1,6 @@
 {
   "name": "@nahisaho/katashiro-media",
-  "version": "2.5.2",
+  "version": "2.5.3",
   "description": "KATASHIRO Media - 画像・音声・動画生成パッケージ",
   "type": "module",
   "main": "./dist/index.js",

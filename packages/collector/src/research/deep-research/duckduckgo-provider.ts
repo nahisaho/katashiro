@@ -2,11 +2,66 @@
  * DuckDuckGo Search Provider
  *
  * DuckDuckGo HTML検索を使用したバックアッププロバイダー
+ * v2.5.3: レートリミット対応追加
  *
- * @version 3.0.0
+ * @version 3.1.0
  */
 
 import type { SearchProvider, SERPQuery, SearchResult } from './types.js';
+
+/**
+ * Global rate limiter for DuckDuckGo
+ * DuckDuckGoは短時間の連続リクエストでブロックされる傾向があるため、
+ * グローバルで最終リクエスト時刻を追跡
+ */
+class DuckDuckGoRateLimiter {
+  private static instance: DuckDuckGoRateLimiter;
+  private lastRequestTime = 0;
+  private readonly minIntervalMs: number;
+  private consecutiveRequests = 0;
+  private readonly maxConsecutive = 2; // 連続2回まで許可
+  private readonly cooldownMs = 5000; // 連続後のクールダウン
+
+  private constructor(minIntervalMs = 1500) {
+    this.minIntervalMs = minIntervalMs;
+  }
+
+  static getInstance(minIntervalMs = 1500): DuckDuckGoRateLimiter {
+    if (!DuckDuckGoRateLimiter.instance) {
+      DuckDuckGoRateLimiter.instance = new DuckDuckGoRateLimiter(minIntervalMs);
+    }
+    return DuckDuckGoRateLimiter.instance;
+  }
+
+  async waitIfNeeded(): Promise<void> {
+    const now = Date.now();
+    const elapsed = now - this.lastRequestTime;
+
+    // Check if we need cooldown after consecutive requests
+    if (this.consecutiveRequests >= this.maxConsecutive) {
+      const cooldownWait = this.cooldownMs - elapsed;
+      if (cooldownWait > 0) {
+        await this.delay(cooldownWait);
+      }
+      this.consecutiveRequests = 0;
+    } else if (elapsed < this.minIntervalMs) {
+      // Normal interval wait
+      await this.delay(this.minIntervalMs - elapsed);
+    }
+
+    this.lastRequestTime = Date.now();
+    this.consecutiveRequests++;
+  }
+
+  reset(): void {
+    this.consecutiveRequests = 0;
+    this.lastRequestTime = 0;
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+}
 
 /**
  * DuckDuckGo Provider Configuration
@@ -18,25 +73,36 @@ export interface DuckDuckGoProviderConfig {
   safeSearch?: 'strict' | 'moderate' | 'off';
   /** Request timeout in ms (default: 15000) */
   timeout?: number;
-  /** Max retries (default: 2) */
+  /** Max retries (default: 3) */
   maxRetries?: number;
+  /** Minimum interval between requests in ms (default: 1500) */
+  minRequestIntervalMs?: number;
+  /** Enable rate limiting (default: true) */
+  enableRateLimiting?: boolean;
 }
 
 /**
  * DuckDuckGoProvider - DuckDuckGo HTML検索
+ * v2.5.3: レートリミット対応追加
  */
 export class DuckDuckGoProvider implements SearchProvider {
   readonly name = 'duckduckgo';
 
   private readonly config: Required<DuckDuckGoProviderConfig>;
+  private readonly rateLimiter: DuckDuckGoRateLimiter;
 
   constructor(config: DuckDuckGoProviderConfig = {}) {
     this.config = {
       region: config.region ?? 'jp-ja',
       safeSearch: config.safeSearch ?? 'moderate',
       timeout: config.timeout ?? 15000,
-      maxRetries: config.maxRetries ?? 2,
+      maxRetries: config.maxRetries ?? 3,
+      minRequestIntervalMs: config.minRequestIntervalMs ?? 1500,
+      enableRateLimiting: config.enableRateLimiting ?? true,
     };
+    this.rateLimiter = DuckDuckGoRateLimiter.getInstance(
+      this.config.minRequestIntervalMs
+    );
   }
 
   /**
@@ -61,9 +127,15 @@ export class DuckDuckGoProvider implements SearchProvider {
 
   /**
    * Search using DuckDuckGo HTML
+   * v2.5.3: レートリミット対応追加
    */
   async search(query: SERPQuery): Promise<SearchResult[]> {
     const { keywords, topK = 10 } = query;
+
+    // Wait for rate limiter if enabled
+    if (this.config.enableRateLimiting) {
+      await this.rateLimiter.waitIfNeeded();
+    }
 
     // Build search URL
     const params = new URLSearchParams({

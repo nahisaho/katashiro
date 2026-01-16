@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.3] - 2026-01-17
+
+### Fixed
+
+#### @nahisaho/katashiro-collector
+
+##### Deep Research - DuckDuckGoレートリミット対応
+
+- **DuckDuckGoRateLimiter**: グローバルレートリミッタークラス追加
+  - シングルトンパターンでインスタンス間のリクエスト調整
+  - `minIntervalMs`: リクエスト間の最小間隔（デフォルト1500ms）
+  - `maxConsecutive`: 連続リクエスト上限（デフォルト2回）
+  - `cooldownMs`: 連続後のクールダウン時間（デフォルト5000ms）
+
+- **DuckDuckGoProviderConfig拡張**
+  - `minRequestIntervalMs`: リクエスト間隔設定
+  - `enableRateLimiting`: レートリミット有効化（デフォルトtrue）
+  - `maxRetries`: リトライ回数を2→3に増加
+
+- **ResearchConfig.searchDelayMs追加**
+  - 検索クエリ間の追加遅延設定（オプション）
+  - DuckDuckGoProviderのレートリミッターと併用可能
+
+### Changed
+
+- ResearchEngine.performSearches()が検索間に遅延を挿入
+- DuckDuckGoProviderが毎回レートリミットをチェック
+
+### Example Usage
+
+```typescript
+import { deepResearch } from '@nahisaho/katashiro';
+
+// レートリミット対応は自動で有効化
+const report = await deepResearch('AI倫理について詳しく調べて');
+
+// 追加の遅延が必要な場合
+const reportWithDelay = await deepResearch('量子コンピューティング', {
+  searchDelayMs: 2000,  // 検索間に2秒の追加遅延
+});
+```
+
 ## [2.5.1] - 2026-01-17
 
 ### Fixed
